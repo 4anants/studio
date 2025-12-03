@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
 import { users as initialUsers, documents as allDocuments, User, Document } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, Filter } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -38,6 +38,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -50,6 +57,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
   } from '@/components/ui/alert-dialog';
+import { Label } from '../ui/label'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -59,6 +67,7 @@ export function AdminView() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
+  const [selectedUserIdFilter, setSelectedUserIdFilter] = useState('all');
   const { toast } = useToast();
 
   const handleUploadComplete = (userId: string) => {
@@ -152,8 +161,12 @@ export function AdminView() {
   const filteredDocuments = docs.filter(doc => {
     const owner = users.find(u => u.id === doc.ownerId);
     if (owner?.status === 'deleted') return false; // Hide docs of deleted users
-    return doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      owner?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const userMatch = selectedUserIdFilter === 'all' || doc.ownerId === selectedUserIdFilter;
+    const searchMatch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      owner?.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return userMatch && searchMatch;
   });
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
@@ -198,6 +211,10 @@ export function AdminView() {
   const onTabChange = (value: string) => {
     setActiveTab(value);
     setSelectedUserIds([]);
+    setSearchTerm('');
+    if (value !== 'all-docs') {
+      setSelectedUserIdFilter('all');
+    }
   }
 
   const numSelected = selectedUserIds.length;
@@ -245,7 +262,7 @@ export function AdminView() {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
-                        placeholder="Search users or files..."
+                        placeholder={activeTab === 'all-docs' ? 'Search documents...' : 'Search users...'}
                         className="w-full sm:w-[300px] pl-8"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -255,9 +272,26 @@ export function AdminView() {
         </div>
         <TabsContent value="all-docs">
             <Card>
-                <CardHeader>
-                    <CardTitle>All Employee Documents</CardTitle>
-                    <CardDescription>A comprehensive list of all documents for active employees.</CardDescription>
+                <CardHeader className="flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>All Employee Documents</CardTitle>
+                        <CardDescription>A comprehensive list of all documents for active employees.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <Label htmlFor="user-filter" className="text-sm font-medium">Filter by Employee</Label>
+                        <Select value={selectedUserIdFilter} onValueChange={setSelectedUserIdFilter}>
+                            <SelectTrigger className="w-[180px]" id="user-filter">
+                                <SelectValue placeholder="Select an employee" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Employees</SelectItem>
+                                {activeUsers.map(user => (
+                                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <DocumentList documents={filteredDocuments} users={activeUsers} showOwner />
@@ -276,7 +310,7 @@ export function AdminView() {
                             <TableRow>
                                 <TableHead className="w-[40px]">
                                     <Checkbox
-                                        checked={numSelected === numFiltered && numFiltered > 0}
+                                        checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
                                         onCheckedChange={handleSelectAll}
                                         aria-label="Select all"
                                     />
@@ -424,3 +458,5 @@ export function AdminView() {
     </>
   )
 }
+
+    
