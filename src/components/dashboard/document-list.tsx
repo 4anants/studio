@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2 } from 'lucide-react'
-import type { Document } from '@/lib/mock-data'
+import type { Document, User } from '@/lib/mock-data'
 import { useToast } from '@/hooks/use-toast'
 
 function getFileIcon(fileType: Document['fileType']) {
@@ -32,7 +32,13 @@ function getFileIcon(fileType: Document['fileType']) {
   }
 }
 
-export function DocumentList({ documents }: { documents: Document[] }) {
+interface DocumentListProps {
+  documents: Document[];
+  users: User[];
+  showOwner?: boolean;
+}
+
+export function DocumentList({ documents, users, showOwner = false }: DocumentListProps) {
   const { toast } = useToast()
     
   const handleDownload = (docName: string) => {
@@ -49,6 +55,14 @@ export function DocumentList({ documents }: { documents: Document[] }) {
       description: `${docName} is being deleted.`,
     })
   }
+  
+  const getOwnerName = (ownerId: string) => {
+    return users.find(u => u.id === ownerId)?.name || 'Unknown';
+  }
+
+  if (documents.length === 0) {
+    return <p className="text-sm text-center text-muted-foreground py-4">No documents found.</p>
+  }
 
   return (
     <Table>
@@ -56,6 +70,7 @@ export function DocumentList({ documents }: { documents: Document[] }) {
         <TableRow>
           <TableHead className="w-[60px] hidden sm:table-cell"></TableHead>
           <TableHead>Name</TableHead>
+          {showOwner && <TableHead className="hidden md:table-cell">Owner</TableHead>}
           <TableHead>Type</TableHead>
           <TableHead className="hidden md:table-cell">Size</TableHead>
           <TableHead className="hidden lg:table-cell">Uploaded</TableHead>
@@ -71,6 +86,7 @@ export function DocumentList({ documents }: { documents: Document[] }) {
               </div>
             </TableCell>
             <TableCell className="font-medium">{doc.name}</TableCell>
+            {showOwner && <TableCell className="hidden md:table-cell">{getOwnerName(doc.ownerId)}</TableCell>}
             <TableCell>{doc.type}</TableCell>
             <TableCell className="hidden md:table-cell">{doc.size}</TableCell>
             <TableCell className="hidden lg:table-cell">{doc.uploadDate}</TableCell>

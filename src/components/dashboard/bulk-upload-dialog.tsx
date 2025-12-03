@@ -15,8 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { classifyDocuments } from '@/ai/flows/classify-documents-flow';
-import { users } from '@/lib/mock-data';
-import type { Document } from '@/lib/mock-data'
+import type { User, Document } from '@/lib/mock-data'
 
 type UploadedFile = {
   file: File;
@@ -29,7 +28,12 @@ type UploadedFile = {
   error?: string;
 };
 
-export function BulkUploadDialog({ onBulkUploadComplete }: { onBulkUploadComplete: (documents: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => void }) {
+interface BulkUploadDialogProps {
+    onBulkUploadComplete: (documents: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => void;
+    users: User[];
+}
+
+export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDialogProps) {
   const [open, setOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);

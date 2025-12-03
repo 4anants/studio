@@ -10,8 +10,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
-import { users, documents as allDocuments, User, Document } from '@/lib/mock-data'
-import { Search } from 'lucide-react'
+import { users as initialUsers, documents as allDocuments, User, Document } from '@/lib/mock-data'
+import { Search, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -20,9 +20,19 @@ import {
 } from "@/components/ui/tabs"
 import Image from 'next/image'
 import { BulkUploadDialog } from './bulk-upload-dialog'
+import { Button } from '../ui/button'
+import { EmployeeManagementDialog } from './employee-management-dialog'
+import { DeleteEmployeeDialog } from './delete-employee-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
+  const [users, setUsers] = useState(initialUsers)
   const [searchTerm, setSearchTerm] = useState('')
 
   const handleUploadComplete = (userId: string) => {
@@ -50,6 +60,27 @@ export function AdminView() {
     setDocs(prev => [...fullNewDocs, ...prev]);
   }
 
+  const handleEmployeeSave = (employee: User) => {
+    setUsers(prevUsers => {
+      const userIndex = prevUsers.findIndex(u => u.id === employee.id);
+      if (userIndex > -1) {
+        // Update existing user
+        const updatedUsers = [...prevUsers];
+        updatedUsers[userIndex] = employee;
+        return updatedUsers;
+      } else {
+        // Add new user
+        return [...prevUsers, employee];
+      }
+    });
+  };
+
+  const handleEmployeeDelete = (employeeId: string) => {
+    setUsers(prevUsers => prevUsers.filter(u => u.id !== employeeId));
+    // Also remove documents associated with the deleted user
+    setDocs(prevDocs => prevDocs.filter(d => d.ownerId !== employeeId));
+  };
+
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -69,16 +100,21 @@ export function AdminView() {
       <div className="flex items-center justify-between">
          <div className="grid gap-2">
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage all employee documents.</p>
+            <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
         </div>
-        <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} />
+        <div className="flex items-center gap-2">
+          <EmployeeManagementDialog onSave={handleEmployeeSave}>
+            <Button>Add Employee</Button>
+          </EmployeeManagementDialog>
+          <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={users} />
+        </div>
       </div>
       
       <Tabs defaultValue="all-docs">
         <div className="flex items-center">
             <TabsList>
                 <TabsTrigger value="all-docs">All Documents</TabsTrigger>
-                <TabsTrigger value="by-employee">By Employee</TabsTrigger>
+                <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
                 <div className="relative">
@@ -100,7 +136,7 @@ export function AdminView() {
                     <CardDescription>A comprehensive list of all documents uploaded to the system.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <DocumentList documents={filteredDocuments} />
+                    <DocumentList documents={filteredDocuments} users={users} showOwner />
                 </CardContent>
             </Card>
         </TabsContent>
@@ -116,10 +152,33 @@ export function AdminView() {
                                     <CardDescription>{user.email}</CardDescription>
                                 </div>
                             </div>
-                            <UploadDialog onUploadComplete={() => handleUploadComplete(user.id)} />
+                            <div className="flex items-center">
+                                <UploadDialog onUploadComplete={() => handleUploadComplete(user.id)} />
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <MoreVertical className="h-5 w-5" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave}>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                Edit Employee
+                                            </DropdownMenuItem>
+                                        </EmployeeManagementDialog>
+                                        <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
+                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete Employee
+                                            </DropdownMenuItem>
+                                        </DeleteEmployeeDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <DocumentList documents={getDocumentsForUser(user.id)} />
+                            <DocumentList documents={getDocumentsForUser(user.id)} users={users} />
                         </CardContent>
                     </Card>
                 )) : (
