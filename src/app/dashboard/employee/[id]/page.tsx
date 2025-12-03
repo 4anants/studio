@@ -1,9 +1,9 @@
 'use client';
 import { notFound, useRouter } from 'next/navigation';
-import { users, documents as allDocuments } from '@/lib/mock-data';
+import { users as initialUsers, documents as allDocuments } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User, Edit } from 'lucide-react';
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 
 type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
@@ -25,6 +26,7 @@ const monthNames = ["January", "February", "March", "April", "May", "June", "Jul
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const [users, setUsers] = useState<UserType[]>(initialUsers);
   const [user, setUser] = useState<UserType | undefined>(undefined);
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
 
@@ -45,7 +47,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     };
 
     resolveUser();
-  }, [params]);
+  }, [params, users]);
   
   useEffect(() => {
       if (user) {
@@ -53,6 +55,32 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
           setEmployeeDocs(userDocs);
       }
   }, [user]);
+
+  const handleEmployeeSave = (employee: UserType & { originalId?: string }) => {
+    const userIndex = users.findIndex(u => u.id === (employee.originalId || employee.id));
+    if (userIndex > -1) {
+        const updatedUsers = [...users];
+        const existingUser = updatedUsers[userIndex];
+
+        updatedUsers[userIndex] = {
+            ...existingUser,
+            ...employee,
+            id: employee.id, // Ensure ID is updated
+            password: employee.password || existingUser.password
+        };
+        
+        setUsers(updatedUsers);
+
+        // If the ID was changed, we need to update the URL
+        if (employee.originalId && employee.id !== employee.originalId) {
+            router.replace(`/dashboard/employee/${employee.id}`);
+        } else {
+            // Force re-render to reflect changes if ID hasn't changed
+            setUser({...updatedUsers[userIndex]});
+        }
+    }
+  };
+
 
   const { availableYears, availableMonths } = useMemo(() => {
     const years = new Set<string>();
@@ -145,17 +173,24 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
             <div className="grid gap-6 md:grid-cols-3">
                 <div className="md:col-span-1">
                     <Card>
-                        <CardHeader className="flex flex-col items-center text-center">
-                             <Image 
-                                src={`https://picsum.photos/seed/${user.avatar}/128/128`} 
-                                width={128} 
-                                height={128} 
-                                className="rounded-full mb-4" 
-                                alt={user.name}
-                                data-ai-hint="person portrait" 
-                             />
-                            <CardTitle className="text-2xl">{user.name}</CardTitle>
-                            <CardDescription>Employee ID: {user.id}</CardDescription>
+                        <CardHeader className="flex flex-row items-start justify-between">
+                            <div className="flex flex-col items-center text-center w-full">
+                                 <Image 
+                                    src={`https://picsum.photos/seed/${user.avatar}/128/128`} 
+                                    width={128} 
+                                    height={128} 
+                                    className="rounded-full mb-4" 
+                                    alt={user.name}
+                                    data-ai-hint="person portrait" 
+                                 />
+                                <CardTitle className="text-2xl">{user.name}</CardTitle>
+                                <CardDescription>Employee ID: {user.id}</CardDescription>
+                            </div>
+                            <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave}>
+                                <Button variant="ghost" size="icon">
+                                    <Edit className="h-4 w-4"/>
+                                </Button>
+                            </EmployeeManagementDialog>
                         </CardHeader>
                         <CardContent>
                             <Separator className="my-4" />
