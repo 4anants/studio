@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
 import { users as initialUsers, documents as allDocuments, User, Document } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -58,6 +58,7 @@ export function AdminView() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('all-docs');
   const { toast } = useToast();
 
   const handleUploadComplete = (userId: string) => {
@@ -100,18 +101,32 @@ export function AdminView() {
         return updatedUsers;
       } else {
         // Add new user
-        return [...prevUsers, employee];
+        return [...prevUsers, { ...employee, status: 'active' }];
       }
     });
   };
 
   const handleEmployeeDelete = (employeeId: string) => {
-    setUsers(prevUsers => prevUsers.filter(u => u.id !== employeeId));
-    // Also remove documents associated with the deleted user
-    setDocs(prevDocs => prevDocs.filter(d => d.ownerId !== employeeId));
+    setUsers(prevUsers => prevUsers.map(u => 
+        u.id === employeeId ? { ...u, status: 'deleted' } : u
+    ));
     setSelectedUserIds(prev => prev.filter(id => id !== employeeId));
+    toast({
+        title: "Employee Deleted",
+        description: `The employee has been moved to the deleted users list.`
+    });
   };
   
+  const handleRestoreUser = (employeeId: string) => {
+    setUsers(prevUsers => prevUsers.map(u => 
+        u.id === employeeId ? { ...u, status: 'active' } : u
+    ));
+    toast({
+        title: "Employee Restored",
+        description: `The employee has been restored to the active list.`
+    });
+  };
+
   const handleResetPassword = (employeeName: string) => {
     toast({
       title: "Password Reset Link Sent",
@@ -119,19 +134,31 @@ export function AdminView() {
     });
   };
 
-  const filteredUsers = users.filter(user => 
+  const activeUsers = users.filter(user => user.status === 'active');
+  const deletedUsers = users.filter(user => user.status === 'deleted');
+
+  const filteredActiveUsers = activeUsers.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const filteredDocuments = docs.filter(doc => 
-    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    users.find(u => u.id === doc.ownerId)?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDeletedUsers = deletedUsers.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
+  
+  const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsers : [];
+
+  const filteredDocuments = docs.filter(doc => {
+    const owner = users.find(u => u.id === doc.ownerId);
+    if (owner?.status === 'deleted') return false; // Hide docs of deleted users
+    return doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      owner?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  });
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked === true) {
-      setSelectedUserIds(filteredUsers.map(u => u.id));
+      setSelectedUserIds(filteredUsersForSelection.map(u => u.id));
     } else {
       setSelectedUserIds([]);
     }
@@ -146,12 +173,12 @@ export function AdminView() {
   };
 
   const handleBulkDelete = () => {
-    selectedUserIds.forEach(id => {
-        handleEmployeeDelete(id)
-    });
+    setUsers(prevUsers => prevUsers.map(u => 
+        selectedUserIds.includes(u.id) ? { ...u, status: 'deleted' } : u
+    ));
     toast({
         title: "Bulk Delete Successful",
-        description: `${selectedUserIds.length} employee(s) have been deleted.`
+        description: `${selectedUserIds.length} employee(s) have been moved to the deleted list.`
     });
     setSelectedUserIds([]);
     setIsBulkDeleteDialogOpen(false);
@@ -167,9 +194,14 @@ export function AdminView() {
     setSelectedUserIds([]);
     setIsBulkResetDialogOpen(false);
   }
+  
+  const onTabChange = (value: string) => {
+    setActiveTab(value);
+    setSelectedUserIds([]);
+  }
 
   const numSelected = selectedUserIds.length;
-  const numFiltered = filteredUsers.length;
+  const numFiltered = filteredUsersForSelection.length;
 
 
   return (
@@ -180,7 +212,7 @@ export function AdminView() {
             <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
         </div>
         <div className="flex items-center gap-2">
-          {numSelected > 0 ? (
+          {numSelected > 0 && activeTab === 'by-employee' ? (
             <>
                 <span className="text-sm text-muted-foreground">{numSelected} selected</span>
                 <Button variant="outline" onClick={() => setIsBulkResetDialogOpen(true)}>
@@ -195,17 +227,18 @@ export function AdminView() {
                 <EmployeeManagementDialog onSave={handleEmployeeSave}>
                     <Button>Add Employee</Button>
                 </EmployeeManagementDialog>
-                <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={users} />
+                <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
             </>
           )}
         </div>
       </div>
       
-      <Tabs defaultValue="all-docs">
+      <Tabs defaultValue={activeTab} onValueChange={onTabChange}>
         <div className="flex items-center">
             <TabsList>
                 <TabsTrigger value="all-docs">All Documents</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
+                <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
                 <div className="relative">
@@ -224,10 +257,10 @@ export function AdminView() {
             <Card>
                 <CardHeader>
                     <CardTitle>All Employee Documents</CardTitle>
-                    <CardDescription>A comprehensive list of all documents uploaded to the system.</CardDescription>
+                    <CardDescription>A comprehensive list of all documents for active employees.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <DocumentList documents={filteredDocuments} users={users} showOwner />
+                    <DocumentList documents={filteredDocuments} users={activeUsers} showOwner />
                 </CardContent>
             </Card>
         </TabsContent>
@@ -235,7 +268,7 @@ export function AdminView() {
             <Card>
                 <CardHeader>
                     <CardTitle>Manage Employees</CardTitle>
-                    <CardDescription>A list of all employees in the system.</CardDescription>
+                    <CardDescription>A list of all active employees in the system.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -256,7 +289,7 @@ export function AdminView() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredUsers.length > 0 ? filteredUsers.map(user => (
+                            {filteredActiveUsers.length > 0 ? filteredActiveUsers.map(user => (
                                 <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
                                     <TableCell>
                                         <Checkbox
@@ -302,7 +335,48 @@ export function AdminView() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">No users found.</TableCell>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground">No active users found.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+         <TabsContent value="deleted-users">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Deleted Users</CardTitle>
+                    <CardDescription>A list of all deleted employees. You can restore them from here.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredDeletedUsers.length > 0 ? filteredDeletedUsers.map(user => (
+                                <TableRow key={user.id}>
+                                    <TableCell className="hidden sm:table-cell">
+                                        <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                    </TableCell>
+                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm" onClick={() => handleRestoreUser(user.id)}>
+                                            <Undo className="mr-2 h-4 w-4" />
+                                            Restore
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted users found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -318,7 +392,7 @@ export function AdminView() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected {numSelected} employee(s) and all of their associated documents.
+              This will move the selected {numSelected} employee(s) to the deleted users list. You can restore them later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

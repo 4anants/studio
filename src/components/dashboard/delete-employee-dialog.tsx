@@ -35,9 +35,9 @@ export function DeleteEmployeeDialog({ employee, onDelete, children }: DeleteEmp
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the employee{' '}
-            <span className="font-semibold text-foreground">{employee.name}</span> and all of their
-            associated documents.
+            This action will move the employee{' '}
+            <span className="font-semibold text-foreground">{employee.name}</span> to the deleted users list.
+            You can restore them later.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

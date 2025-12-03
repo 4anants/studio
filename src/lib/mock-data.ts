@@ -18,12 +18,13 @@ export type User = {
   dateOfBirth?: string;
   joiningDate?: string;
   resignationDate?: string;
+  status: 'active' | 'deleted';
 };
 
 export const users: User[] = [
-  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10' },
-  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12' },
-  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01' },
+  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active' },
+  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active' },
+  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active' },
 ];
 
 export const documents: Document[] = [

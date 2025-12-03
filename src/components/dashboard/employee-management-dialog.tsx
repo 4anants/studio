@@ -38,7 +38,7 @@ const formSchema = z.object({
 
 interface EmployeeManagementDialogProps {
   employee?: User;
-  onSave: (employee: User) => void;
+  onSave: (employee: Omit<User, 'status' | 'id' | 'avatar'> & { id?: string; avatar?: string }) => void;
   children: React.ReactNode;
 }
 
@@ -82,9 +82,9 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
-      const userData: User = {
-        id: employee?.id || `user-${Date.now()}`,
-        avatar: employee?.avatar || `${Date.now()}`,
+      const userData = {
+        id: employee?.id,
+        avatar: employee?.avatar,
         ...validation.data
       };
       onSave(userData);
