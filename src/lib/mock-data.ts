@@ -13,12 +13,14 @@ export type User = {
   name: string;
   email: string;
   avatar: string;
+  mobile?: string;
+  password?: string;
 };
 
 export const users: User[] = [
-  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', avatar: '1' },
-  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', avatar: '2' },
-  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', avatar: '3' },
+  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', avatar: '1', mobile: '123-456-7890', password: 'password123' },
+  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', avatar: '2', mobile: '123-456-7891', password: 'password123' },
+  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', avatar: '3', mobile: '123-456-7892', password: 'password123' },
 ];
 
 export const documents: Document[] = [

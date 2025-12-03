@@ -29,6 +29,8 @@ import type { User } from '@/lib/mock-data';
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
+  mobile: z.string().optional(),
+  password: z.string().optional(),
 });
 
 interface EmployeeManagementDialogProps {
@@ -47,23 +49,45 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
     defaultValues: {
       name: employee?.name || '',
       email: employee?.email || '',
+      mobile: employee?.mobile || '',
+      password: '',
     },
   });
+  
+  const finalSchema = isEditing 
+  ? formSchema 
+  : formSchema.extend({
+      password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+    });
+
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const validation = finalSchema.safeParse(values);
+    if (!validation.success) {
+        // This part is to show errors in the form
+        Object.entries(validation.error.flatten().fieldErrors).forEach(([name, errors]) => {
+            if (errors) {
+                 form.setError(name as any, { type: 'manual', message: errors[0] });
+            }
+        });
+        return;
+    }
+
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
       const userData: User = {
         id: employee?.id || `user-${Date.now()}`,
         avatar: employee?.avatar || `${Date.now()}`,
-        ...values
+        ...validation.data
       };
       onSave(userData);
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ name: '', email: '' });
+        form.reset({ name: '', email: '', mobile: '', password: '' });
+      } else {
+        form.reset({ ...values, password: '' }); // Clear password field after edit
       }
     }, 1000);
   };
@@ -75,7 +99,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? `Update the details for ${employee.name}.` : 'Enter the details for the new employee.'}
+            {isEditing ? `Update the details for ${employee.name}. Leave password blank to keep it unchanged.` : 'Enter the details for the new employee.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -101,6 +125,32 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input placeholder="john.doe@company.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="mobile"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mobile No.</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123-456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder={isEditing ? "Leave blank to keep current" : "••••••••"} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

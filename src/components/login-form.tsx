@@ -78,6 +78,14 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
+             <div className="flex items-center">
+                <a
+                  href="#"
+                  className="ml-auto inline-block text-sm underline"
+                >
+                  Forgot your password?
+                </a>
+              </div>
           </CardContent>
           <CardFooter className="flex-col gap-4">
             <Button 

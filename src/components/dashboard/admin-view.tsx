@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
 import { users as initialUsers, documents as allDocuments, User, Document } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -27,13 +27,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useToast } from '@/hooks/use-toast'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
   const [users, setUsers] = useState(initialUsers)
   const [searchTerm, setSearchTerm] = useState('')
+  const { toast } = useToast();
 
   const handleUploadComplete = (userId: string) => {
     // Simulate refetching or adding a new doc for a specific user
@@ -66,7 +69,12 @@ export function AdminView() {
       if (userIndex > -1) {
         // Update existing user
         const updatedUsers = [...prevUsers];
-        updatedUsers[userIndex] = employee;
+        const existingUser = updatedUsers[userIndex];
+        updatedUsers[userIndex] = {
+            ...existingUser,
+            ...employee,
+            password: employee.password || existingUser.password // Keep old password if not provided
+        };
         return updatedUsers;
       } else {
         // Add new user
@@ -79,6 +87,13 @@ export function AdminView() {
     setUsers(prevUsers => prevUsers.filter(u => u.id !== employeeId));
     // Also remove documents associated with the deleted user
     setDocs(prevDocs => prevDocs.filter(d => d.ownerId !== employeeId));
+  };
+  
+  const handleResetPassword = (employeeName: string) => {
+    toast({
+      title: "Password Reset Link Sent",
+      description: `An email has been sent to ${employeeName} with password reset instructions.`
+    });
   };
 
   const filteredUsers = users.filter(user => 
@@ -167,6 +182,11 @@ export function AdminView() {
                                                 Edit Employee
                                             </DropdownMenuItem>
                                         </EmployeeManagementDialog>
+                                        <DropdownMenuItem onClick={() => handleResetPassword(user.name)}>
+                                            <KeyRound className="mr-2 h-4 w-4" />
+                                            Reset Password
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
                                         <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
                                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
                                                 <Trash2 className="mr-2 h-4 w-4" />
