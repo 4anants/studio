@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
 import { users as initialUsers, documents as allDocuments, User, Document } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, Filter } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, Users } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -38,13 +38,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -57,7 +50,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
   } from '@/components/ui/alert-dialog';
-import { Label } from '../ui/label'
+import { cn } from '@/lib/utils'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -163,8 +156,9 @@ export function AdminView() {
     if (owner?.status === 'deleted') return false; // Hide docs of deleted users
     
     const userMatch = selectedUserIdFilter === 'all' || doc.ownerId === selectedUserIdFilter;
-    const searchMatch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      owner?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchMatch = activeTab === 'all-docs' 
+        ? doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+        : (doc.name.toLowerCase().includes(searchTerm.toLowerCase()) || owner?.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return userMatch && searchMatch;
   });
@@ -212,9 +206,7 @@ export function AdminView() {
     setActiveTab(value);
     setSelectedUserIds([]);
     setSearchTerm('');
-    if (value !== 'all-docs') {
-      setSelectedUserIdFilter('all');
-    }
+    setSelectedUserIdFilter('all');
   }
 
   const numSelected = selectedUserIds.length;
@@ -272,29 +264,43 @@ export function AdminView() {
         </div>
         <TabsContent value="all-docs">
             <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>All Employee Documents</CardTitle>
-                        <CardDescription>A comprehensive list of all documents for active employees.</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="user-filter" className="text-sm font-medium">Filter by Employee</Label>
-                        <Select value={selectedUserIdFilter} onValueChange={setSelectedUserIdFilter}>
-                            <SelectTrigger className="w-[180px]" id="user-filter">
-                                <SelectValue placeholder="Select an employee" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Employees</SelectItem>
-                                {activeUsers.map(user => (
-                                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <CardHeader>
+                    <CardTitle>All Employee Documents</CardTitle>
+                    <CardDescription>Select an employee to view their documents, or search all documents.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <DocumentList documents={filteredDocuments} users={activeUsers} showOwner />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                        <Card 
+                            className={cn(
+                                "cursor-pointer hover:border-primary transition-all", 
+                                selectedUserIdFilter === 'all' && 'border-primary ring-2 ring-primary'
+                            )}
+                            onClick={() => setSelectedUserIdFilter('all')}
+                        >
+                            <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
+                                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-muted">
+                                    <Users className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                                <p className="text-sm font-medium text-center">All Employees</p>
+                            </CardContent>
+                        </Card>
+                        {activeUsers.map(user => (
+                            <Card 
+                                key={user.id} 
+                                className={cn(
+                                    "cursor-pointer hover:border-primary transition-all", 
+                                    selectedUserIdFilter === user.id && 'border-primary ring-2 ring-primary'
+                                )}
+                                onClick={() => setSelectedUserIdFilter(user.id)}
+                            >
+                                <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
+                                    <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                    <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                    <DocumentList documents={filteredDocuments} users={activeUsers} showOwner={selectedUserIdFilter === 'all'} />
                 </CardContent>
             </Card>
         </TabsContent>
@@ -458,5 +464,3 @@ export function AdminView() {
     </>
   )
 }
-
-    
