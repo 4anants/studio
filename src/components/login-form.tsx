@@ -18,6 +18,19 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Label } from './ui/label'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -27,6 +40,9 @@ const formSchema = z.object({
 export function LoginForm() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState<false | 'employee' | 'admin'>(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false)
+  const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,7 +60,19 @@ export function LoginForm() {
     }, 1000)
   }
 
+  const handleForgotPassword = () => {
+    if (forgotPasswordEmail) {
+        toast({
+            title: 'Password Reset Link Sent',
+            description: `If an account with the email ${forgotPasswordEmail} exists, a password reset link has been sent.`,
+        });
+        setIsForgotPasswordOpen(false);
+        setForgotPasswordEmail('');
+    }
+  }
+
   return (
+    <>
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Login to your account</CardTitle>
@@ -79,12 +107,38 @@ export function LoginForm() {
               )}
             />
              <div className="flex items-center">
-                <a
-                  href="#"
-                  className="ml-auto inline-block text-sm underline"
-                >
-                  Forgot your password?
-                </a>
+                <AlertDialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="ml-auto inline-block text-sm underline"
+                    >
+                      Forgot your password?
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Forgot Password</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Enter your email address and we'll send you a link to reset your password.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input 
+                            id="email" 
+                            type="email" 
+                            placeholder="name@company.com"
+                            value={forgotPasswordEmail}
+                            onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        />
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleForgotPassword}>Submit</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
           </CardContent>
           <CardFooter className="flex-col gap-4">
@@ -109,5 +163,6 @@ export function LoginForm() {
         </form>
       </Form>
     </Card>
+    </>
   )
 }

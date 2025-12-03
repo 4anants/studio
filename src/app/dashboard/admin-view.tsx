@@ -105,6 +105,12 @@ export function AdminView() {
             ...employee,
             password: employee.password || existingUser.password // Keep old password if not provided
         };
+        if (employee.id !== (employee.originalId || employee.id)) {
+            toast({
+                title: "Profile Updated",
+                description: `An email notification has been sent to the admins regarding the update of ${employee.name}'s profile.`,
+            });
+        }
         return updatedUsers;
       } else {
         // Add new user
@@ -117,6 +123,7 @@ export function AdminView() {
            password: employee.password,
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
+           resignationDate: employee.resignationDate,
            designation: employee.designation,
            status: employee.status,
            department: employee.department
