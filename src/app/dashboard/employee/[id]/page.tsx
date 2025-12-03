@@ -26,7 +26,7 @@ const monthNames = ["January", "February", "March", "April", "May", "June", "Jul
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [user, setUser] = useState<UserType | undefined>(undefined);
-  const [employeeDocs, setEmployeeDocs] = useState(() => allDocuments.filter(doc => doc.ownerId === params.id));
+  const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
 
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
