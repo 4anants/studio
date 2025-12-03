@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   id: z.string().min(1, { message: 'Employee ID is required.' }),
@@ -57,6 +58,7 @@ interface EmployeeManagementDialogProps {
 export function EmployeeManagementDialog({ employee, onSave, children, departments = [] }: EmployeeManagementDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
   const isEditing = !!employee;
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -104,6 +106,14 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
         originalId: employee?.id,
       };
       onSave(userData as any);
+
+      if (isEditing) {
+        toast({
+            title: "Profile Updated",
+            description: `An email notification has been sent to the admins regarding the update of ${employee.name}'s profile.`,
+        });
+      }
+      
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
