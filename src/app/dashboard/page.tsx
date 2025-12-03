@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { AdminView } from '@/components/dashboard/admin-view'
 import { EmployeeView } from '@/components/dashboard/employee-view'
-import { DashboardHeader } from '@/components/dashboard/header'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -48,15 +47,10 @@ export default function DashboardPage({
   const { role } = searchParams
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <Suspense>
-        <DashboardHeader />
-      </Suspense>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         <Suspense fallback={<DashboardSkeleton />}>
            <DashboardContent role={role} />
         </Suspense>
       </main>
-    </div>
   )
 }

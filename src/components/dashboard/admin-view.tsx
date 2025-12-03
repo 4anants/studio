@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -8,8 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { DocumentList } from './document-list'
-import { UploadDialog } from './upload-dialog'
 import { users as initialUsers, documents as allDocuments, User, Document } from '@/lib/mock-data'
 import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, Users } from 'lucide-react'
 import {
@@ -60,8 +59,8 @@ export function AdminView() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
-  const [selectedUserIdFilter, setSelectedUserIdFilter] = useState('all');
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleUploadComplete = (userId: string) => {
     // Simulate refetching or adding a new doc for a specific user
@@ -139,29 +138,21 @@ export function AdminView() {
   const activeUsers = users.filter(user => user.status === 'active');
   const deletedUsers = users.filter(user => user.status === 'deleted');
 
-  const filteredActiveUsers = activeUsers.filter(user => 
+  const filteredActiveUsersForGrid = activeUsers.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const filteredActiveUsersForTable = activeUsers.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  );
 
   const filteredDeletedUsers = deletedUsers.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
   
-  const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsers : [];
-
-  const filteredDocuments = docs.filter(doc => {
-    const owner = users.find(u => u.id === doc.ownerId);
-    if (owner?.status === 'deleted') return false; // Hide docs of deleted users
-    
-    const userMatch = selectedUserIdFilter === 'all' || doc.ownerId === selectedUserIdFilter;
-    const searchMatch = activeTab === 'all-docs' 
-        ? doc.name.toLowerCase().includes(searchTerm.toLowerCase())
-        : (doc.name.toLowerCase().includes(searchTerm.toLowerCase()) || owner?.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    return userMatch && searchMatch;
-  });
+  const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked === true) {
@@ -206,7 +197,6 @@ export function AdminView() {
     setActiveTab(value);
     setSelectedUserIds([]);
     setSearchTerm('');
-    setSelectedUserIdFilter('all');
   }
 
   const numSelected = selectedUserIds.length;
@@ -245,7 +235,7 @@ export function AdminView() {
       <Tabs defaultValue={activeTab} onValueChange={onTabChange}>
         <div className="flex items-center">
             <TabsList>
-                <TabsTrigger value="all-docs">All Documents</TabsTrigger>
+                <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
@@ -254,7 +244,7 @@ export function AdminView() {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
-                        placeholder={activeTab === 'all-docs' ? 'Search documents...' : 'Search users...'}
+                        placeholder={activeTab === 'all-docs' ? 'Search employees by name...' : 'Search users...'}
                         className="w-full sm:w-[300px] pl-8"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -265,33 +255,16 @@ export function AdminView() {
         <TabsContent value="all-docs">
             <Card>
                 <CardHeader>
-                    <CardTitle>All Employee Documents</CardTitle>
-                    <CardDescription>Select an employee to view their documents, or search all documents.</CardDescription>
+                    <CardTitle>Employee Overview</CardTitle>
+                    <CardDescription>Select an employee to view their detailed profile and documents.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-                        <Card 
-                            className={cn(
-                                "cursor-pointer hover:border-primary transition-all", 
-                                selectedUserIdFilter === 'all' && 'border-primary ring-2 ring-primary'
-                            )}
-                            onClick={() => setSelectedUserIdFilter('all')}
-                        >
-                            <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-muted">
-                                    <Users className="h-8 w-8 text-muted-foreground" />
-                                </div>
-                                <p className="text-sm font-medium text-center">All Employees</p>
-                            </CardContent>
-                        </Card>
-                        {activeUsers.map(user => (
+                        {filteredActiveUsersForGrid.map(user => (
                             <Card 
                                 key={user.id} 
-                                className={cn(
-                                    "cursor-pointer hover:border-primary transition-all", 
-                                    selectedUserIdFilter === user.id && 'border-primary ring-2 ring-primary'
-                                )}
-                                onClick={() => setSelectedUserIdFilter(user.id)}
+                                className="cursor-pointer hover:border-primary transition-all"
+                                onClick={() => router.push(`/dashboard/employee/${user.id}`)}
                             >
                                 <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                     <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
@@ -300,7 +273,11 @@ export function AdminView() {
                             </Card>
                         ))}
                     </div>
-                    <DocumentList documents={filteredDocuments} users={activeUsers} showOwner={selectedUserIdFilter === 'all'} />
+                     {filteredActiveUsersForGrid.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                            <p>No employees found.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </TabsContent>
@@ -329,7 +306,7 @@ export function AdminView() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredActiveUsers.length > 0 ? filteredActiveUsers.map(user => (
+                            {filteredActiveUsersForTable.length > 0 ? filteredActiveUsersForTable.map(user => (
                                 <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
                                     <TableCell>
                                         <Checkbox
