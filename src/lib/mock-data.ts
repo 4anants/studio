@@ -1,0 +1,32 @@
+export type Document = {
+  id: string;
+  name: string;
+  type: 'Salary Slip' | 'Medical Report' | 'Appraisal Letter' | 'Personal';
+  size: string;
+  uploadDate: string;
+  ownerId: string;
+  fileType: 'pdf' | 'doc' | 'image';
+};
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+};
+
+export const users: User[] = [
+  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', avatar: '1' },
+  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', avatar: '2' },
+  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', avatar: '3' },
+];
+
+export const documents: Document[] = [
+  { id: 'doc-1', name: 'June 2024 Payslip.pdf', type: 'Salary Slip', size: '245 KB', uploadDate: '2024-06-28', ownerId: 'user-1', fileType: 'pdf' },
+  { id: 'doc-2', name: 'Annual Health Checkup.pdf', type: 'Medical Report', size: '1.2 MB', uploadDate: '2024-06-15', ownerId: 'user-1', fileType: 'pdf' },
+  { id: 'doc-3', name: '2023-2024 Appraisal.docx', type: 'Appraisal Letter', size: '88 KB', uploadDate: '2024-04-10', ownerId: 'user-1', fileType: 'doc' },
+  { id: 'doc-4', name: 'Passport_Scan.jpg', type: 'Personal', size: '850 KB', uploadDate: '2024-03-01', ownerId: 'user-1', fileType: 'image' },
+  { id: 'doc-5', name: 'June 2024 Payslip.pdf', type: 'Salary Slip', size: '248 KB', uploadDate: '2024-06-28', ownerId: 'user-2', fileType: 'pdf' },
+  { id: 'doc-6', name: 'Performance Review Q2.docx', type: 'Appraisal Letter', size: '95 KB', uploadDate: '2024-07-01', ownerId: 'user-2', fileType: 'doc' },
+  { id: 'doc-7', name: 'June 2024 Payslip.pdf', type: 'Salary Slip', size: '251 KB', uploadDate: '2024-06-28', ownerId: 'user-3', fileType: 'pdf' },
+];

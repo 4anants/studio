@@ -1,0 +1,133 @@
+'use client'
+
+import { useState, useTransition } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Progress } from '@/components/ui/progress'
+import { UploadCloud, FileCheck2, Loader2 } from 'lucide-react'
+
+export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isComplete, setIsComplete] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  const handleUpload = async () => {
+    setIsUploading(true)
+    setIsComplete(false)
+    setUploadProgress(0)
+
+    // Simulate upload progress
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 95) {
+          clearInterval(interval)
+          return prev
+        }
+        return prev + 10
+      })
+    }, 200)
+
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+    clearInterval(interval)
+    setUploadProgress(100)
+    setIsUploading(false)
+    setIsComplete(true)
+
+    // Wait a bit on the success screen
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    startTransition(() => {
+      onUploadComplete() // This could be a server action to revalidate data
+    })
+
+    setOpen(false)
+    // Reset state for next time
+    setTimeout(() => {
+        setIsComplete(false)
+        setUploadProgress(0)
+    }, 500)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <UploadCloud className="mr-2 h-4 w-4" />
+          Upload Document
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Upload a new document</DialogTitle>
+          <DialogDescription>
+            Choose a file and select its type. Click upload when you're ready.
+          </DialogDescription>
+        </DialogHeader>
+        {isUploading || isComplete ? (
+          <div className="flex flex-col items-center justify-center space-y-4 py-8">
+            {isComplete ? (
+              <>
+                <FileCheck2 className="h-16 w-16 text-green-500" />
+                <p className="text-lg font-medium">Upload Complete!</p>
+              </>
+            ) : (
+              <>
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <p className="text-lg font-medium">Uploading...</p>
+                <Progress value={uploadProgress} className="w-[60%]" />
+              </>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 py-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="document">Document</Label>
+                <Input id="document" type="file" />
+              </div>
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="doc-type">Document Type</Label>
+                <Select>
+                  <SelectTrigger id="doc-type">
+                    <SelectValue placeholder="Select a type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="salary">Salary Slip</SelectItem>
+                    <SelectItem value="medical">Medical Report</SelectItem>
+                    <SelectItem value="appraisal">Appraisal Letter</SelectItem>
+                    <SelectItem value="personal">Personal Document</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" onClick={handleUpload}>
+                Upload
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
