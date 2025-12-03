@@ -4,6 +4,7 @@ import { EmployeeView } from '@/components/dashboard/employee-view'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: 'Dashboard - FileSafe',
