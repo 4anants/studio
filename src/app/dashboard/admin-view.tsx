@@ -18,10 +18,10 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import Image from 'next/image'
-import { BulkUploadDialog } from './bulk-upload-dialog'
+import { BulkUploadDialog } from '@/components/dashboard/bulk-upload-dialog'
 import { Button } from '../ui/button'
-import { EmployeeManagementDialog } from './employee-management-dialog'
-import { DeleteEmployeeDialog } from './delete-employee-dialog'
+import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog'
+import { DeleteEmployeeDialog } from '@/components/dashboard/delete-employee-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
