@@ -33,8 +33,8 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
-  const [selectedYear, setSelectedYear] = useState<string>('');
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
       .forEach(doc => {
         const date = new Date(doc.uploadDate);
         years.add(date.getFullYear().toString());
-        if (selectedYear === '' || date.getFullYear().toString() === selectedYear) {
+        if (selectedYear === 'all' || date.getFullYear().toString() === selectedYear) {
             months.add(date.getMonth());
         }
     });
@@ -125,8 +125,8 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     return employeeDocs.filter(doc => {
       const date = new Date(doc.uploadDate);
       const typeMatch = selectedTypes.includes('All') || selectedTypes.includes(doc.type);
-      const yearMatch = selectedYear === '' || date.getFullYear().toString() === selectedYear;
-      const monthMatch = selectedMonth === '' || date.getMonth().toString() === selectedMonth;
+      const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
+      const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
       return typeMatch && yearMatch && monthMatch;
     });
   }, [employeeDocs, selectedTypes, selectedYear, selectedMonth]);
@@ -275,19 +275,19 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                                                 <SelectValue placeholder="Select Year" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">All Years</SelectItem>
+                                                <SelectItem value="all">All Years</SelectItem>
                                                 {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="flex-grow min-w-[120px]">
                                          <label className="text-sm font-medium">Month</label>
-                                         <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!selectedYear}>
+                                         <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
                                             <SelectTrigger className="w-full mt-1">
                                                 <SelectValue placeholder="Select Month" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">All Months</SelectItem>
+                                                <SelectItem value="all">All Months</SelectItem>
                                                 {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
