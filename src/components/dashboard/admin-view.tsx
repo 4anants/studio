@@ -30,6 +30,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 
 export function AdminView() {
@@ -101,10 +109,6 @@ export function AdminView() {
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const getDocumentsForUser = (userId: string): Document[] => {
-    return docs.filter(doc => doc.ownerId === userId)
-  }
-
   const filteredDocuments = docs.filter(doc => 
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     users.find(u => u.id === doc.ownerId)?.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -156,55 +160,69 @@ export function AdminView() {
             </Card>
         </TabsContent>
         <TabsContent value="by-employee">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredUsers.length > 0 ? filteredUsers.map(user => (
-                    <Card key={user.id}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <div className="flex items-center gap-4">
-                                <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
-                                <div>
-                                    <CardTitle className="text-lg">{user.name}</CardTitle>
-                                    <CardDescription>{user.email}</CardDescription>
-                                </div>
-                            </div>
-                            <div className="flex items-center">
-                                <UploadDialog onUploadComplete={() => handleUploadComplete(user.id)} />
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <MoreVertical className="h-5 w-5" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave}>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Edit Employee
-                                            </DropdownMenuItem>
-                                        </EmployeeManagementDialog>
-                                        <DropdownMenuItem onClick={() => handleResetPassword(user.name)}>
-                                            <KeyRound className="mr-2 h-4 w-4" />
-                                            Reset Password
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
-                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete Employee
-                                            </DropdownMenuItem>
-                                        </DeleteEmployeeDialog>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <DocumentList documents={getDocumentsForUser(user.id)} users={users} />
-                        </CardContent>
-                    </Card>
-                )) : (
-                    <p className="text-muted-foreground col-span-3 text-center">No users found.</p>
-                )}
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Manage Employees</CardTitle>
+                    <CardDescription>A list of all employees in the system.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead className="hidden md:table-cell">Mobile</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredUsers.length > 0 ? filteredUsers.map(user => (
+                                <TableRow key={user.id}>
+                                    <TableCell className="hidden sm:table-cell">
+                                        <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                    </TableCell>
+                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell className="hidden md:table-cell">{user.mobile || 'N/A'}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreVertical className="h-5 w-5" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave}>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Edit Employee
+                                                    </DropdownMenuItem>
+                                                </EmployeeManagementDialog>
+                                                <DropdownMenuItem onClick={() => handleResetPassword(user.name)}>
+                                                    <KeyRound className="mr-2 h-4 w-4" />
+                                                    Reset Password
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete Employee
+                                                    </DropdownMenuItem>
+                                                </DeleteEmployeeDialog>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground">No users found.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
     </>
