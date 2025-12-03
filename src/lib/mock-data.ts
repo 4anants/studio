@@ -17,6 +17,7 @@ export type User = {
   password?: string;
   dateOfBirth?: string;
   joiningDate?: string;
+  resignationDate?: string;
   designation?: string;
   status: 'active' | 'inactive' | 'pending' | 'deleted';
   department?: string;

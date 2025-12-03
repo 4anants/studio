@@ -41,6 +41,7 @@ const formSchema = z.object({
   password: z.string().optional(),
   dateOfBirth: z.string().optional(),
   joiningDate: z.string().optional(),
+  resignationDate: z.string().optional(),
   designation: z.string().optional(),
   status: z.enum(['active', 'inactive', 'pending']),
   department: z.string().optional(),
@@ -68,6 +69,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       password: '',
       dateOfBirth: employee?.dateOfBirth || '',
       joiningDate: employee?.joiningDate || '',
+      resignationDate: employee?.resignationDate || '',
       designation: employee?.designation || '',
       status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
       department: employee?.department || '',
@@ -105,7 +107,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', designation: '', status: 'active', department: '' });
+        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '' });
       } else {
         form.reset({ ...values, password: '' }); // Clear password field after edit
       }
@@ -123,6 +125,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             password: '',
             dateOfBirth: employee?.dateOfBirth || '',
             joiningDate: employee?.joiningDate || '',
+            resignationDate: employee?.resignationDate || '',
             designation: employee?.designation || '',
             status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
             department: employee?.department || '',
@@ -214,6 +217,19 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               render={({ field }) => (
                 <FormItem className="col-span-2 sm:col-span-1">
                   <FormLabel>Joining Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="resignationDate"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Resignation Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>

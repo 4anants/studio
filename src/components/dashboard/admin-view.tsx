@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, Award } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -18,10 +18,10 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import Image from 'next/image'
-import { BulkUploadDialog } from './bulk-upload-dialog'
+import { BulkUploadDialog } from '@/components/dashboard/bulk-upload-dialog'
 import { Button } from '../ui/button'
-import { EmployeeManagementDialog } from './employee-management-dialog'
-import { DeleteEmployeeDialog } from './delete-employee-dialog'
+import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog'
+import { DeleteEmployeeDialog } from '@/components/dashboard/delete-employee-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,6 +118,7 @@ export function AdminView() {
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
            resignationDate: employee.resignationDate,
+           designation: employee.designation,
            status: employee.status,
            department: employee.department
         };
