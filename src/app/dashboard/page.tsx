@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
-import { AdminView } from '@/components/dashboard/admin-view'
+import { AdminView } from '@/app/dashboard/admin-view'
 import { EmployeeView } from '@/components/dashboard/employee-view'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export const metadata: Metadata = {
-  title: 'Dashboard - FileSafe',
+  title: 'Dashboard - AE INTRAWEB',
 }
 
 function DashboardContent({ role }: { role: string | string[] | undefined }) {

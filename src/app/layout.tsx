@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'FileSafe',
-  description: 'Secure internal document repository',
+  title: 'AE INTRAWEB',
+  description: 'Your secure internal document repository.',
 };
 
 export default function RootLayout({

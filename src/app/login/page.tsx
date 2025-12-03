@@ -10,7 +10,7 @@ export default function LoginPage() {
             <FileLock2 className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-primary">
-            FileSafe
+            AE INTRAWEB
           </h1>
           <p className="mt-2 text-muted-foreground">
             Your secure internal document repository.

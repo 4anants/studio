@@ -37,7 +37,7 @@ export function DashboardHeader() {
           className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
         >
           <FileLock2 className="h-6 w-6" />
-          <span className="font-bold">FileSafe</span>
+          <span className="font-bold">AE INTRAWEB</span>
         </Link>
       </nav>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
