@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/tabs"
 import Image from 'next/image'
 import { BulkUploadDialog } from '@/components/dashboard/bulk-upload-dialog'
-import { Button } from '../ui/button'
+import { Button } from '@/components/ui/button'
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog'
 import { DeleteEmployeeDialog } from '@/components/dashboard/delete-employee-dialog'
 import {
