@@ -1,9 +1,9 @@
 'use client';
 import { notFound, useRouter } from 'next/navigation';
-import { users as initialUsers, documents as allDocuments, documentTypesList } from '@/lib/mock-data';
+import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User, Edit } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User, Edit, Building } from 'lucide-react';
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
@@ -179,6 +179,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const userDetails = [
     { icon: Mail, label: 'Email', value: user.email },
     { icon: Phone, label: 'Mobile', value: user.mobile || 'N/A' },
+    { icon: Building, label: 'Department', value: user.department || 'N/A' },
     { icon: Calendar, label: 'Date of Birth', value: user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A' },
     { icon: Briefcase, label: 'Joining Date', value: user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : 'N/A' },
     { icon: DoorOpen, label: 'Resignation Date', value: user.resignationDate ? new Date(user.resignationDate).toLocaleDateString() : 'N/A' },
@@ -210,7 +211,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                                 <CardTitle className="text-2xl">{user.name}</CardTitle>
                                 <CardDescription>Employee ID: {user.id}</CardDescription>
                             </div>
-                            <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave}>
+                            <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
                                 <Button variant="ghost" size="icon">
                                     <Edit className="h-4 w-4"/>
                                 </Button>

@@ -43,15 +43,17 @@ const formSchema = z.object({
   joiningDate: z.string().optional(),
   resignationDate: z.string().optional(),
   status: z.enum(['active', 'inactive', 'pending']),
+  department: z.string().optional(),
 });
 
 interface EmployeeManagementDialogProps {
   employee?: User;
   onSave: (employee: Omit<User, 'avatar' | 'deleted'> & { avatar?: string, originalId?: string }) => void;
   children: React.ReactNode;
+  departments: string[];
 }
 
-export function EmployeeManagementDialog({ employee, onSave, children }: EmployeeManagementDialogProps) {
+export function EmployeeManagementDialog({ employee, onSave, children, departments = [] }: EmployeeManagementDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isEditing = !!employee;
@@ -68,6 +70,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
       joiningDate: employee?.joiningDate || '',
       resignationDate: employee?.resignationDate || '',
       status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
+      department: employee?.department || '',
     },
   });
   
@@ -102,7 +105,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', status: 'active' });
+        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', status: 'active', department: '' });
       } else {
         form.reset({ ...values, password: '' }); // Clear password field after edit
       }
@@ -122,6 +125,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
             joiningDate: employee?.joiningDate || '',
             resignationDate: employee?.resignationDate || '',
             status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
+            department: employee?.department || '',
         });
     }
     setOpen(isOpen);
@@ -226,6 +230,28 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
                   <FormControl>
                     <Input type="password" placeholder={isEditing ? "Leave blank to keep current" : "••••••••"} {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Department</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a department" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {departments.map(dept => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

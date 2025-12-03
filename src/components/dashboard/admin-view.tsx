@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document } from '@/lib/mock-data'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments } from '@/lib/mock-data'
 import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Users, Tag } from 'lucide-react'
 import {
   Tabs,
@@ -51,6 +51,7 @@ import {
   } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils'
 import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -61,6 +62,7 @@ export function AdminView() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -114,7 +116,8 @@ export function AdminView() {
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
            resignationDate: employee.resignationDate,
-           status: employee.status
+           status: employee.status,
+           department: employee.department
         };
         return [...prevUsers, newUser];
       }
@@ -168,11 +171,13 @@ export function AdminView() {
   const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending');
   const deletedUsers = users.filter(user => user.status === 'deleted');
 
-  const filteredActiveUsersForGrid = activeUsers.filter(user => 
+  const filteredByDept = activeUsers.filter(user => departmentFilter === 'all' || user.department === departmentFilter);
+
+  const filteredActiveUsersForGrid = filteredByDept.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const filteredActiveUsersForTable = activeUsers.filter(user => 
+  const filteredActiveUsersForTable = filteredByDept.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -231,6 +236,7 @@ export function AdminView() {
     setActiveTab(value);
     setSelectedUserIds([]);
     setSearchTerm('');
+    setDepartmentFilter('all');
   }
 
   const numSelected = selectedUserIds.length;
@@ -257,7 +263,7 @@ export function AdminView() {
             </>
           ) : (
             <>
-                <EmployeeManagementDialog onSave={handleEmployeeSave}>
+                <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments}>
                     <Button>Add Employee</Button>
                 </EmployeeManagementDialog>
                 <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
@@ -275,6 +281,19 @@ export function AdminView() {
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
+                {(activeTab === 'all-docs' || activeTab === 'by-employee') && (
+                    <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filter by Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Departments</SelectItem>
+                            {departments.map(dept => (
+                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -340,6 +359,7 @@ export function AdminView() {
                                 <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
+                                <TableHead className="hidden lg:table-cell">Department</TableHead>
                                 <TableHead className="hidden md:table-cell">Mobile</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -360,6 +380,7 @@ export function AdminView() {
                                     </TableCell>
                                     <TableCell className="font-medium">{user.name}</TableCell>
                                     <TableCell>{user.email}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{user.department || 'N/A'}</TableCell>
                                     <TableCell className="hidden md:table-cell">{user.mobile || 'N/A'}</TableCell>
                                     <TableCell>
                                         <span className={cn('px-2 py-1 rounded-full text-xs font-medium', 
@@ -378,7 +399,7 @@ export function AdminView() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave}>
+                                                <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
                                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         Edit Employee
@@ -401,7 +422,7 @@ export function AdminView() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-muted-foreground">No active users found.</TableCell>
+                                    <TableCell colSpan={8} className="text-center text-muted-foreground">No active users found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
