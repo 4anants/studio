@@ -23,6 +23,7 @@ type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const documentTypes: Document['type'][] = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   
   useEffect(() => {
@@ -103,9 +105,10 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
       const date = new Date(doc.uploadDate);
       const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
       const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
-      return yearMatch && monthMatch;
+      const typeMatch = selectedType === 'all' || doc.type === selectedType;
+      return yearMatch && monthMatch && typeMatch;
     });
-  }, [employeeDocs, selectedYear, selectedMonth]);
+  }, [employeeDocs, selectedYear, selectedMonth, selectedType]);
 
   const sortedAndFilteredDocs = useMemo(() => {
     let sortableItems = [...filteredDocs];
@@ -216,9 +219,18 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                              <CardTitle>Documents</CardTitle>
                              <CardDescription>All documents associated with {user.name}.</CardDescription>
                            </div>
-                           <div className="flex items-center gap-2 w-full sm:w-auto">
+                           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                <Select value={selectedType} onValueChange={setSelectedType}>
+                                    <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
+                                        <SelectValue placeholder="Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                        {documentTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                                 <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                    <SelectTrigger className="w-full sm:w-[120px]">
+                                    <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
                                         <SelectValue placeholder="Year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -227,7 +239,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                                     </SelectContent>
                                 </Select>
                                 <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all' && availableMonths.length === 0}>
-                                    <SelectTrigger className="w-full sm:w-[150px]">
+                                    <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
                                         <SelectValue placeholder="Month" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -248,3 +260,5 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     </div>
   )
 }
+
+    
