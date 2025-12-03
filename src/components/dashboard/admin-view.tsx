@@ -350,5 +350,3 @@ export function AdminView() {
     </>
   )
 }
-
-    

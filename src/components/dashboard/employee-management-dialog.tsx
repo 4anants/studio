@@ -31,6 +31,9 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   mobile: z.string().optional(),
   password: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  joiningDate: z.string().optional(),
+  resignationDate: z.string().optional(),
 });
 
 interface EmployeeManagementDialogProps {
@@ -51,6 +54,9 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
       email: employee?.email || '',
       mobile: employee?.mobile || '',
       password: '',
+      dateOfBirth: employee?.dateOfBirth || '',
+      joiningDate: employee?.joiningDate || '',
+      resignationDate: employee?.resignationDate || '',
     },
   });
   
@@ -85,7 +91,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ name: '', email: '', mobile: '', password: '' });
+        form.reset({ name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '' });
       } else {
         form.reset({ ...values, password: '' }); // Clear password field after edit
       }
@@ -95,7 +101,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
           <DialogDescription>
@@ -103,12 +109,12 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4 py-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="col-span-2">
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
@@ -121,7 +127,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
               control={form.control}
               name="email"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="col-span-2 sm:col-span-1">
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input placeholder="john.doe@company.com" {...field} />
@@ -134,10 +140,36 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
               control={form.control}
               name="mobile"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="col-span-2 sm:col-span-1">
                   <FormLabel>Mobile No.</FormLabel>
                   <FormControl>
                     <Input placeholder="123-456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Date of Birth</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="joiningDate"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Joining Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,7 +179,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
               control={form.control}
               name="password"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="col-span-2 sm:col-span-1">
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder={isEditing ? "Leave blank to keep current" : "••••••••"} {...field} />
@@ -156,7 +188,20 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
                 </FormItem>
               )}
             />
-             <DialogFooter>
+            <FormField
+              control={form.control}
+              name="resignationDate"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Resignation Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <DialogFooter className="col-span-2">
                 <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isEditing ? 'Save Changes' : 'Create Employee'}
