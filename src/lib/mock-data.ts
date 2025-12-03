@@ -1,7 +1,7 @@
 export type Document = {
   id: string;
   name: string;
-  type: 'Salary Slip' | 'Medical Report' | 'Appraisal Letter' | 'Personal';
+  type: string;
   size: string;
   uploadDate: string;
   ownerId: string;
@@ -20,6 +20,8 @@ export type User = {
   resignationDate?: string;
   status: 'active' | 'inactive' | 'pending' | 'deleted';
 };
+
+export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
 
 export const users: User[] = [
   { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active' },

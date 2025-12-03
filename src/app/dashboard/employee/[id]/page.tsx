@@ -1,6 +1,6 @@
 'use client';
 import { notFound, useRouter } from 'next/navigation';
-import { users as initialUsers, documents as allDocuments } from '@/lib/mock-data';
+import { users as initialUsers, documents as allDocuments, documentTypesList } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User, Edit } from 'lucide-react';
@@ -24,13 +24,13 @@ type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const documentTypes: Document['type'][] = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   const [user, setUser] = useState<UserType | undefined>(undefined);
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
+  const [documentTypes, setDocumentTypes] = useState<string[]>(documentTypesList);
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -167,7 +167,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     const newDoc = {
       id: `doc-${Date.now()}`,
       name: `Uploaded Doc.pdf`,
-      type: 'Personal' as const,
+      type: 'Personal',
       size: '128 KB',
       uploadDate: new Date().toISOString().split('T')[0],
       ownerId: user.id,
