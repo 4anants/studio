@@ -27,6 +27,7 @@ import { Loader2 } from 'lucide-react';
 import type { User } from '@/lib/mock-data';
 
 const formSchema = z.object({
+  id: z.string().min(1, { message: 'Employee ID is required.' }),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
   mobile: z.string().optional(),
@@ -38,7 +39,7 @@ const formSchema = z.object({
 
 interface EmployeeManagementDialogProps {
   employee?: User;
-  onSave: (employee: Omit<User, 'status' | 'id' | 'avatar'> & { id?: string; avatar?: string }) => void;
+  onSave: (employee: Omit<User, 'status' | 'avatar'> & { avatar?: string, originalId?: string }) => void;
   children: React.ReactNode;
 }
 
@@ -50,6 +51,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: employee?.id || '',
       name: employee?.name || '',
       email: employee?.email || '',
       mobile: employee?.mobile || '',
@@ -83,23 +85,40 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
     // Simulate API call
     setTimeout(() => {
       const userData = {
-        id: employee?.id,
         avatar: employee?.avatar,
-        ...validation.data
+        ...validation.data,
+        originalId: employee?.id,
       };
       onSave(userData);
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '' });
+        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '' });
       } else {
         form.reset({ ...values, password: '' }); // Clear password field after edit
       }
     }, 1000);
   };
+  
+  // Reset form when dialog opens
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+        form.reset({
+            id: employee?.id || '',
+            name: employee?.name || '',
+            email: employee?.email || '',
+            mobile: employee?.mobile || '',
+            password: '',
+            dateOfBirth: employee?.dateOfBirth || '',
+            joiningDate: employee?.joiningDate || '',
+            resignationDate: employee?.resignationDate || '',
+        });
+    }
+    setOpen(isOpen);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
@@ -110,11 +129,24 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4 py-4">
+             <FormField
+              control={form.control}
+              name="id"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Employee ID</FormLabel>
+                  <FormControl>
+                    <Input placeholder="user-id-123" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem className="col-span-2">
+                <FormItem className="col-span-2 sm:col-span-1">
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />

@@ -87,9 +87,9 @@ export function AdminView() {
     setDocs(prev => [...fullNewDocs, ...prev]);
   }
 
-  const handleEmployeeSave = (employee: User) => {
+  const handleEmployeeSave = (employee: User & { originalId?: string }) => {
     setUsers(prevUsers => {
-      const userIndex = prevUsers.findIndex(u => u.id === employee.id);
+      const userIndex = prevUsers.findIndex(u => u.id === (employee.originalId || employee.id));
       if (userIndex > -1) {
         // Update existing user
         const updatedUsers = [...prevUsers];
@@ -102,7 +102,19 @@ export function AdminView() {
         return updatedUsers;
       } else {
         // Add new user
-        return [...prevUsers, { ...employee, status: 'active' }];
+        const newUser: User = {
+           id: employee.id,
+           name: employee.name,
+           email: employee.email,
+           avatar: String(Date.now()), // new avatar
+           mobile: employee.mobile,
+           password: employee.password,
+           dateOfBirth: employee.dateOfBirth,
+           joiningDate: employee.joiningDate,
+           resignationDate: employee.resignationDate,
+           status: 'active'
+        };
+        return [...prevUsers, newUser];
       }
     });
   };
