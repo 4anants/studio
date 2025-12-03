@@ -59,9 +59,9 @@ export function BulkUploadDialog({ onBulkUploadComplete }: { onBulkUploadComplet
         });
 
         setUploadedFiles(prev => {
-            return prev.map((file, index) => {
-                const result = results[index];
-                if (result.employeeId && result.documentType) {
+            return prev.map((file) => {
+                const result = results.find(r => r.originalFilename === file.file.name);
+                if (result && result.employeeId && result.documentType) {
                     const employee = users.find(u => u.id === result.employeeId);
                     return {
                         ...file,
@@ -76,7 +76,7 @@ export function BulkUploadDialog({ onBulkUploadComplete }: { onBulkUploadComplet
                 return {
                     ...file,
                     status: 'error',
-                    error: result.error || 'Could not classify document.',
+                    error: result?.error || 'Could not classify document.',
                 }
             })
         });
