@@ -7,20 +7,42 @@ import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User } from 'luc
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
+import type { User as UserType } from '@/lib/mock-data';
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const user = users.find(u => u.id === params.id);
+  const [user, setUser] = useState<UserType | undefined>(undefined);
   
+  useEffect(() => {
+    // params can be a promise in newer Next.js versions.
+    // We find the user directly here to avoid issues, even though it's synchronous in this mock data setup.
+    const foundUser = users.find(u => u.id === params.id);
+    if (foundUser) {
+        setUser(foundUser);
+    } else {
+        // If the user isn't found after checking, trigger a 404.
+        // A short delay helps prevent flashing content if params are resolving.
+        const timer = setTimeout(() => notFound(), 200);
+        return () => clearTimeout(timer);
+    }
+  }, [params.id]);
+
   const [employeeDocs, setEmployeeDocs] = useState(() => {
     if (!user) return [];
     return allDocuments.filter(doc => doc.ownerId === user.id)
   });
+  
+  useEffect(() => {
+      if (user) {
+          setEmployeeDocs(allDocuments.filter(doc => doc.ownerId === user.id));
+      }
+  }, [user]);
 
   if (!user) {
-    notFound();
+    // You can add a skeleton loader here if you'd like
+    return <div>Loading...</div>;
   }
 
   const handleUploadComplete = () => {
