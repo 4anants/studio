@@ -31,9 +31,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const [user, setUser] = useState<UserType | undefined>(undefined);
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
 
-  const [selectedYear, setSelectedYear] = useState<string>('all');
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   
   useEffect(() => {
@@ -85,30 +85,37 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
 
   const { availableYears, availableMonths } = useMemo(() => {
+    if (!selectedType) return { availableYears: [], availableMonths: [] };
     const years = new Set<string>();
     const months = new Set<number>();
-    employeeDocs.forEach(doc => {
+    
+    employeeDocs
+      .filter(doc => doc.type === selectedType)
+      .forEach(doc => {
         const date = new Date(doc.uploadDate);
         years.add(date.getFullYear().toString());
-        if (selectedYear === 'all' || date.getFullYear().toString() === selectedYear) {
+        if (selectedYear === '' || date.getFullYear().toString() === selectedYear) {
             months.add(date.getMonth());
         }
     });
+
     return { 
         availableYears: Array.from(years).sort((a, b) => Number(b) - Number(a)),
         availableMonths: Array.from(months).sort((a, b) => a - b)
     };
-  }, [employeeDocs, selectedYear]);
+  }, [employeeDocs, selectedType, selectedYear]);
 
   const filteredDocs = useMemo(() => {
+    if (!selectedType) return [];
+    
     return employeeDocs.filter(doc => {
       const date = new Date(doc.uploadDate);
-      const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
-      const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
-      const typeMatch = selectedType === 'all' || doc.type === selectedType;
-      return yearMatch && monthMatch && typeMatch;
+      const typeMatch = doc.type === selectedType;
+      const yearMatch = selectedYear === '' || date.getFullYear().toString() === selectedYear;
+      const monthMatch = selectedMonth === '' || date.getMonth().toString() === selectedMonth;
+      return typeMatch && yearMatch && monthMatch;
     });
-  }, [employeeDocs, selectedYear, selectedMonth, selectedType]);
+  }, [employeeDocs, selectedType, selectedYear, selectedMonth]);
 
   const sortedAndFilteredDocs = useMemo(() => {
     let sortableItems = [...filteredDocs];
@@ -222,28 +229,25 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                 <Select value={selectedType} onValueChange={setSelectedType}>
                                     <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                                        <SelectValue placeholder="Type" />
+                                        <SelectValue placeholder="Select Type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Types</SelectItem>
                                         {documentTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!selectedType}>
                                     <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
-                                        <SelectValue placeholder="Year" />
+                                        <SelectValue placeholder="Select Year" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Years</SelectItem>
                                         {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                                <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all' && availableMonths.length === 0}>
+                                <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!selectedType || !selectedYear}>
                                     <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
-                                        <SelectValue placeholder="Month" />
+                                        <SelectValue placeholder="Select Month" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Months</SelectItem>
                                         {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
@@ -260,5 +264,3 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     </div>
   )
 }
-
-    
