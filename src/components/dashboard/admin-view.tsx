@@ -38,12 +38,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+  } from '@/components/ui/alert-dialog';
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
   const [users, setUsers] = useState(initialUsers)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const { toast } = useToast();
 
   const handleUploadComplete = (userId: string) => {
@@ -95,6 +109,7 @@ export function AdminView() {
     setUsers(prevUsers => prevUsers.filter(u => u.id !== employeeId));
     // Also remove documents associated with the deleted user
     setDocs(prevDocs => prevDocs.filter(d => d.ownerId !== employeeId));
+    setSelectedUserIds(prev => prev.filter(id => id !== employeeId));
   };
   
   const handleResetPassword = (employeeName: string) => {
@@ -114,6 +129,49 @@ export function AdminView() {
     users.find(u => u.id === doc.ownerId)?.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const handleSelectAll = (checked: boolean | 'indeterminate') => {
+    if (checked === true) {
+      setSelectedUserIds(filteredUsers.map(u => u.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+  
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(prev => [...prev, userId]);
+    } else {
+      setSelectedUserIds(prev => prev.filter(id => id !== userId));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    selectedUserIds.forEach(id => {
+        handleEmployeeDelete(id)
+    });
+    toast({
+        title: "Bulk Delete Successful",
+        description: `${selectedUserIds.length} employee(s) have been deleted.`
+    });
+    setSelectedUserIds([]);
+    setIsBulkDeleteDialogOpen(false);
+  }
+
+  const handleBulkResetPassword = () => {
+    const selectedUsers = users.filter(u => selectedUserIds.includes(u.id));
+    selectedUsers.forEach(user => handleResetPassword(user.name));
+    toast({
+        title: "Bulk Password Reset",
+        description: `Password reset links have been sent to ${selectedUserIds.length} employee(s).`
+    });
+    setSelectedUserIds([]);
+    setIsBulkResetDialogOpen(false);
+  }
+
+  const numSelected = selectedUserIds.length;
+  const numFiltered = filteredUsers.length;
+
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -122,10 +180,24 @@ export function AdminView() {
             <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
         </div>
         <div className="flex items-center gap-2">
-          <EmployeeManagementDialog onSave={handleEmployeeSave}>
-            <Button>Add Employee</Button>
-          </EmployeeManagementDialog>
-          <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={users} />
+          {numSelected > 0 ? (
+            <>
+                <span className="text-sm text-muted-foreground">{numSelected} selected</span>
+                <Button variant="outline" onClick={() => setIsBulkResetDialogOpen(true)}>
+                    <KeyRound className="mr-2 h-4 w-4" /> Reset Passwords
+                </Button>
+                <Button variant="destructive" onClick={() => setIsBulkDeleteDialogOpen(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
+                </Button>
+            </>
+          ) : (
+            <>
+                <EmployeeManagementDialog onSave={handleEmployeeSave}>
+                    <Button>Add Employee</Button>
+                </EmployeeManagementDialog>
+                <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={users} />
+            </>
+          )}
         </div>
       </div>
       
@@ -169,6 +241,13 @@ export function AdminView() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-[40px]">
+                                    <Checkbox
+                                        checked={numSelected === numFiltered && numFiltered > 0}
+                                        onCheckedChange={handleSelectAll}
+                                        aria-label="Select all"
+                                    />
+                                </TableHead>
                                 <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
@@ -178,7 +257,14 @@ export function AdminView() {
                         </TableHeader>
                         <TableBody>
                             {filteredUsers.length > 0 ? filteredUsers.map(user => (
-                                <TableRow key={user.id}>
+                                <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={selectedUserIds.includes(user.id)}
+                                            onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
+                                            aria-label={`Select ${user.name}`}
+                                        />
+                                    </TableCell>
                                     <TableCell className="hidden sm:table-cell">
                                         <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
                                     </TableCell>
@@ -216,7 +302,7 @@ export function AdminView() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground">No users found.</TableCell>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground">No users found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -225,6 +311,44 @@ export function AdminView() {
             </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected {numSelected} employee(s) and all of their associated documents.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">
+              Delete {numSelected} Employee(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Reset Password Confirmation Dialog */}
+      <AlertDialog open={isBulkResetDialogOpen} onOpenChange={setIsBulkResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Password Reset</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to send password reset links to the {numSelected} selected employee(s)?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkResetPassword}>
+                Send Reset Links
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
+
+    
