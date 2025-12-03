@@ -51,7 +51,6 @@ import {
   } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils'
 import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { AddDepartmentDialog } from '@/components/dashboard/add-department-dialog'
 import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department-dialog'
 
@@ -680,3 +679,5 @@ export function AdminView() {
     </>
   )
 }
+
+    
