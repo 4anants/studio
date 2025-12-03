@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
+import { cn } from '@/lib/utils';
 
 type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
@@ -31,7 +32,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const [user, setUser] = useState<UserType | undefined>(undefined);
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
 
-  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
@@ -83,14 +84,29 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     }
   };
 
+  const handleTypeSelection = (type: string) => {
+    setSelectedTypes(prevTypes => {
+      if (type === 'All') {
+        return ['All'];
+      }
+      
+      const newTypes = prevTypes.filter(t => t !== 'All');
+
+      if (newTypes.includes(type)) {
+        const filteredTypes = newTypes.filter(t => t !== type);
+        return filteredTypes.length === 0 ? ['All'] : filteredTypes;
+      } else {
+        return [...newTypes, type];
+      }
+    });
+  };
 
   const { availableYears, availableMonths } = useMemo(() => {
-    if (!selectedType) return { availableYears: [], availableMonths: [] };
     const years = new Set<string>();
     const months = new Set<number>();
     
     employeeDocs
-      .filter(doc => doc.type === selectedType)
+      .filter(doc => selectedTypes.includes('All') || selectedTypes.includes(doc.type))
       .forEach(doc => {
         const date = new Date(doc.uploadDate);
         years.add(date.getFullYear().toString());
@@ -103,19 +119,17 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
         availableYears: Array.from(years).sort((a, b) => Number(b) - Number(a)),
         availableMonths: Array.from(months).sort((a, b) => a - b)
     };
-  }, [employeeDocs, selectedType, selectedYear]);
+  }, [employeeDocs, selectedTypes, selectedYear]);
 
   const filteredDocs = useMemo(() => {
-    if (!selectedType) return [];
-    
     return employeeDocs.filter(doc => {
       const date = new Date(doc.uploadDate);
-      const typeMatch = doc.type === selectedType;
+      const typeMatch = selectedTypes.includes('All') || selectedTypes.includes(doc.type);
       const yearMatch = selectedYear === '' || date.getFullYear().toString() === selectedYear;
       const monthMatch = selectedMonth === '' || date.getMonth().toString() === selectedMonth;
       return typeMatch && yearMatch && monthMatch;
     });
-  }, [employeeDocs, selectedType, selectedYear, selectedMonth]);
+  }, [employeeDocs, selectedTypes, selectedYear, selectedMonth]);
 
   const sortedAndFilteredDocs = useMemo(() => {
     let sortableItems = [...filteredDocs];
@@ -221,37 +235,64 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
                 <div className="md:col-span-2">
                     <Card>
-                        <CardHeader className="flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
-                           <div className="flex-grow">
-                             <CardTitle>Documents</CardTitle>
-                             <CardDescription>All documents associated with {user.name}.</CardDescription>
+                        <CardHeader>
+                           <div className="flex items-center justify-between">
+                             <div>
+                               <CardTitle>Documents</CardTitle>
+                               <CardDescription>All documents associated with {user.name}.</CardDescription>
+                             </div>
+                             <UploadDialog onUploadComplete={handleUploadComplete} />
                            </div>
-                           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                                <Select value={selectedType} onValueChange={setSelectedType}>
-                                    <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                                        <SelectValue placeholder="Select Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {documentTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!selectedType}>
-                                    <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
-                                        <SelectValue placeholder="Select Year" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!selectedType || !selectedYear}>
-                                    <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
-                                        <SelectValue placeholder="Select Month" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <UploadDialog onUploadComplete={handleUploadComplete} />
+                           <Separator className="my-4" />
+                           <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium">Document Type</label>
+                                    <div className="flex flex-wrap items-center gap-2 pt-2">
+                                        <Button
+                                            variant={selectedTypes.includes('All') ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handleTypeSelection('All')}
+                                        >
+                                            All
+                                        </Button>
+                                        {documentTypes.map(type => (
+                                            <Button
+                                                key={type}
+                                                variant={selectedTypes.includes(type) ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => handleTypeSelection(type)}
+                                            >
+                                                {type}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                    <div className="flex-grow min-w-[120px]">
+                                        <label className="text-sm font-medium">Year</label>
+                                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                            <SelectTrigger className="w-full mt-1">
+                                                <SelectValue placeholder="Select Year" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="">All Years</SelectItem>
+                                                {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex-grow min-w-[120px]">
+                                         <label className="text-sm font-medium">Month</label>
+                                         <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!selectedYear}>
+                                            <SelectTrigger className="w-full mt-1">
+                                                <SelectValue placeholder="Select Month" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="">All Months</SelectItem>
+                                                {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                               </div>
                            </div>
                         </CardHeader>
                         <CardContent>
