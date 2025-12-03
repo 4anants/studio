@@ -16,18 +16,22 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const [user, setUser] = useState<UserType | undefined>(undefined);
   
   useEffect(() => {
-    // params can be a promise in newer Next.js versions.
-    // We find the user directly here to avoid issues, even though it's synchronous in this mock data setup.
-    const foundUser = users.find(u => u.id === params.id);
-    if (foundUser) {
+    // In newer Next.js versions, `params` can be a promise. This effect handles it.
+    const resolveUser = async () => {
+      // Although our `params` from mock data is sync, this pattern is correct for async params.
+      const resolvedParams = await Promise.resolve(params);
+      const foundUser = users.find(u => u.id === resolvedParams.id);
+
+      if (foundUser) {
         setUser(foundUser);
-    } else {
+      } else {
         // If the user isn't found after checking, trigger a 404.
-        // A short delay helps prevent flashing content if params are resolving.
-        const timer = setTimeout(() => notFound(), 200);
-        return () => clearTimeout(timer);
-    }
-  }, [params.id]);
+        notFound();
+      }
+    };
+
+    resolveUser();
+  }, [params]);
 
   const [employeeDocs, setEmployeeDocs] = useState(() => {
     if (!user) return [];
