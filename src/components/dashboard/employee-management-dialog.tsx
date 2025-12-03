@@ -25,6 +25,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@/lib/mock-data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const formSchema = z.object({
   id: z.string().min(1, { message: 'Employee ID is required.' }),
@@ -35,11 +42,12 @@ const formSchema = z.object({
   dateOfBirth: z.string().optional(),
   joiningDate: z.string().optional(),
   resignationDate: z.string().optional(),
+  status: z.enum(['active', 'inactive']),
 });
 
 interface EmployeeManagementDialogProps {
   employee?: User;
-  onSave: (employee: Omit<User, 'status' | 'avatar'> & { avatar?: string, originalId?: string }) => void;
+  onSave: (employee: Omit<User, 'avatar' | 'deleted'> & { avatar?: string, originalId?: string }) => void;
   children: React.ReactNode;
 }
 
@@ -59,6 +67,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
       dateOfBirth: employee?.dateOfBirth || '',
       joiningDate: employee?.joiningDate || '',
       resignationDate: employee?.resignationDate || '',
+      status: (employee?.status === 'active' || employee?.status === 'inactive') ? employee.status : 'active',
     },
   });
   
@@ -89,11 +98,11 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
         ...validation.data,
         originalId: employee?.id,
       };
-      onSave(userData);
+      onSave(userData as any);
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '' });
+        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', status: 'active' });
       } else {
         form.reset({ ...values, password: '' }); // Clear password field after edit
       }
@@ -112,6 +121,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
             dateOfBirth: employee?.dateOfBirth || '',
             joiningDate: employee?.joiningDate || '',
             resignationDate: employee?.resignationDate || '',
+            status: (employee?.status === 'active' || employee?.status === 'inactive') ? employee.status : 'active',
         });
     }
     setOpen(isOpen);
@@ -229,6 +239,27 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

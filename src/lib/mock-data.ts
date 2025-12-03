@@ -18,7 +18,7 @@ export type User = {
   dateOfBirth?: string;
   joiningDate?: string;
   resignationDate?: string;
-  status: 'active' | 'deleted';
+  status: 'active' | 'inactive' | 'deleted';
 };
 
 export const users: User[] = [

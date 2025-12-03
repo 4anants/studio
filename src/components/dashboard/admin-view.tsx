@@ -112,7 +112,7 @@ export function AdminView() {
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
            resignationDate: employee.resignationDate,
-           status: 'active'
+           status: employee.status
         };
         return [...prevUsers, newUser];
       }
@@ -147,7 +147,7 @@ export function AdminView() {
     });
   };
 
-  const activeUsers = users.filter(user => user.status === 'active');
+  const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive');
   const deletedUsers = users.filter(user => user.status === 'deleted');
 
   const filteredActiveUsersForGrid = activeUsers.filter(user => 
@@ -314,6 +314,7 @@ export function AdminView() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead className="hidden md:table-cell">Mobile</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -333,6 +334,11 @@ export function AdminView() {
                                     <TableCell className="font-medium">{user.name}</TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell className="hidden md:table-cell">{user.mobile || 'N/A'}</TableCell>
+                                    <TableCell>
+                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium', user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}>
+                                            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                                        </span>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -364,7 +370,7 @@ export function AdminView() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">No active users found.</TableCell>
+                                    <TableCell colSpan={7} className="text-center text-muted-foreground">No active users found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
