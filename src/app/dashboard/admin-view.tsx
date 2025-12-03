@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, Award } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -117,7 +117,7 @@ export function AdminView() {
            password: employee.password,
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
-           resignationDate: employee.resignationDate,
+           designation: employee.designation,
            status: employee.status,
            department: employee.department
         };

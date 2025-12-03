@@ -3,7 +3,7 @@ import { notFound, useRouter } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User, Edit, Building } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building } from 'lucide-react';
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
@@ -180,9 +180,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     { icon: Mail, label: 'Email', value: user.email },
     { icon: Phone, label: 'Mobile', value: user.mobile || 'N/A' },
     { icon: Building, label: 'Department', value: user.department || 'N/A' },
+    { icon: Award, label: 'Designation', value: user.designation || 'N/A' },
     { icon: Calendar, label: 'Date of Birth', value: user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A' },
     { icon: Briefcase, label: 'Joining Date', value: user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : 'N/A' },
-    { icon: DoorOpen, label: 'Resignation Date', value: user.resignationDate ? new Date(user.resignationDate).toLocaleDateString() : 'N/A' },
     { icon: User, label: 'Status', value: user.status.charAt(0).toUpperCase() + user.status.slice(1) },
   ];
 
