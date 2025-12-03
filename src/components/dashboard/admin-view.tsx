@@ -51,7 +51,6 @@ import {
   } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils'
 import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { AddDepartmentDialog } from '@/components/dashboard/add-department-dialog'
 import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department-dialog'
 
@@ -65,7 +64,7 @@ export function AdminView() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
-  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -200,7 +199,26 @@ export function AdminView() {
   const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending');
   const deletedUsers = users.filter(user => user.status === 'deleted');
 
-  const filteredByDept = activeUsers.filter(user => departmentFilter === 'all' || user.department === departmentFilter);
+  const handleDepartmentFilterChange = (dept: string) => {
+    setDepartmentFilters(prev => {
+      if (dept === 'all') {
+        return ['all'];
+      }
+      
+      const newFilters = prev.filter(d => d !== 'all');
+
+      if (newFilters.includes(dept)) {
+        const filtered = newFilters.filter(d => d !== dept);
+        return filtered.length === 0 ? ['all'] : filtered;
+      } else {
+        return [...newFilters, dept];
+      }
+    });
+  };
+
+  const filteredByDept = activeUsers.filter(user => 
+    departmentFilters.includes('all') || (user.department && departmentFilters.includes(user.department))
+  );
 
   const filteredActiveUsersForGrid = filteredByDept.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -269,7 +287,7 @@ export function AdminView() {
     setActiveTab(value);
     setSelectedUserIds([]);
     setSearchTerm('');
-    setDepartmentFilter('all');
+    setDepartmentFilters(['all']);
   }
 
   const numSelected = selectedUserIds.length;
@@ -306,7 +324,7 @@ export function AdminView() {
       </div>
       
       <Tabs defaultValue={activeTab} onValueChange={onTabChange}>
-        <div className="flex items-center">
+        <div className="flex items-center mb-4">
             <TabsList>
                 <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
@@ -315,19 +333,6 @@ export function AdminView() {
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
-                {(activeTab === 'all-docs' || activeTab === 'by-employee') && (
-                    <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Filter by Department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Departments</SelectItem>
-                            {departments.map(dept => (
-                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -345,6 +350,34 @@ export function AdminView() {
                 </div>
             </div>
         </div>
+
+        {(activeTab === 'all-docs' || activeTab === 'by-employee') && (
+            <Card className="mb-4">
+                <CardHeader>
+                    <CardTitle>Filter by Department</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap items-center gap-2">
+                    <Button
+                        variant={departmentFilters.includes('all') ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleDepartmentFilterChange('all')}
+                    >
+                        All Departments
+                    </Button>
+                    {departments.map(dept => (
+                        <Button
+                            key={dept}
+                            variant={departmentFilters.includes(dept) ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handleDepartmentFilterChange(dept)}
+                        >
+                            {dept}
+                        </Button>
+                    ))}
+                </CardContent>
+            </Card>
+        )}
+
         <TabsContent value="all-docs">
             <Card>
                 <CardHeader>
@@ -646,3 +679,5 @@ export function AdminView() {
     </>
   )
 }
+
+    
