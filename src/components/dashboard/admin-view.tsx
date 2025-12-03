@@ -9,8 +9,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Users, Tag } from 'lucide-react'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments } from '@/lib/mock-data'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -52,11 +52,14 @@ import {
 import { cn } from '@/lib/utils'
 import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { AddDepartmentDialog } from '@/components/dashboard/add-department-dialog'
+import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department-dialog'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
   const [users, setUsers] = useState(initialUsers)
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
+  const [departments, setDepartments] = useState(initialDepartments);
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
@@ -168,6 +171,32 @@ export function AdminView() {
     }
   };
 
+  const handleAddDepartment = (newDepartment: string) => {
+    if (!departments.find(d => d.toLowerCase() === newDepartment.toLowerCase())) {
+      setDepartments(prev => [...prev, newDepartment]);
+      toast({
+        title: 'Department Added',
+        description: `"${newDepartment.trim()}" has been added to the list of departments.`,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Duplicate Department',
+        description: `"${newDepartment.trim()}" already exists.`,
+      });
+    }
+  };
+
+  const handleDeleteDepartment = (departmentToDelete: string) => {
+    setDepartments(prev => prev.filter(d => d !== departmentToDelete));
+    // Optional: Also update users who were in this department
+    setUsers(prevUsers => prevUsers.map(u => u.department === departmentToDelete ? { ...u, department: undefined } : u));
+    toast({
+      title: 'Department Deleted',
+      description: `"${departmentToDelete}" has been deleted.`,
+    });
+  };
+
   const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending');
   const deletedUsers = users.filter(user => user.status === 'deleted');
 
@@ -189,6 +218,10 @@ export function AdminView() {
 
   const filteredDocTypes = documentTypes.filter(type => 
     type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredDepartments = departments.filter(dept =>
+    dept.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
@@ -278,6 +311,7 @@ export function AdminView() {
                 <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
                 <TabsTrigger value="doc-types">Document Types</TabsTrigger>
+                <TabsTrigger value="departments">Departments</TabsTrigger>
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
@@ -301,6 +335,7 @@ export function AdminView() {
                         placeholder={
                             activeTab === 'all-docs' ? 'Search employees by name...' 
                             : activeTab === 'doc-types' ? 'Search document types...'
+                            : activeTab === 'departments' ? 'Search departments...'
                             : 'Search users...'
                         }
                         className="w-full sm:w-[300px] pl-8"
@@ -472,6 +507,57 @@ export function AdminView() {
                            )) : (
                                 <TableRow>
                                     <TableCell colSpan={2} className="text-center text-muted-foreground">No document types found.</TableCell>
+                                </TableRow>
+                           )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+         <TabsContent value="departments">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Manage Departments</CardTitle>
+                        <CardDescription>Add, edit, or delete departments for the organization.</CardDescription>
+                    </div>
+                     <AddDepartmentDialog onAdd={handleAddDepartment}>
+                        <Button variant="outline">
+                            <Building className="mr-2 h-4 w-4" /> Add Department
+                        </Button>
+                    </AddDepartmentDialog>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Department Name</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {filteredDepartments.length > 0 ? filteredDepartments.map(dept => (
+                                <TableRow key={dept}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <Building className="h-4 w-4 text-muted-foreground" />
+                                            {dept}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="sm" disabled>
+                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                        </Button>
+                                        <DeleteDepartmentDialog departmentName={dept} onDelete={() => handleDeleteDepartment(dept)}>
+                                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </Button>
+                                        </DeleteDepartmentDialog>
+                                    </TableCell>
+                                </TableRow>
+                           )) : (
+                                <TableRow>
+                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No departments found.</TableCell>
                                 </TableRow>
                            )}
                         </TableBody>
