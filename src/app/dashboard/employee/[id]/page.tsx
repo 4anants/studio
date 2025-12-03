@@ -7,13 +7,26 @@ import { ArrowLeft, Mail, Phone, Calendar, Briefcase, DoorOpen, User } from 'luc
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Separator } from '@/components/ui/separator';
 import type { User as UserType } from '@/lib/mock-data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [user, setUser] = useState<UserType | undefined>(undefined);
+  const [employeeDocs, setEmployeeDocs] = useState(() => allDocuments.filter(doc => doc.ownerId === params.id));
+
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
   
   useEffect(() => {
     // In newer Next.js versions, `params` can be a promise. This effect handles it.
@@ -32,17 +45,39 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
     resolveUser();
   }, [params]);
-
-  const [employeeDocs, setEmployeeDocs] = useState(() => {
-    if (!user) return [];
-    return allDocuments.filter(doc => doc.ownerId === user.id)
-  });
   
   useEffect(() => {
       if (user) {
-          setEmployeeDocs(allDocuments.filter(doc => doc.ownerId === user.id));
+          const userDocs = allDocuments.filter(doc => doc.ownerId === user.id);
+          setEmployeeDocs(userDocs);
       }
   }, [user]);
+
+  const { availableYears, availableMonths } = useMemo(() => {
+    const years = new Set<string>();
+    const months = new Set<number>();
+    employeeDocs.forEach(doc => {
+        const date = new Date(doc.uploadDate);
+        years.add(date.getFullYear().toString());
+        if (selectedYear === 'all' || date.getFullYear().toString() === selectedYear) {
+            months.add(date.getMonth());
+        }
+    });
+    return { 
+        availableYears: Array.from(years).sort((a, b) => Number(b) - Number(a)),
+        availableMonths: Array.from(months).sort((a, b) => a - b)
+    };
+  }, [employeeDocs, selectedYear]);
+
+  const filteredDocs = useMemo(() => {
+    return employeeDocs.filter(doc => {
+      const date = new Date(doc.uploadDate);
+      const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
+      const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
+      return yearMatch && monthMatch;
+    });
+  }, [employeeDocs, selectedYear, selectedMonth]);
+
 
   if (!user) {
     // You can add a skeleton loader here if you'd like
@@ -115,15 +150,35 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
                 <div className="md:col-span-2">
                     <Card>
-                        <CardHeader className="flex-row items-center justify-between">
-                           <div>
+                        <CardHeader className="flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+                           <div className="flex-grow">
                              <CardTitle>Documents</CardTitle>
                              <CardDescription>All documents associated with {user.name}.</CardDescription>
                            </div>
-                           <UploadDialog onUploadComplete={handleUploadComplete} />
+                           <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                    <SelectTrigger className="w-full sm:w-[120px]">
+                                        <SelectValue placeholder="Year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Years</SelectItem>
+                                        {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all' && availableMonths.length === 0}>
+                                    <SelectTrigger className="w-full sm:w-[150px]">
+                                        <SelectValue placeholder="Month" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Months</SelectItem>
+                                        {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <UploadDialog onUploadComplete={handleUploadComplete} />
+                           </div>
                         </CardHeader>
                         <CardContent>
-                            <DocumentList documents={employeeDocs} users={[]} />
+                            <DocumentList documents={filteredDocs} users={[]} />
                         </CardContent>
                     </Card>
                 </div>
