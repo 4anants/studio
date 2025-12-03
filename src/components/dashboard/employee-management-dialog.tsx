@@ -42,7 +42,7 @@ const formSchema = z.object({
   dateOfBirth: z.string().optional(),
   joiningDate: z.string().optional(),
   resignationDate: z.string().optional(),
-  status: z.enum(['active', 'inactive']),
+  status: z.enum(['active', 'inactive', 'pending']),
 });
 
 interface EmployeeManagementDialogProps {
@@ -67,7 +67,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
       dateOfBirth: employee?.dateOfBirth || '',
       joiningDate: employee?.joiningDate || '',
       resignationDate: employee?.resignationDate || '',
-      status: (employee?.status === 'active' || employee?.status === 'inactive') ? employee.status : 'active',
+      status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
     },
   });
   
@@ -121,7 +121,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
             dateOfBirth: employee?.dateOfBirth || '',
             joiningDate: employee?.joiningDate || '',
             resignationDate: employee?.resignationDate || '',
-            status: (employee?.status === 'active' || employee?.status === 'inactive') ? employee.status : 'active',
+            status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
         });
     }
     setOpen(isOpen);
@@ -258,6 +258,7 @@ export function EmployeeManagementDialog({ employee, onSave, children }: Employe
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

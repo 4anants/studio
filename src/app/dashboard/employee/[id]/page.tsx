@@ -224,7 +224,13 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                                         <detail.icon className="h-5 w-5 text-primary" />
                                         <div className="flex-1">
                                             <p className="font-medium text-foreground">{detail.label}</p>
-                                            <p className={cn(detail.label === 'Status' && (detail.value === 'Active' ? 'text-green-600' : 'text-red-600'))}>{detail.value}</p>
+                                            <p className={cn(
+                                                detail.label === 'Status' && (
+                                                    detail.value === 'Active' ? 'text-green-600' : 
+                                                    detail.value === 'Inactive' ? 'text-red-600' :
+                                                    'text-yellow-600'
+                                                )
+                                            )}>{detail.value}</p>
                                         </div>
                                     </li>
                                 ))}

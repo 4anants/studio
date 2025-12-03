@@ -147,7 +147,7 @@ export function AdminView() {
     });
   };
 
-  const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive');
+  const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending');
   const deletedUsers = users.filter(user => user.status === 'deleted');
 
   const filteredActiveUsersForGrid = activeUsers.filter(user => 
@@ -335,7 +335,11 @@ export function AdminView() {
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell className="hidden md:table-cell">{user.mobile || 'N/A'}</TableCell>
                                     <TableCell>
-                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium', user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}>
+                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium', 
+                                            user.status === 'active' ? 'bg-green-100 text-green-800' : 
+                                            user.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                                            'bg-yellow-100 text-yellow-800'
+                                        )}>
                                             {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                                         </span>
                                     </TableCell>
