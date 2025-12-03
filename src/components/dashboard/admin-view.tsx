@@ -19,6 +19,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import Image from 'next/image'
+import { BulkUploadDialog } from './bulk-upload-dialog'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -36,6 +37,17 @@ export function AdminView() {
       fileType: 'pdf' as const,
     }
     setDocs((prev) => [newDoc, ...prev])
+  }
+
+  const handleBulkUploadComplete = (newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
+    const fullNewDocs: Document[] = newDocs.map(d => ({
+        ...d,
+        id: `doc-${Date.now()}-${Math.random()}`,
+        size: `${(Math.random() * 1000).toFixed(0)} KB`,
+        uploadDate: new Date().toISOString().split('T')[0],
+        fileType: d.name.endsWith('.pdf') ? 'pdf' : d.name.endsWith('.doc') || d.name.endsWith('.docx') ? 'doc' : 'image',
+    }))
+    setDocs(prev => [...fullNewDocs, ...prev]);
   }
 
   const filteredUsers = users.filter(user => 
@@ -59,6 +71,7 @@ export function AdminView() {
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage all employee documents.</p>
         </div>
+        <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} />
       </div>
       
       <Tabs defaultValue="all-docs">
