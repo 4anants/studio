@@ -15,9 +15,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2 } from 'lucide-react'
+import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2, ChevronsUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import type { Document, User } from '@/lib/mock-data'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 function getFileIcon(fileType: Document['fileType']) {
   switch (fileType) {
@@ -32,13 +33,49 @@ function getFileIcon(fileType: Document['fileType']) {
   }
 }
 
+type SortKey = keyof Document;
+type SortDirection = 'ascending' | 'descending';
+
 interface DocumentListProps {
   documents: Document[];
   users: User[];
   showOwner?: boolean;
+  onSort: (key: SortKey) => void;
+  sortConfig: { key: SortKey; direction: SortDirection } | null;
 }
 
-export function DocumentList({ documents, users, showOwner = false }: DocumentListProps) {
+const SortableHeader = ({
+  children,
+  sortKey,
+  onSort,
+  sortConfig,
+  className,
+}: {
+  children: React.ReactNode;
+  sortKey: SortKey;
+  onSort: (key: SortKey) => void;
+  sortConfig: { key: SortKey; direction: SortDirection } | null;
+  className?: string;
+}) => {
+  const isSorting = sortConfig?.key === sortKey;
+  const direction = sortConfig?.direction;
+
+  const Icon = isSorting
+    ? direction === 'ascending' ? ArrowUp : ArrowDown
+    : ChevronsUpDown;
+
+  return (
+    <TableHead className={cn("cursor-pointer hover:bg-muted/50", className)} onClick={() => onSort(sortKey)}>
+      <div className="flex items-center gap-2">
+        {children}
+        <Icon className={`h-4 w-4 ${isSorting ? 'text-foreground' : 'text-muted-foreground'}`} />
+      </div>
+    </TableHead>
+  );
+};
+
+
+export function DocumentList({ documents, users, showOwner = false, onSort, sortConfig }: DocumentListProps) {
   const { toast } = useToast()
     
   const handleDownload = (docName: string) => {
@@ -69,11 +106,11 @@ export function DocumentList({ documents, users, showOwner = false }: DocumentLi
       <TableHeader>
         <TableRow>
           <TableHead className="w-[60px] hidden sm:table-cell"></TableHead>
-          <TableHead>Name</TableHead>
+          <SortableHeader sortKey="name" onSort={onSort} sortConfig={sortConfig}>Name</SortableHeader>
           {showOwner && <TableHead className="hidden md:table-cell">Owner</TableHead>}
-          <TableHead>Type</TableHead>
+          <SortableHeader sortKey="type" onSort={onSort} sortConfig={sortConfig}>Type</SortableHeader>
           <TableHead className="hidden md:table-cell">Size</TableHead>
-          <TableHead className="hidden lg:table-cell">Uploaded</TableHead>
+          <SortableHeader sortKey="uploadDate" onSort={onSort} sortConfig={sortConfig} className="hidden lg:table-cell">Uploaded</SortableHeader>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>

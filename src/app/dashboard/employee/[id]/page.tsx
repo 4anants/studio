@@ -9,7 +9,7 @@ import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
 import { useState, useEffect, useMemo } from 'react';
 import { Separator } from '@/components/ui/separator';
-import type { User as UserType } from '@/lib/mock-data';
+import type { User as UserType, Document } from '@/lib/mock-data';
 import {
   Select,
   SelectContent,
@@ -17,6 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
+type SortKey = keyof Document;
+type SortDirection = 'ascending' | 'descending';
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -27,18 +30,16 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   
   useEffect(() => {
-    // In newer Next.js versions, `params` can be a promise. This effect handles it.
     const resolveUser = async () => {
-      // Although our `params` from mock data is sync, this pattern is correct for async params.
       const resolvedParams = await Promise.resolve(params);
       const foundUser = users.find(u => u.id === resolvedParams.id);
 
       if (foundUser) {
         setUser(foundUser);
       } else {
-        // If the user isn't found after checking, trigger a 404.
         notFound();
       }
     };
@@ -78,14 +79,39 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     });
   }, [employeeDocs, selectedYear, selectedMonth]);
 
+  const sortedAndFilteredDocs = useMemo(() => {
+    let sortableItems = [...filteredDocs];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredDocs, sortConfig]);
+
+  const requestSort = (key: SortKey) => {
+    let direction: SortDirection = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
 
   if (!user) {
-    // You can add a skeleton loader here if you'd like
     return <div>Loading...</div>;
   }
 
   const handleUploadComplete = () => {
-    // In a real app, you would refetch the documents for this user.
     const newDoc = {
       id: `doc-${Date.now()}`,
       name: `Uploaded Doc.pdf`,
@@ -178,7 +204,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                            </div>
                         </CardHeader>
                         <CardContent>
-                            <DocumentList documents={filteredDocs} users={[]} />
+                            <DocumentList documents={sortedAndFilteredDocs} users={[]} onSort={requestSort} sortConfig={sortConfig} />
                         </CardContent>
                     </Card>
                 </div>
