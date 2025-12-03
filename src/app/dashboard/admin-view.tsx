@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Users } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Users, Tag } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -150,7 +150,19 @@ export function AdminView() {
   };
 
   const handleAddDocumentType = (newType: string) => {
-    setDocumentTypes(prev => [...prev, newType]);
+    if (!documentTypes.find(dt => dt.toLowerCase() === newType.toLowerCase())) {
+        setDocumentTypes(prev => [...prev, newType]);
+        toast({
+            title: 'Document Type Added',
+            description: `"${newType.trim()}" has been added to the list of document types.`,
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Duplicate Type',
+            description: `"${newType.trim()}" already exists.`,
+        });
+    }
   };
 
   const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending');
@@ -169,6 +181,10 @@ export function AdminView() {
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const filteredDocTypes = documentTypes.filter(type => 
+    type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
@@ -241,11 +257,6 @@ export function AdminView() {
             </>
           ) : (
             <>
-                <AddDocumentTypeDialog onAdd={handleAddDocumentType}>
-                    <Button variant="outline">
-                        <FolderPlus className="mr-2 h-4 w-4" /> Add Doc Type
-                    </Button>
-                </AddDocumentTypeDialog>
                 <EmployeeManagementDialog onSave={handleEmployeeSave}>
                     <Button>Add Employee</Button>
                 </EmployeeManagementDialog>
@@ -260,6 +271,7 @@ export function AdminView() {
             <TabsList>
                 <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
+                <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
@@ -267,7 +279,11 @@ export function AdminView() {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
-                        placeholder={activeTab === 'all-docs' ? 'Search employees by name...' : 'Search users...'}
+                        placeholder={
+                            activeTab === 'all-docs' ? 'Search employees by name...' 
+                            : activeTab === 'doc-types' ? 'Search document types...'
+                            : 'Search users...'
+                        }
                         className="w-full sm:w-[300px] pl-8"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -388,6 +404,55 @@ export function AdminView() {
                                     <TableCell colSpan={7} className="text-center text-muted-foreground">No active users found.</TableCell>
                                 </TableRow>
                             )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="doc-types">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Manage Document Types</CardTitle>
+                        <CardDescription>Add or edit document categories for the whole organization.</CardDescription>
+                    </div>
+                     <AddDocumentTypeDialog onAdd={handleAddDocumentType}>
+                        <Button variant="outline">
+                            <FolderPlus className="mr-2 h-4 w-4" /> Add Doc Type
+                        </Button>
+                    </AddDocumentTypeDialog>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Type Name</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {filteredDocTypes.length > 0 ? filteredDocTypes.map(type => (
+                                <TableRow key={type}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <Tag className="h-4 w-4 text-muted-foreground" />
+                                            {type}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="sm" disabled>
+                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                        </Button>
+                                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled>
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                           )) : (
+                                <TableRow>
+                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No document types found.</TableCell>
+                                </TableRow>
+                           )}
                         </TableBody>
                     </Table>
                 </CardContent>

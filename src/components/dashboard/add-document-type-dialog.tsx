@@ -13,8 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { FolderPlus } from 'lucide-react';
 
 interface AddDocumentTypeDialogProps {
   onAdd: (newType: string) => void;
@@ -24,15 +22,10 @@ interface AddDocumentTypeDialogProps {
 export function AddDocumentTypeDialog({ onAdd, children }: AddDocumentTypeDialogProps) {
   const [open, setOpen] = useState(false);
   const [newType, setNewType] = useState('');
-  const { toast } = useToast();
 
   const handleAdd = () => {
     if (newType.trim()) {
       onAdd(newType.trim());
-      toast({
-        title: 'Document Type Added',
-        description: `"${newType.trim()}" has been added to the list of document types.`,
-      });
       setNewType('');
       setOpen(false);
     }
@@ -57,6 +50,12 @@ export function AddDocumentTypeDialog({ onAdd, children }: AddDocumentTypeDialog
               onChange={(e) => setNewType(e.target.value)}
               className="col-span-3"
               placeholder="e.g., 'Offer Letter'"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAdd();
+                }
+              }}
             />
           </div>
         </div>
