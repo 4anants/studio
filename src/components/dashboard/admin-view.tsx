@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -68,21 +68,7 @@ export function AdminView() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleUploadComplete = (userId: string) => {
-    // Simulate refetching or adding a new doc for a specific user
-    const newDoc = {
-      id: `doc-${Date.now()}`,
-      name: `Admin Uploaded Doc.pdf`,
-      type: 'Salary Slip',
-      size: '300 KB',
-      uploadDate: new Date().toISOString().split('T')[0],
-      ownerId: userId,
-      fileType: 'pdf' as const,
-    }
-    setDocs((prev) => [newDoc, ...prev])
-  }
-
-  const handleBulkUploadComplete = (newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
+  const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
     const fullNewDocs: Document[] = newDocs.map(d => ({
         ...d,
         id: `doc-${Date.now()}-${Math.random()}`,
@@ -91,9 +77,9 @@ export function AdminView() {
         fileType: d.name.endsWith('.pdf') ? 'pdf' : d.name.endsWith('.doc') || d.name.endsWith('.docx') ? 'doc' : 'image',
     }))
     setDocs(prev => [...fullNewDocs, ...prev]);
-  }
+  }, []);
 
-  const handleEmployeeSave = (employee: User & { originalId?: string }) => {
+  const handleEmployeeSave = useCallback((employee: User & { originalId?: string }) => {
     setUsers(prevUsers => {
       const userIndex = prevUsers.findIndex(u => u.id === (employee.originalId || employee.id));
       if (userIndex > -1) {
@@ -105,6 +91,12 @@ export function AdminView() {
             ...employee,
             password: employee.password || existingUser.password // Keep old password if not provided
         };
+        if (employee.id !== (employee.originalId || employee.id)) {
+            toast({
+                title: "Profile Updated",
+                description: `An email notification has been sent to the admins regarding the update of ${employee.name}'s profile.`,
+            });
+        }
         return updatedUsers;
       } else {
         // Add new user
@@ -125,9 +117,9 @@ export function AdminView() {
         return [...prevUsers, newUser];
       }
     });
-  };
+  }, [toast]);
 
-  const handleEmployeeDelete = (employeeId: string) => {
+  const handleEmployeeDelete = useCallback((employeeId: string) => {
     setUsers(prevUsers => prevUsers.map(u => 
         u.id === employeeId ? { ...u, status: 'deleted' } : u
     ));
@@ -136,9 +128,9 @@ export function AdminView() {
         title: "Employee Deleted",
         description: `The employee has been moved to the deleted users list.`
     });
-  };
+  }, [toast]);
   
-  const handleRestoreUser = (employeeId: string) => {
+  const handleRestoreUser = useCallback((employeeId: string) => {
     setUsers(prevUsers => prevUsers.map(u => 
         u.id === employeeId ? { ...u, status: 'active' } : u
     ));
@@ -146,61 +138,67 @@ export function AdminView() {
         title: "Employee Restored",
         description: `The employee has been restored to the active list.`
     });
-  };
+  }, [toast]);
 
-  const handleResetPassword = (employeeName: string) => {
+  const handleResetPassword = useCallback((employeeName: string) => {
     toast({
       title: "Password Reset Link Sent",
       description: `An email has been sent to ${employeeName} with password reset instructions.`
     });
-  };
+  }, [toast]);
 
-  const handleAddDocumentType = (newType: string) => {
-    if (!documentTypes.find(dt => dt.toLowerCase() === newType.toLowerCase())) {
-        setDocumentTypes(prev => [...prev, newType]);
-        toast({
-            title: 'Document Type Added',
-            description: `"${newType.trim()}" has been added to the list of document types.`,
-        });
-    } else {
-        toast({
+  const handleAddDocumentType = useCallback((newType: string) => {
+    setDocumentTypes(prev => {
+        if (!prev.find(dt => dt.toLowerCase() === newType.toLowerCase())) {
+            toast({
+                title: 'Document Type Added',
+                description: `"${newType.trim()}" has been added to the list of document types.`,
+            });
+            return [...prev, newType];
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Duplicate Type',
+                description: `"${newType.trim()}" already exists.`,
+            });
+            return prev;
+        }
+    });
+  }, [toast]);
+
+  const handleAddDepartment = useCallback((newDepartment: string) => {
+    setDepartments(prev => {
+        if (!prev.find(d => d.toLowerCase() === newDepartment.toLowerCase())) {
+          toast({
+            title: 'Department Added',
+            description: `"${newDepartment.trim()}" has been added to the list of departments.`,
+          });
+          return [...prev, newDepartment];
+        } else {
+          toast({
             variant: 'destructive',
-            title: 'Duplicate Type',
-            description: `"${newType.trim()}" already exists.`,
-        });
-    }
-  };
+            title: 'Duplicate Department',
+            description: `"${newDepartment.trim()}" already exists.`,
+          });
+          return prev;
+        }
+    });
+  }, [toast]);
 
-  const handleAddDepartment = (newDepartment: string) => {
-    if (!departments.find(d => d.toLowerCase() === newDepartment.toLowerCase())) {
-      setDepartments(prev => [...prev, newDepartment]);
-      toast({
-        title: 'Department Added',
-        description: `"${newDepartment.trim()}" has been added to the list of departments.`,
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Duplicate Department',
-        description: `"${newDepartment.trim()}" already exists.`,
-      });
-    }
-  };
-
-  const handleDeleteDepartment = (departmentToDelete: string) => {
+  const handleDeleteDepartment = useCallback((departmentToDelete: string) => {
     setDepartments(prev => prev.filter(d => d !== departmentToDelete));
-    // Optional: Also update users who were in this department
+    // Also update users who were in this department
     setUsers(prevUsers => prevUsers.map(u => u.department === departmentToDelete ? { ...u, department: undefined } : u));
     toast({
       title: 'Department Deleted',
       description: `"${departmentToDelete}" has been deleted.`,
     });
-  };
+  }, [toast]);
 
-  const activeUsers = users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending');
-  const deletedUsers = users.filter(user => user.status === 'deleted');
+  const activeUsers = useMemo(() => users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending'), [users]);
+  const deletedUsers = useMemo(() => users.filter(user => user.status === 'deleted'), [users]);
 
-  const handleDepartmentFilterChange = (dept: string) => {
+  const handleDepartmentFilterChange = useCallback((dept: string) => {
     setDepartmentFilters(prev => {
       if (dept === 'all') {
         return ['all'];
@@ -215,53 +213,53 @@ export function AdminView() {
         return [...newFilters, dept];
       }
     });
-  };
+  }, []);
 
-  const filteredByDept = activeUsers.filter(user => 
+  const filteredByDept = useMemo(() => activeUsers.filter(user => 
     departmentFilters.includes('all') || (user.department && departmentFilters.includes(user.department))
-  );
+  ), [activeUsers, departmentFilters]);
 
-  const filteredActiveUsersForGrid = filteredByDept.filter(user => 
+  const filteredActiveUsersForGrid = useMemo(() => filteredByDept.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ), [filteredByDept, searchTerm]);
   
-  const filteredActiveUsersForTable = filteredByDept.filter(user => 
+  const filteredActiveUsersForTable = useMemo(() => filteredByDept.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ), [filteredByDept, searchTerm]);
 
-  const filteredDeletedUsers = deletedUsers.filter(user => 
+  const filteredDeletedUsers = useMemo(() => deletedUsers.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ), [deletedUsers, searchTerm]);
 
-  const filteredDocTypes = documentTypes.filter(type => 
+  const filteredDocTypes = useMemo(() => documentTypes.filter(type => 
     type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ), [documentTypes, searchTerm]);
 
-  const filteredDepartments = departments.filter(dept =>
+  const filteredDepartments = useMemo(() => departments.filter(dept =>
     dept.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ), [departments, searchTerm]);
   
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
-  const handleSelectAll = (checked: boolean | 'indeterminate') => {
+  const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
     if (checked === true) {
       setSelectedUserIds(filteredUsersForSelection.map(u => u.id));
     } else {
       setSelectedUserIds([]);
     }
-  };
+  }, [filteredUsersForSelection]);
   
-  const handleSelectUser = (userId: string, checked: boolean) => {
+  const handleSelectUser = useCallback((userId: string, checked: boolean) => {
     if (checked) {
       setSelectedUserIds(prev => [...prev, userId]);
     } else {
       setSelectedUserIds(prev => prev.filter(id => id !== userId));
     }
-  };
+  }, []);
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = useCallback(() => {
     setUsers(prevUsers => prevUsers.map(u => 
         selectedUserIds.includes(u.id) ? { ...u, status: 'deleted' } : u
     ));
@@ -271,9 +269,9 @@ export function AdminView() {
     });
     setSelectedUserIds([]);
     setIsBulkDeleteDialogOpen(false);
-  }
+  }, [selectedUserIds, toast]);
 
-  const handleBulkResetPassword = () => {
+  const handleBulkResetPassword = useCallback(() => {
     const selectedUsers = users.filter(u => selectedUserIds.includes(u.id));
     selectedUsers.forEach(user => handleResetPassword(user.name));
     toast({
@@ -282,14 +280,14 @@ export function AdminView() {
     });
     setSelectedUserIds([]);
     setIsBulkResetDialogOpen(false);
-  }
+  }, [users, selectedUserIds, handleResetPassword, toast]);
   
-  const onTabChange = (value: string) => {
+  const onTabChange = useCallback((value: string) => {
     setActiveTab(value);
     setSelectedUserIds([]);
     setSearchTerm('');
     setDepartmentFilters(['all']);
-  }
+  }, []);
 
   const numSelected = selectedUserIds.length;
   const numFiltered = filteredUsersForSelection.length;

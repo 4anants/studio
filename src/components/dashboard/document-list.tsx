@@ -1,5 +1,5 @@
 'use client'
-
+import React from 'react'
 import {
   Table,
   TableBody,
@@ -44,7 +44,7 @@ interface DocumentListProps {
   sortConfig: { key: SortKey; direction: SortDirection } | null;
 }
 
-const SortableHeader = ({
+const SortableHeader = React.memo(({
   children,
   sortKey,
   onSort,
@@ -72,10 +72,11 @@ const SortableHeader = ({
       </div>
     </TableHead>
   );
-};
+});
+SortableHeader.displayName = 'SortableHeader';
 
 
-export function DocumentList({ documents, users, showOwner = false, onSort, sortConfig }: DocumentListProps) {
+export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig }: DocumentListProps) => {
   const { toast } = useToast()
     
   const handleDownload = (docName: string) => {
@@ -156,4 +157,5 @@ export function DocumentList({ documents, users, showOwner = false, onSort, sort
       </TableBody>
     </Table>
   )
-}
+});
+DocumentList.displayName = 'DocumentList';

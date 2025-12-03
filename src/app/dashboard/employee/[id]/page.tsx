@@ -7,7 +7,7 @@ import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Buildin
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Separator } from '@/components/ui/separator';
 import type { User as UserType, Document } from '@/lib/mock-data';
 import {
@@ -38,19 +38,14 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   
   useEffect(() => {
-    const resolveUser = async () => {
-      const resolvedParams = await Promise.resolve(params);
-      const foundUser = users.find(u => u.id === resolvedParams.id);
+    const foundUser = initialUsers.find(u => u.id === params.id);
 
-      if (foundUser) {
-        setUser(foundUser);
-      } else {
-        notFound();
-      }
-    };
-
-    resolveUser();
-  }, [params, users]);
+    if (foundUser) {
+      setUser(foundUser);
+    } else {
+      notFound();
+    }
+  }, [params.id]);
   
   useEffect(() => {
       if (user) {
@@ -59,32 +54,34 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
       }
   }, [user]);
 
-  const handleEmployeeSave = (employee: UserType & { originalId?: string }) => {
-    const userIndex = users.findIndex(u => u.id === (employee.originalId || employee.id));
-    if (userIndex > -1) {
-        const updatedUsers = [...users];
-        const existingUser = updatedUsers[userIndex];
+  const handleEmployeeSave = useCallback((employee: UserType & { originalId?: string }) => {
+    setUsers(currentUsers => {
+        const userIndex = currentUsers.findIndex(u => u.id === (employee.originalId || employee.id));
+        if (userIndex > -1) {
+            const updatedUsers = [...currentUsers];
+            const existingUser = updatedUsers[userIndex];
 
-        updatedUsers[userIndex] = {
-            ...existingUser,
-            ...employee,
-            id: employee.id, // Ensure ID is updated
-            password: employee.password || existingUser.password
-        };
-        
-        setUsers(updatedUsers);
-
-        // If the ID was changed, we need to update the URL
-        if (employee.originalId && employee.id !== employee.originalId) {
-            router.replace(`/dashboard/employee/${employee.id}`);
-        } else {
-            // Force re-render to reflect changes if ID hasn't changed
-            setUser({...updatedUsers[userIndex]});
+            updatedUsers[userIndex] = {
+                ...existingUser,
+                ...employee,
+                id: employee.id, // Ensure ID is updated
+                password: employee.password || existingUser.password
+            };
+            
+            // If the ID was changed, we need to update the URL
+            if (employee.originalId && employee.id !== employee.originalId) {
+                router.replace(`/dashboard/employee/${employee.id}`);
+            } else {
+                // Force re-render to reflect changes if ID hasn't changed
+                setUser({...updatedUsers[userIndex]});
+            }
+            return updatedUsers;
         }
-    }
-  };
+        return currentUsers;
+    });
+  }, [router]);
 
-  const handleTypeSelection = (type: string) => {
+  const handleTypeSelection = useCallback((type: string) => {
     setSelectedTypes(prevTypes => {
       if (type === 'All') {
         return ['All'];
@@ -99,7 +96,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
         return [...newTypes, type];
       }
     });
-  };
+  }, []);
 
   const { availableYears, availableMonths } = useMemo(() => {
     const years = new Set<string>();
@@ -150,20 +147,18 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     return sortableItems;
   }, [filteredDocs, sortConfig]);
 
-  const requestSort = (key: SortKey) => {
-    let direction: SortDirection = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
+  const requestSort = useCallback((key: SortKey) => {
+    setSortConfig(currentSortConfig => {
+      let direction: SortDirection = 'ascending';
+      if (currentSortConfig && currentSortConfig.key === key && currentSortConfig.direction === 'ascending') {
+        direction = 'descending';
+      }
+      return { key, direction };
+    });
+  }, []);
 
-
-  if (!user) {
-    return <div>Loading...</div>;
-  }
-
-  const handleUploadComplete = () => {
+  const handleUploadComplete = useCallback(() => {
+    if (!user) return;
     const newDoc = {
       id: `doc-${Date.now()}`,
       name: `Uploaded Doc.pdf`,
@@ -174,7 +169,11 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
       fileType: 'pdf' as const,
     }
     setEmployeeDocs((prev) => [newDoc, ...prev]);
-  };
+  }, [user]);
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
   
   const userDetails = [
     { icon: Mail, label: 'Email', value: user.email },
@@ -304,7 +303,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                            </div>
                         </CardHeader>
                         <CardContent>
-                            <DocumentList documents={sortedAndFilteredDocs} users={[]} onSort={requestSort} sortConfig={sortConfig} />
+                            <DocumentList documents={sortedAndFilteredDocs} users={users} onSort={requestSort} sortConfig={sortConfig} />
                         </CardContent>
                     </Card>
                 </div>
