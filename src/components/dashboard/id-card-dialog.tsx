@@ -137,7 +137,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         }
     }
     // Fallback for other locations
-    const fullAddress = locations[locationKey];
     return {
       line1: 'B-813, K P Epitome, Near Makarba Lake,',
       line2: 'Makarba, Ahmedabad - 380051.'
@@ -173,7 +172,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
               data-ai-hint="person passport"
             />
           </div>
-          <div className="w-3/5 h-full flex items-center justify-center -ml-4">
+          <div className="w-3/5 h-full flex items-center justify-center">
             <div
               className="flex flex-col justify-center items-center text-center whitespace-nowrap origin-center"
               style={{ transform: 'rotate(-90deg)' }}
@@ -186,7 +185,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           </div>
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-xs mb-1">{companyDetails.name}</p>}
+            {companyDetails && <p className="font-bold text-xs mb-1.5">{companyDetails.name}</p>}
             {addressLine1 && (
                 <div className="text-[8px] leading-tight space-y-0.5">
                     <p>{addressLine1}</p>
@@ -286,3 +285,4 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     
 
     
+
