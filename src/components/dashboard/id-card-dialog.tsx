@@ -162,7 +162,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         <div className="flex flex-col items-center justify-center pt-3 px-2 flex-shrink-0">
           {LogoComponent && <LogoComponent />}
         </div>
-        <div className="flex-grow flex items-center pt-3 px-2">
+        <div className="flex-grow flex items-center pt-3">
           <div className="w-2/5 flex-shrink-0 flex justify-center">
             <Image
               src={`https://picsum.photos/seed/${user.avatar}/150/200`}
@@ -173,7 +173,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
               data-ai-hint="person passport"
             />
           </div>
-          <div className="w-3/5 h-full flex items-center justify-center -ml-2">
+          <div className="w-3/5 h-full flex items-center justify-center -ml-4">
             <div
               className="flex flex-col justify-center items-center text-center whitespace-nowrap origin-center"
               style={{ transform: 'rotate(-90deg)' }}
@@ -188,7 +188,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
             {companyDetails && <p className="font-bold text-xs mb-1">{companyDetails.name}</p>}
             {addressLine1 && (
-                <div className="text-[8px] leading-tight space-y-px">
+                <div className="text-[8px] leading-tight space-y-0.5">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
                 </div>
