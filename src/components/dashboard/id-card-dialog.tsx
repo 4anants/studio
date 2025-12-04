@@ -123,68 +123,85 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Generate ID Card</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-             <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="company">Company</Label>
-                    <Select value={selectedCompany} onValueChange={(val: CompanyName) => setSelectedCompany(val)}>
-                        <SelectTrigger id="company">
-                            <SelectValue placeholder="Select Company" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {companies.map(c => <SelectItem key={c.name} value={c.name}>{c.shortName}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <Label htmlFor="company">Company</Label>
+                        <Select value={selectedCompany} onValueChange={(val: CompanyName) => setSelectedCompany(val)}>
+                            <SelectTrigger id="company">
+                                <SelectValue placeholder="Select Company" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {companies.map(c => <SelectItem key={c.name} value={c.name}>{c.shortName}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label htmlFor="location">Location</Label>
+                        <Select value={selectedLocation} onValueChange={(val: LocationKey) => setSelectedLocation(val)}>
+                            <SelectTrigger id="location">
+                                <SelectValue placeholder="Select Location" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.keys(locations).map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
-                <div>
-                    <Label htmlFor="location">Location</Label>
-                     <Select value={selectedLocation} onValueChange={(val: LocationKey) => setSelectedLocation(val)}>
-                        <SelectTrigger id="location">
-                            <SelectValue placeholder="Select Location" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.keys(locations).map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                <div className="flex justify-center mt-4">
+                    <Button onClick={handlePrint} className="w-full" disabled={!selectedCompany || !selectedLocation}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print ID Card
+                    </Button>
                 </div>
-             </div>
+            </div>
 
-            <div className="flex justify-center">
-                <div ref={cardRef} className="id-card-print-area w-[320px] h-[512px] bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col justify-between p-4 shadow-md">
+            <div className="flex justify-center items-center">
+                <div 
+                    ref={cardRef} 
+                    className="id-card-print-area w-[320px] h-[512px] bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col shadow-lg"
+                    style={{ fontFamily: "'Segoe UI', sans-serif" }}
+                >
                     {/* Header */}
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center pt-4 px-4">
                        {LogoComponent && <LogoComponent />}
                     </div>
 
                     {/* Body */}
-                    <div className="flex-grow flex flex-col items-center justify-center gap-4">
-                        <Image
-                            src={`https://picsum.photos/seed/${user.avatar}/200/200`}
-                            width={130}
-                            height={130}
-                            className="rounded-md border-2 border-gray-300 aspect-square object-cover"
-                            alt={user.name}
-                            data-ai-hint="person portrait"
-                        />
-                        <div className="text-center">
-                            <p className="font-bold text-xl text-gray-800">{user.name}</p>
-                            <p className="text-sm text-gray-600">{user.designation || 'N/A'}</p>
-                            <p className="text-sm text-gray-600">Emp Code: {user.id}</p>
-                            <p className="text-sm text-gray-600">Blood Group: <span className="text-red-600 font-bold">{user.bloodGroup || 'N/A'}</span></p>
+                    <div className="flex-grow grid grid-cols-2 gap-2 p-2">
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <p className="font-bold text-lg leading-tight text-gray-800">{user.name}</p>
+                            <p className="text-xs text-gray-600 mt-1">{user.designation || 'N/A'}</p>
+                            <div className="text-xs text-gray-600 mt-2 space-y-1">
+                                <p>Emp Code: {user.id}</p>
+                                <p>Blood Group: <span className="font-bold text-red-600">{user.bloodGroup || 'N/A'}</span></p>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-center">
+                            <Image
+                                src={`https://picsum.photos/seed/${user.avatar}/200/200`}
+                                width={120}
+                                height={145}
+                                className="rounded-md border-2 border-gray-300 object-cover"
+                                style={{ aspectRatio: '4/5' }}
+                                alt={user.name}
+                                data-ai-hint="person passport"
+                            />
                         </div>
                     </div>
-
+                    
                     {/* Footer */}
-                    <div className="text-center text-xs text-gray-700">
+                    <div className="bg-gray-800 text-white text-center text-[10px] p-2 leading-tight">
                         {selectedCompany && <p className="font-bold">{selectedCompany}</p>}
                         {address && (
                             <>
-                                <p>{line1}</p>
+                                <p>{line1},</p>
                                 <p>{line2}, {line3}</p>
                             </>
                         )}
@@ -194,10 +211,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         </div>
 
         <DialogFooter>
-          <Button onClick={handlePrint} className="w-full" disabled={!selectedCompany || !selectedLocation}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print ID Card
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
