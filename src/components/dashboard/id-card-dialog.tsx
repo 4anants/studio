@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -24,6 +25,7 @@ import type { User, CompanyName, LocationKey } from '@/lib/mock-data';
 import { companies, locations } from '@/lib/mock-data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
 
 interface IdCardDialogProps {
   user: User;
@@ -75,12 +77,14 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
 
   const [selectedCompany, setSelectedCompany] = useState<CompanyName | undefined>(user.company);
   const [selectedLocation, setSelectedLocation] = useState<LocationKey | undefined>(user.location);
+  const [position, setPosition] = useState([0]);
   
   useEffect(() => {
     if (open) {
         setSelectedCompany(user.company);
         setSelectedLocation(user.location);
         setIsZoomed(false);
+        setPosition([0]);
     }
   }, [open, user.company, user.location]);
 
@@ -145,7 +149,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
 
   const { line1: addressLine1, line2: addressLine2 } = getAddressLines(selectedLocation);
 
-  const CardComponent = ({ className }: { className?: string }) => (
+  const CardComponent = ({ className, positionX = 0 }: { className?: string; positionX?: number }) => (
     <div
       className={cn(
         "id-card-print-area bg-white shadow-lg overflow-hidden",
@@ -161,8 +165,11 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         <div className="flex flex-col items-center justify-center pt-3 px-2 flex-shrink-0">
           {LogoComponent && <LogoComponent />}
         </div>
-        <div className="flex-grow flex items-center pt-3 pr-2">
-          <div className="w-2/5 flex-shrink-0 flex justify-center">
+        <div
+          className="flex-grow flex items-center relative"
+          style={{ transform: `translateX(${positionX}px)` }}
+        >
+          <div className="w-2/5 flex-shrink-0 flex justify-center pl-1">
             <Image
               src={`https://picsum.photos/seed/${user.avatar}/150/200`}
               width={75}
@@ -185,9 +192,9 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           </div>
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-xs mb-1">{companyDetails.name}</p>}
+            {companyDetails && <p className="font-bold text-xs mb-1.5">{companyDetails.name}</p>}
             {addressLine1 && (
-                <div className="text-[8px] leading-[1.2] space-y-0.5">
+                <div className="text-[8px] leading-tight space-y-0.5">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
                 </div>
@@ -232,6 +239,17 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                         </Select>
                     </div>
                 </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="position">Horizontal Position</Label>
+                    <Slider
+                      id="position"
+                      min={-20}
+                      max={20}
+                      step={1}
+                      value={position}
+                      onValueChange={setPosition}
+                    />
+                 </div>
                 <div className="flex justify-center mt-4">
                     <Button onClick={handlePrint} className="w-full" disabled={!selectedCompany || !selectedLocation}>
                         <Printer className="mr-2 h-4 w-4" />
@@ -245,13 +263,13 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                 {/* Hidden card for printing */}
                 <div className="absolute opacity-0 pointer-events-none -z-10" aria-hidden>
                     <div ref={cardRef}>
-                        <CardComponent />
+                        <CardComponent positionX={position[0]} />
                     </div>
                 </div>
                 
                 {/* Visible card for interaction */}
                  <div className="cursor-zoom-in" onClick={() => setIsZoomed(true)}>
-                    <CardComponent className={cn(!isZoomed && "opacity-100")} />
+                    <CardComponent positionX={position[0]}/>
                 </div>
             </div>
         </div>
@@ -265,7 +283,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                     className="scale-[2.5] cursor-default"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <CardComponent />
+                    <CardComponent positionX={position[0]}/>
                 </div>
             </div>
         )}
