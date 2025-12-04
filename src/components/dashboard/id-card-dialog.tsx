@@ -161,7 +161,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         <div className="flex flex-col items-center justify-center pt-3 px-2 flex-shrink-0">
           {LogoComponent && <LogoComponent />}
         </div>
-        <div className="flex-grow flex items-center pt-3">
+        <div className="flex-grow flex items-center pt-3 pr-2">
           <div className="w-2/5 flex-shrink-0 flex justify-center">
             <Image
               src={`https://picsum.photos/seed/${user.avatar}/150/200`}
@@ -185,9 +185,9 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           </div>
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-xs mb-1.5">{companyDetails.name}</p>}
+            {companyDetails && <p className="font-bold text-xs mb-1">{companyDetails.name}</p>}
             {addressLine1 && (
-                <div className="text-[8px] leading-tight space-y-0.5">
+                <div className="text-[8px] leading-[1.2] space-y-0.5">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
                 </div>
@@ -251,7 +251,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                 
                 {/* Visible card for interaction */}
                  <div className="cursor-zoom-in" onClick={() => setIsZoomed(true)}>
-                    <CardComponent />
+                    <CardComponent className={cn(!isZoomed && "opacity-100")} />
                 </div>
             </div>
         </div>
@@ -286,3 +286,4 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
 
     
 
+    
