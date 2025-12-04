@@ -33,13 +33,11 @@ const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
       <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
           <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
-              <path d="M5,70 L50,5 L95,70" stroke="#334b6c" strokeWidth="10" fill="none" strokeLinecap="round" />
-              <path d="M68,55 L68,65" stroke="#334b6c" strokeWidth="6" fill="none" />
-              <path d="M65,60 L71,60" stroke="#334b6c" strokeWidth="6" fill="none" />
-              <g transform="translate(18, 40) scale(0.6)">
-                  <text x="0" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">s</text>
-                  <text x="20" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">e</text>
-                  <path d="M-5 5 C 20 -15, 40 -15, 60 10" stroke="#334b6c" strokeWidth="7" fill="none" />
+              <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
+              <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
+               <g transform="translate(32, 48) scale(0.5)">
+                  <text x="0" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">s</text>
+                  <text x="22" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">e</text>
               </g>
           </svg>
           <div className="flex flex-col">
