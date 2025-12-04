@@ -29,10 +29,13 @@ type SortDirection = 'ascending' | 'descending';
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
-  const [user, setUser] = useState<UserType | undefined>(undefined);
+  
+  const [user, setUser] = useState<UserType | undefined>(() => users.find(u => u.id === id));
+  
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
   const [documentTypes, setDocumentTypes] = useState<string[]>(documentTypesList);
 
@@ -45,11 +48,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const isSelfView = role !== 'admin';
 
   useEffect(() => {
-    const foundUser = users.find(u => u.id === params.id);
-     if (foundUser) {
-      setUser(foundUser);
-    }
-  }, [params.id, users]);
+    const foundUser = users.find(u => u.id === id);
+    setUser(foundUser);
+  }, [id, users]);
   
   useEffect(() => {
       if (user) {
@@ -176,7 +177,14 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   }, [user]);
 
   if (!user) {
-    return <div>Loading...</div>;
+    // This can happen briefly on first render if the user is not found immediately.
+    // Or if the user truly doesn't exist.
+    // A notFound() call could be placed in the effect if permanent.
+    return (
+        <div className="flex min-h-screen w-full flex-col bg-muted/40 items-center justify-center">
+            <p>Loading user or user not found...</p>
+        </div>
+    );
   }
   
   const userDetails = [
