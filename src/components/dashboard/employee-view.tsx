@@ -28,7 +28,7 @@ import {
     TableHeader,
     TableRow,
   } from '@/components/ui/table'
-import { Calendar, Megaphone, Info } from 'lucide-react'
+import { Calendar, Bell, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 
@@ -44,13 +44,14 @@ export function EmployeeView() {
     allDocuments.filter((doc) => doc.ownerId === currentUserId)
   )
   const [holidays] = useState(initialHolidays);
-  const [announcements] = useState(initialAnnouncements.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: a.isRead ?? false })));
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
 
+  const hasUnreadAnnouncements = useMemo(() => announcements.some(a => !a.isRead), [announcements]);
 
   const handleUploadComplete = useCallback(() => {
     // In a real app, you would refetch the documents.
@@ -149,7 +150,17 @@ export function EmployeeView() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [holidays, holidayLocationFilter]);
 
-  const latestAnnouncement = announcements[0];
+  const latestAnnouncement = useMemo(() => announcements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0], [announcements]);
+
+  const sortedAnnouncements = useMemo(() => [...announcements].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [announcements]);
+
+  const onTabChange = useCallback((value: string) => {
+    if (value === 'announcements') {
+      setTimeout(() => {
+        setAnnouncements(prev => prev.map(a => ({ ...a, isRead: true })));
+      }, 200); // Small delay to allow tab to switch
+    }
+  }, []);
 
   return (
     <>
@@ -162,18 +173,24 @@ export function EmployeeView() {
       </div>
       
       {latestAnnouncement && (
-        <Alert>
+        <Alert className={cn(!latestAnnouncement.isRead && 'border-primary')}>
             <Info className="h-4 w-4" />
             <AlertTitle>{latestAnnouncement.title}</AlertTitle>
             <AlertDescription>{latestAnnouncement.message}</AlertDescription>
         </Alert>
       )}
 
-       <Tabs defaultValue="documents">
+       <Tabs defaultValue="documents" onValueChange={onTabChange}>
             <TabsList>
                 <TabsTrigger value="documents">My Documents</TabsTrigger>
                 <TabsTrigger value="holidays">Holiday List</TabsTrigger>
-                <TabsTrigger value="announcements">Announcements</TabsTrigger>
+                <TabsTrigger value="announcements" className="relative">
+                    Announcements
+                    {hasUnreadAnnouncements && <span className="relative flex h-3 w-3 ml-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>}
+                </TabsTrigger>
             </TabsList>
             <TabsContent value="documents">
                 <Card className="mb-4">
@@ -317,10 +334,11 @@ export function EmployeeView() {
                         <CardDescription>Stay up to date with the latest news and updates.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {announcements.length > 0 ? announcements.map(announcement => (
-                            <div key={announcement.id} className="p-4 border rounded-lg">
+                        {sortedAnnouncements.length > 0 ? sortedAnnouncements.map(announcement => (
+                            <div key={announcement.id} className={cn("p-4 border rounded-lg relative overflow-hidden", !announcement.isRead && "bg-blue-50/50 border-blue-200")}>
+                                {!announcement.isRead && <div className="absolute left-0 top-0 h-full w-1.5 bg-primary"></div>}
                                 <h3 className="font-semibold flex items-center gap-2">
-                                    <Megaphone className="h-5 w-5 text-primary" />
+                                    <Bell className="h-5 w-5 text-primary" />
                                     {announcement.title}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mt-1">

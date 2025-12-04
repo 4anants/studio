@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Megaphone } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -63,7 +63,7 @@ export function AdminView() {
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
   const [departments, setDepartments] = useState(initialDepartments);
   const [holidays, setHolidays] = useState(initialHolidays);
-  const [announcements, setAnnouncements] = useState(initialAnnouncements);
+  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: true}))); // Admins see all as read initially
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
@@ -230,6 +230,7 @@ export function AdminView() {
       message: announcement.message,
       date: new Date().toISOString(),
       author: 'Admin',
+      isRead: true, // New announcements by admin are 'read' for them
     };
     setAnnouncements(prev => [newAnnouncement, ...prev]);
     toast({
@@ -396,7 +397,9 @@ export function AdminView() {
                 <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                 <TabsTrigger value="departments">Departments</TabsTrigger>
                 <TabsTrigger value="holidays">Holidays</TabsTrigger>
-                <TabsTrigger value="announcements">Announcements</TabsTrigger>
+                <TabsTrigger value="announcements">
+                    Announcements
+                </TabsTrigger>
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
@@ -749,7 +752,7 @@ export function AdminView() {
                     </div>
                      <AddAnnouncementDialog onAdd={handleAddAnnouncement}>
                         <Button variant="outline">
-                            <Megaphone className="mr-2 h-4 w-4" /> New Announcement
+                            <Bell className="mr-2 h-4 w-4" /> New Announcement
                         </Button>
                     </AddAnnouncementDialog>
                 </CardHeader>

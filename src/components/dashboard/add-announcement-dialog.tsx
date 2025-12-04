@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '../ui/textarea';
+import { Bell } from 'lucide-react';
 
 interface AddAnnouncementDialogProps {
   onAdd: (announcement: { title: string, message: string }) => void;
@@ -39,7 +40,9 @@ export function AddAnnouncementDialog({ onAdd, children }: AddAnnouncementDialog
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New Announcement</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" /> New Announcement
+          </DialogTitle>
           <DialogDescription>Create a new announcement to be broadcast to all employees.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
