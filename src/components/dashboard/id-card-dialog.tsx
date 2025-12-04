@@ -32,20 +32,20 @@ interface IdCardDialogProps {
 
 const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
-        <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
-             <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
-                <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
-                <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
-                <g transform="translate(32, 48) scale(0.5)">
-                    <text x="0" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">s</text>
-                    <text x="22" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">e</text>
-                </g>
-            </svg>
-            <div className="flex flex-col">
-                <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
-                <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
-            </div>
+      <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
+        <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
+          <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
+          <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
+          <g transform="translate(32, 48) scale(0.5)">
+            <text x="0" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">s</text>
+            <text x="22" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">e</text>
+          </g>
+        </svg>
+        <div className="flex flex-col">
+          <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
+          <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
         </div>
+      </div>
     ),
     'ALLIANCE MEP PRIVATE LIMITED': () => (
         <div className="flex items-center gap-2">
@@ -255,4 +255,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
+    
+
     
