@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,12 +18,13 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import type { User, CompanyName, LocationKey } from '@/lib/mock-data';
 import { companies, locations } from '@/lib/mock-data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Slider } from '@/components/ui/slider';
+import { toPng } from 'html-to-image';
+import { useToast } from '@/hooks/use-toast';
 
 interface IdCardDialogProps {
   user: User;
@@ -72,6 +73,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   const [open, setOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const [isZoomed, setIsZoomed] = useState(false);
+  const { toast } = useToast();
 
   const [selectedCompany, setSelectedCompany] = useState<CompanyName | undefined>(user.company);
   const [selectedLocation, setSelectedLocation] = useState<LocationKey | undefined>(user.location);
@@ -117,6 +119,33 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
       }
     }
   };
+
+  const handleDownload = useCallback(() => {
+    if (cardRef.current === null) {
+      return
+    }
+    
+    toast({
+        title: 'Generating Image...',
+        description: 'Your ID card is being prepared for download.',
+    });
+
+    toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 })
+      .then((dataUrl) => {
+        const link = document.createElement('a')
+        link.download = `ID-Card-${user.name.replace(/\s+/g, '-')}.png`
+        link.href = dataUrl
+        link.click()
+      })
+      .catch((err) => {
+        console.error(err)
+        toast({
+            variant: 'destructive',
+            title: 'Download Failed',
+            description: 'Could not generate an image of the ID card.',
+        });
+      })
+  }, [cardRef, user.name, toast]);
   
   const LogoComponent = selectedCompany ? companyLogos[selectedCompany] : null;
   const companyDetails = selectedCompany ? companies.find(c => c.name === selectedCompany) : null;
@@ -191,12 +220,12 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
           {companyDetails && (
-              <p className="font-bold text-xs break-words mb-1">
+              <p className="font-bold text-xs mb-1">
                   {companyDetails.name}
               </p>
           )}
           {addressLine1 && (
-            <div className="text-[8px] leading-tight space-y-0.5">
+            <div className="text-[8px] leading-snug space-y-0.5">
               <p>{addressLine1}</p>
               <p>{addressLine2}</p>
             </div>
@@ -242,17 +271,21 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                     </div>
                 </div>
 
-                <div className="flex justify-center mt-4 pt-8">
+                <div className="flex justify-center items-center gap-4 mt-4 pt-8">
                     <Button onClick={handlePrint} className="w-full" disabled={!selectedCompany || !selectedLocation}>
                         <Printer className="mr-2 h-4 w-4" />
                         Print ID Card
+                    </Button>
+                    <Button onClick={handleDownload} variant="outline" className="w-full" disabled={!selectedCompany || !selectedLocation}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
                     </Button>
                 </div>
                  <div className="text-sm text-muted-foreground text-center">Click the card to zoom.</div>
             </div>
 
             <div className="flex justify-center items-center p-4 bg-gray-100 rounded-lg relative min-h-[360px]">
-                {/* Hidden card for printing */}
+                {/* Hidden card for printing and downloading */}
                 <div className="absolute opacity-0 pointer-events-none -z-10" aria-hidden>
                     <div ref={cardRef}>
                         <CardComponent />
