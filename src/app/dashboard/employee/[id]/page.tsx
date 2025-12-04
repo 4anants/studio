@@ -20,7 +20,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
-  const { id } = use(params);
+  const { id } = params;
 
   const [user, setUser] = useState<UserType | undefined>(undefined);
   
