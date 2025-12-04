@@ -25,16 +25,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Camera } from 'lucide-react';
-import type { User, CompanyName, LocationKey } from '@/lib/mock-data';
-import { companies, locations } from '@/lib/mock-data';
+import type { User } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-
-const companyNames = companies.map(c => c.name) as [string, ...string[]];
-const locationKeys = Object.keys(locations) as [string, ...string[]];
-
 
 const formSchema = z.object({
   personalEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
@@ -42,8 +36,6 @@ const formSchema = z.object({
   password: z.string().optional(),
   avatar: z.string().optional(),
   bloodGroup: z.string().optional(),
-  company: z.enum(companyNames).optional(),
-  location: z.enum(locationKeys).optional(),
 });
 
 interface EmployeeSelfEditDialogProps {
@@ -66,8 +58,6 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
       password: '',
       avatar: employee?.avatar,
       bloodGroup: employee?.bloodGroup || '',
-      company: employee?.company,
-      location: employee?.location,
     },
   });
 
@@ -128,8 +118,6 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
             password: '',
             avatar: employee?.avatar,
             bloodGroup: employee?.bloodGroup || '',
-            company: employee?.company,
-            location: employee?.location,
         });
         setAvatarPreview(null);
     }
@@ -207,50 +195,6 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                   <FormControl>
                     <Input placeholder="e.g. A+" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="company"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a company" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {companies.map(c => (
-                        <SelectItem key={c.name} value={c.name}>{c.shortName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a location" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.keys(locations).map(loc => (
-                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
