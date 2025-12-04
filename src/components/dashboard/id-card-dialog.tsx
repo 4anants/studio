@@ -99,9 +99,9 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
             }
           })
           .join('');
-        printWindow.document.write(`<style>${styles}</style>`);
-        printWindow.document.write('</head><body">');
-        printWindow.document.write('<div class="p-4 flex justify-center items-center h-full bg-gray-100">');
+        printWindow.document.write(`<style>${styles} @page { size: 54mm 86mm; margin: 0; } body { margin: 0; }</style>`);
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<div style="display:flex; justify-content:center; align-items:center; width:100vw; height:100vh;">');
         printWindow.document.write(printContent.outerHTML);
         printWindow.document.write('</div>');
         printWindow.document.write('</body></html>');
@@ -117,7 +117,8 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   
   const LogoComponent = selectedCompany ? companyLogos[selectedCompany] : null;
   const address = selectedLocation ? locations[selectedLocation] : '';
-  const [line1, line2, line3] = address.split(',').map(s => s.trim());
+  const [line1, ...restOfAddress] = address.split(', ');
+  const addressLine2 = restOfAddress.join(', ');
 
 
   return (
@@ -162,51 +163,56 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                 </div>
             </div>
 
-            <div className="flex justify-center items-center">
+            <div className="flex justify-center items-center p-4 bg-gray-100 rounded-lg">
                 <div 
                     ref={cardRef} 
-                    className="id-card-print-area w-[320px] h-[512px] bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col shadow-lg"
-                    style={{ fontFamily: "'Segoe UI', sans-serif" }}
+                    className="id-card-print-area bg-white shadow-lg overflow-hidden"
+                    style={{
+                        width: '324px', // 86mm at 96 DPI
+                        height: '204px', // 54mm at 96 DPI
+                        fontFamily: "'Segoe UI', sans-serif",
+                        transform: 'rotate(90deg) scale(1.5)',
+                        transformOrigin: 'center',
+                    }}
                 >
-                    {/* Header */}
-                    <div className="flex flex-col items-center justify-center pt-4 px-4 h-[90px]">
-                       {LogoComponent && <LogoComponent />}
-                    </div>
-
-                    {/* Body */}
-                     <div className="flex-grow grid grid-cols-2 gap-2 p-4">
-                        <div className="flex items-center justify-center">
-                            <Image
-                                src={`https://picsum.photos/seed/${user.avatar}/200/200`}
-                                width={120}
-                                height={150}
-                                className="rounded-md border-2 border-gray-300 object-cover"
-                                style={{ aspectRatio: '4/5' }}
-                                alt={user.name}
-                                data-ai-hint="person passport"
-                            />
+                    <div className="flex flex-col h-full">
+                        {/* Header */}
+                        <div className="flex flex-col items-center justify-center pt-2 px-4 flex-shrink-0">
+                           {LogoComponent && <LogoComponent />}
                         </div>
-                        <div className="flex items-center justify-center">
-                            <div className="flex flex-col items-center justify-center text-center -rotate-90 whitespace-nowrap">
-                                <p className="font-bold text-lg leading-tight text-gray-800">{user.name}</p>
-                                <p className="text-xs text-gray-600 mt-1">{user.designation || 'N/A'}</p>
-                                <div className="text-xs text-gray-600 mt-2">
-                                    <p>Emp Code: {user.id}</p>
-                                    <p>Blood Group: <span className="font-bold text-red-600">{user.bloodGroup || 'N/A'}</span></p>
+
+                        {/* Body */}
+                        <div className="flex-grow flex items-center pt-2 px-3">
+                            <div className="w-2/5 flex-shrink-0 flex justify-center">
+                                <Image
+                                    src={`https://picsum.photos/seed/${user.avatar}/150/200`}
+                                    width={75}
+                                    height={94}
+                                    className="border border-gray-300"
+                                    alt={user.name}
+                                    data-ai-hint="person passport"
+                                />
+                            </div>
+                            <div className="w-3/5 h-full flex items-center justify-center -ml-2">
+                                <div className="flex flex-col justify-center items-start text-left whitespace-nowrap" style={{ transform: 'rotate(-90deg)' }}>
+                                    <p className="font-bold text-base leading-tight" style={{ color: '#009966' }}>{user.name}</p>
+                                    <p className="text-xs leading-tight mt-1">{user.department || 'N/A'}</p>
+                                    <p className="text-xs leading-tight">Employee Code : {user.id}</p>
+                                    <p className="text-xs leading-tight">Blood Group : <span className="font-bold">{user.bloodGroup ? `${user.bloodGroup}+ve` : 'N/A'}</span></p>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    {/* Footer */}
-                    <div className="bg-gray-800 text-white text-center text-[10px] p-2 leading-tight">
-                        {selectedCompany && <p className="font-bold">{selectedCompany}</p>}
-                        {address && (
-                            <>
-                                <p>{line1},</p>
-                                <p>{line2}, {line3}</p>
-                            </>
-                        )}
+                        
+                        {/* Footer */}
+                         <div className="text-black text-center text-[7px] p-2 leading-tight flex-shrink-0">
+                            {selectedCompany && <p className="font-bold text-[8px]">{selectedCompany}</p>}
+                            {address && (
+                                <div className="text-[7px]">
+                                    <p>{line1},</p>
+                                    <p>{addressLine2}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -218,3 +224,5 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
+
+    
