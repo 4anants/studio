@@ -47,6 +47,7 @@ const formSchema = z.object({
   designation: z.string().optional(),
   status: z.enum(['active', 'inactive', 'pending']),
   department: z.string().optional(),
+  bloodGroup: z.string().optional(),
 });
 
 interface EmployeeManagementDialogProps {
@@ -77,6 +78,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       designation: employee?.designation || '',
       status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
       department: employee?.department || '',
+      bloodGroup: employee?.bloodGroup || '',
     },
   });
   
@@ -123,7 +125,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '' });
+        form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '', bloodGroup: '' });
       } else {
         form.reset({ ...values, password: '' }); // Clear password field after edit
       }
@@ -146,6 +148,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             designation: employee?.designation || '',
             status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
             department: employee?.department || '',
+            bloodGroup: employee?.bloodGroup || '',
         });
     }
     setOpen(isOpen);
@@ -314,6 +317,19 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                   <FormMessage />
                 </FormItem>
               )}
+            />
+            <FormField
+                control={form.control}
+                name="bloodGroup"
+                render={({ field }) => (
+                    <FormItem className="col-span-2 sm:col-span-1">
+                    <FormLabel>Blood Group</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g. A+" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
             />
             <FormField
               control={form.control}

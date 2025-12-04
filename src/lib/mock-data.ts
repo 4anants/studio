@@ -22,6 +22,7 @@ export type User = {
   designation?: string;
   status: 'active' | 'inactive' | 'pending' | 'deleted';
   department?: string;
+  bloodGroup?: string;
 };
 
 export const holidayLocations = ['ALL', 'AMD', 'HYD', 'US'] as const;
@@ -46,12 +47,13 @@ export type Announcement = {
 
 export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
 
-export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales'];
+export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales', 'Information & Technology'];
 
 export const users: User[] = [
-  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', personalEmail: 'alice.personal@email.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer' },
-  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', personalEmail: 'bob.personal@email.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager' },
-  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', personalEmail: 'charlie.personal@email.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer' },
+  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', personalEmail: 'alice.personal@email.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer', bloodGroup: 'O+' },
+  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', personalEmail: 'bob.personal@email.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager', bloodGroup: 'A-' },
+  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', personalEmail: 'charlie.personal@email.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer', bloodGroup: 'B+' },
+  { id: 'A-134', name: 'Anant Upenkumar Shah', email: 'anant.shah@company.com', personalEmail: 'anant.personal@email.com', avatar: '134', mobile: '123-456-7893', password: 'password123', dateOfBirth: '1995-02-20', joiningDate: '2022-08-01', status: 'active', department: 'Information & Technology', designation: 'IT Specialist', bloodGroup: 'A+' },
 ];
 
 export const documents: Document[] = [

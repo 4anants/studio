@@ -34,6 +34,7 @@ const formSchema = z.object({
   mobile: z.string().optional(),
   password: z.string().optional(),
   avatar: z.string().optional(), // Can be the existing seed or a new data URI
+  bloodGroup: z.string().optional(),
 });
 
 interface EmployeeSelfEditDialogProps {
@@ -55,6 +56,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
       mobile: employee?.mobile || '',
       password: '',
       avatar: employee?.avatar,
+      bloodGroup: employee?.bloodGroup || '',
     },
   });
 
@@ -117,6 +119,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
             mobile: employee?.mobile || '',
             password: '',
             avatar: employee?.avatar,
+            bloodGroup: employee?.bloodGroup || '',
         });
         setAvatarPreview(null);
     }
@@ -180,6 +183,19 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                   <FormLabel>Mobile No.</FormLabel>
                   <FormControl>
                     <Input placeholder="123-456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="bloodGroup"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Blood Group</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. A+" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

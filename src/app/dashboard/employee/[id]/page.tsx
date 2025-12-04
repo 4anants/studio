@@ -5,7 +5,7 @@ import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, IdCard } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, IdCard, Droplet } from 'lucide-react';
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
@@ -34,10 +34,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
-  // Use React.use() to correctly unwrap the promise-like params object
   const { id } = use(params);
 
-  const [user, setUser] = useState<UserType | undefined>(() => users.find(u => u.id === id));
+  const [user, setUser] = useState<UserType | undefined>(undefined);
   
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
   const [documentTypes, setDocumentTypes] = useState<string[]>(documentTypesList);
@@ -51,7 +50,6 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const isSelfView = role !== 'admin';
   
   useEffect(() => {
-    // This effect ensures the user state is updated if the id or users list changes.
     if (id) {
       const foundUser = users.find(u => u.id === id);
       setUser(foundUser);
@@ -81,11 +79,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
             updatedUsers[userIndex] = updatedUser;
             
-            // If the ID was changed (by admin), we need to update the URL
             if (employee.originalId && employee.id && employee.id !== employee.originalId) {
                 router.replace(`/dashboard/employee/${employee.id}?role=admin`);
             } else {
-                // Force re-render to reflect changes if ID hasn't changed
                 setUser(updatedUser);
             }
             return updatedUsers;
@@ -185,9 +181,6 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   }, [user]);
 
   if (!user) {
-    // This can happen briefly on first render if the user is not found immediately.
-    // Or if the user truly doesn't exist.
-    // A notFound() call could be placed in the effect if permanent.
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40 items-center justify-center">
             <p>Loading user or user not found...</p>
@@ -202,6 +195,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     { icon: Building, label: 'Department', value: user.department || 'N/A' },
     { icon: Award, label: 'Designation', value: user.designation || 'N/A' },
     { icon: Calendar, label: 'Date of Birth', value: user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A' },
+    { icon: Droplet, label: 'Blood Group', value: user.bloodGroup || 'N/A' },
     { icon: Briefcase, label: 'Joining Date', value: user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : 'N/A' },
     { icon: LogOut, label: 'Resignation Date', value: user.resignationDate ? new Date(user.resignationDate).toLocaleDateString() : 'N/A' },
     { icon: User, label: 'Status', value: user.status.charAt(0).toUpperCase() + user.status.slice(1) },
