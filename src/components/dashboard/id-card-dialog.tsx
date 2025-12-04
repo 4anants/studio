@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select';
-import { Printer, ZoomIn } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import type { User, CompanyName, LocationKey } from '@/lib/mock-data';
 import { companies, locations } from '@/lib/mock-data';
 import Image from 'next/image';
@@ -33,7 +33,7 @@ interface IdCardDialogProps {
 const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
         <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
-            <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
+             <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
                 <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
                 <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
                 <g transform="translate(32, 48) scale(0.5)">
@@ -102,7 +102,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
             }
           })
           .join('');
-        printWindow.document.write(`<style>${styles} @page { size: 54mm 86mm; margin: 0; } body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .id-card-print-area { box-shadow: none !important; border: none !important; }</style>`);
+        printWindow.document.write(`<style>${styles} @page { size: 54mm 86mm; margin: 0; } body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .id-card-print-area { box-shadow: none !important; border: none !important; transform: scale(1) !important; }</style>`);
         printWindow.document.write('</head><body>');
         printWindow.document.write('<div style="display:flex; justify-content:center; align-items:center; width:100vw; height:100vh;">');
         printWindow.document.write(printContent.outerHTML);
@@ -171,7 +171,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         </div>
 
         {/* Footer */}
-        <div className="text-white text-center text-[7px] p-2 leading-tight flex-shrink-0" style={{ backgroundColor: '#262626' }}>
+        <div className="text-white text-center text-[7px] p-2 leading-tight flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
           {selectedCompany && <p className="font-bold text-[8px]">{selectedCompany}</p>}
           {address && (
             <div className="text-[7px]">
@@ -235,14 +235,26 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                 </div>
                 
                 {/* Visible card for interaction */}
-                <CardComponent onClick={() => setIsZoomed(true)} />
+                <div className={cn(
+                    "transition-transform duration-300",
+                    isZoomed ? "scale-[2] z-50" : "scale-100"
+                )}
+                onClick={() => !isZoomed && setIsZoomed(true)}
+                >
+                    <CardComponent className={cn(isZoomed ? "cursor-zoom-out" : "cursor-zoom-in")} />
+                </div>
 
                 {isZoomed && (
                   <div 
-                    className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center cursor-zoom-out"
+                    className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center"
                     onClick={() => setIsZoomed(false)}
                   >
-                    <CardComponent className="cursor-default" onClick={(e) => e.stopPropagation()} />
+                     <div
+                        className="scale-[2] cursor-default"
+                        onClick={(e) => e.stopPropagation()}
+                     >
+                        <CardComponent />
+                     </div>
                   </div>
                 )}
             </div>
@@ -254,6 +266,4 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
-    
-
     
