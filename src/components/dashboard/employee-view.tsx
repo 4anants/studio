@@ -30,7 +30,6 @@ import {
   } from '@/components/ui/table'
 import { Calendar, Bell, Info, MailOpen, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
@@ -172,8 +171,6 @@ export function EmployeeView() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [holidays, holidayLocationFilter]);
 
-  const latestAnnouncement = useMemo(() => announcements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0], [announcements]);
-
   const sortedAnnouncements = useMemo(() => [...announcements].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [announcements]);
 
   const onTabChange = useCallback((value: string) => {
@@ -204,15 +201,7 @@ export function EmployeeView() {
         <UploadDialog onUploadComplete={handleUploadComplete} />
       </div>
       
-      {latestAnnouncement && (
-        <Alert className={cn(!latestAnnouncement.isRead && 'border-primary')}>
-            <Info className="h-4 w-4" />
-            <AlertTitle>{latestAnnouncement.title}</AlertTitle>
-            <AlertDescription>{latestAnnouncement.message}</AlertDescription>
-        </Alert>
-      )}
-
-       <Tabs value={activeTab} onValueChange={onTabChange}>
+       <Tabs value={activeTab} onValueChange={onTabChange} className="pt-4">
             <TabsList>
                 <TabsTrigger value="documents">My Documents</TabsTrigger>
                 <TabsTrigger value="holidays">Holiday List</TabsTrigger>
@@ -406,3 +395,4 @@ export function EmployeeView() {
   )
 }
  
+    
