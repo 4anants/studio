@@ -1,3 +1,4 @@
+
 'use client';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
@@ -48,7 +49,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     if (foundUser) {
       setUser(foundUser);
     } else {
-      notFound();
+      // In a real app, you might want to call notFound() here.
+      // For mock data, we'll just log an error.
+      console.error("User not found");
     }
   }, [params.id]);
   
@@ -326,3 +329,5 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     </div>
   )
 }
+
+    
