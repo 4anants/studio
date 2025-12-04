@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
@@ -52,6 +52,21 @@ export function EmployeeView() {
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
 
   const hasUnreadAnnouncements = useMemo(() => announcements.some(a => !a.isRead), [announcements]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const tabClicked = localStorage.getItem('announcements_tab_clicked');
+      if (tabClicked === 'true') {
+        setAnnouncements(prev => prev.map(a => ({ ...a, isRead: true })));
+        localStorage.removeItem('announcements_tab_clicked');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleUploadComplete = useCallback(() => {
     // In a real app, you would refetch the documents.
@@ -158,6 +173,11 @@ export function EmployeeView() {
     if (value === 'announcements') {
       setTimeout(() => {
         setAnnouncements(prev => prev.map(a => ({ ...a, isRead: true })));
+        // Tell other components (like the header bell) that we've read everything
+        localStorage.setItem('announcements_all_read', 'true');
+        const event = new Event('storage');
+        window.dispatchEvent(event);
+
       }, 200); // Small delay to allow tab to switch
     }
   }, []);
