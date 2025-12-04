@@ -23,6 +23,12 @@ export type User = {
   department?: string;
 };
 
+export type Holiday = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  name: string;
+};
+
 export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
 
 export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales'];
@@ -41,4 +47,10 @@ export const documents: Document[] = [
   { id: 'doc-5', name: 'June 2024 Payslip.pdf', type: 'Salary Slip', size: '248 KB', uploadDate: '2024-06-28', ownerId: 'user-2', fileType: 'pdf' },
   { id: 'doc-6', name: 'Performance Review Q2.docx', type: 'Appraisal Letter', size: '95 KB', uploadDate: '2024-07-01', ownerId: 'user-2', fileType: 'doc' },
   { id: 'doc-7', name: 'June 2024 Payslip.pdf', type: 'Salary Slip', size: '251 KB', uploadDate: '2024-06-28', ownerId: 'user-3', fileType: 'pdf' },
+];
+
+export const holidays: Holiday[] = [
+    { id: 'h-1', date: '2024-01-01', name: 'New Year\'s Day' },
+    { id: 'h-2', date: '2024-10-17', name: 'Diwali' },
+    { id: 'h-3', date: '2024-12-25', name: 'Christmas Day' },
 ];

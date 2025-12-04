@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
-import { documents as allDocuments, users as allUsers, documentTypesList } from '@/lib/mock-data'
+import { documents as allDocuments, users as allUsers, documentTypesList, holidays as initialHolidays } from '@/lib/mock-data'
 import type { Document } from '@/lib/mock-data'
 import { Button } from '../ui/button'
 import {
@@ -14,6 +14,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from '@/components/ui/table'
+import { Calendar } from 'lucide-react'
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
@@ -26,6 +41,7 @@ export function EmployeeView() {
   const [userDocuments, setUserDocuments] = useState(
     allDocuments.filter((doc) => doc.ownerId === currentUserId)
   )
+  const [holidays] = useState(initialHolidays);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -122,84 +138,131 @@ export function EmployeeView() {
     }
     return sortableItems;
   }, [filteredDocuments, sortConfig]);
+  
+  const sortedHolidays = useMemo(() => {
+      return [...holidays].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [holidays]);
 
   return (
     <>
       <div className="flex items-center justify-between">
         <div className="grid gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">My Documents</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Employee Dashboard</h1>
             <p className="text-muted-foreground">Access and manage your personal and company documents.</p>
         </div>
         <UploadDialog onUploadComplete={handleUploadComplete} />
       </div>
+      
+       <Tabs defaultValue="documents">
+            <TabsList>
+                <TabsTrigger value="documents">My Documents</TabsTrigger>
+                <TabsTrigger value="holidays">Holiday List</TabsTrigger>
+            </TabsList>
+            <TabsContent value="documents">
+                <Card className="mb-4">
+                    <CardHeader>
+                        <CardTitle>Filter by</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <label className="text-sm font-medium">Document Type</label>
+                            <div className="flex flex-wrap items-center gap-2 pt-2">
+                                <Button
+                                    variant={selectedTypes.includes('All') ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => handleTypeSelection('All')}
+                                >
+                                    All
+                                </Button>
+                                {documentTypesList.map(type => (
+                                    <Button
+                                        key={type}
+                                        variant={selectedTypes.includes(type) ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => handleTypeSelection(type)}
+                                    >
+                                        {type}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <div className="flex-grow min-w-[120px]">
+                                <label className="text-sm font-medium">Year</label>
+                                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                    <SelectTrigger className="w-full mt-1">
+                                        <SelectValue placeholder="Select Year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Years</SelectItem>
+                                        {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex-grow min-w-[120px]">
+                                  <label className="text-sm font-medium">Month</label>
+                                  <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
+                                    <SelectTrigger className="w-full mt-1">
+                                        <SelectValue placeholder="Select Month" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Months</SelectItem>
+                                        {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-       <Card className="mb-4">
-          <CardHeader>
-              <CardTitle>Filter by</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-               <div>
-                  <label className="text-sm font-medium">Document Type</label>
-                  <div className="flex flex-wrap items-center gap-2 pt-2">
-                      <Button
-                          variant={selectedTypes.includes('All') ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleTypeSelection('All')}
-                      >
-                          All
-                      </Button>
-                      {documentTypesList.map(type => (
-                          <Button
-                              key={type}
-                              variant={selectedTypes.includes(type) ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => handleTypeSelection(type)}
-                          >
-                              {type}
-                          </Button>
-                      ))}
-                  </div>
-              </div>
-               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                  <div className="flex-grow min-w-[120px]">
-                      <label className="text-sm font-medium">Year</label>
-                      <Select value={selectedYear} onValueChange={setSelectedYear}>
-                          <SelectTrigger className="w-full mt-1">
-                              <SelectValue placeholder="Select Year" />
-                          </SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="all">All Years</SelectItem>
-                              {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                          </SelectContent>
-                      </Select>
-                  </div>
-                  <div className="flex-grow min-w-[120px]">
-                        <label className="text-sm font-medium">Month</label>
-                        <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
-                          <SelectTrigger className="w-full mt-1">
-                              <SelectValue placeholder="Select Month" />
-                          </SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="all">All Months</SelectItem>
-                              {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
-                          </SelectContent>
-                      </Select>
-                  </div>
-              </div>
-          </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Files</CardTitle>
-          <CardDescription>
-            Here are all documents associated with your account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DocumentList documents={sortedAndFilteredDocuments} users={allUsers} onSort={requestSort} sortConfig={sortConfig} />
-        </CardContent>
-      </Card>
+                <Card>
+                    <CardHeader>
+                    <CardTitle>Your Files</CardTitle>
+                    <CardDescription>
+                        Here are all documents associated with your account.
+                    </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    <DocumentList documents={sortedAndFilteredDocuments} users={allUsers} onSort={requestSort} sortConfig={sortConfig} />
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="holidays">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Holiday List</CardTitle>
+                        <CardDescription>Upcoming company holidays for the year.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Holiday Name</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {sortedHolidays.length > 0 ? sortedHolidays.map(holiday => (
+                                <TableRow key={holiday.id}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                                            {new Date(holiday.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{holiday.name}</TableCell>
+                                </TableRow>
+                           )) : (
+                                <TableRow>
+                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No holidays found.</TableCell>
+                                </TableRow>
+                           )}
+                        </TableBody>
+                    </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+      </Tabs>
     </>
   )
 }
