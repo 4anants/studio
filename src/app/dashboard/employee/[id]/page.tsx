@@ -5,7 +5,7 @@ import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, IdCard } from 'lucide-react';
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
@@ -22,6 +22,7 @@ import {
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
+import { IdCardDialog } from '@/components/dashboard/id-card-dialog';
 
 type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
@@ -264,6 +265,13 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                                     </li>
                                 ))}
                             </ul>
+                             <Separator className="my-4" />
+                             <IdCardDialog user={user}>
+                                <Button variant="outline" className="w-full">
+                                    <IdCard className="mr-2 h-4 w-4" />
+                                    Generate ID Card
+                                </Button>
+                            </IdCardDialog>
                         </CardContent>
                     </Card>
                 </div>
