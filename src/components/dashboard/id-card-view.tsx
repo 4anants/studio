@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -66,13 +67,11 @@ export function IdCardView({ user }: IdCardViewProps) {
 
   const [selectedCompany, setSelectedCompany] = useState<CompanyName | undefined>(user.company);
   const [selectedLocation, setSelectedLocation] = useState<LocationKey | undefined>(user.location);
-  const [position, setPosition] = useState([0]);
   
   useEffect(() => {
     setSelectedCompany(user.company);
     setSelectedLocation(user.location);
     setIsZoomed(false);
-    setPosition([0]);
   }, [user.company, user.location]);
 
   const handlePrint = () => {
@@ -136,7 +135,9 @@ export function IdCardView({ user }: IdCardViewProps) {
 
   const { line1: addressLine1, line2: addressLine2 } = getAddressLines(selectedLocation);
 
-  const CardComponent = ({ className, positionX = 0 }: { className?: string; positionX?: number }) => (
+  const positionX = 10;
+
+  const CardComponent = ({ className }: { className?: string; }) => (
     <div
       className={cn(
         "id-card-print-area bg-white shadow-lg overflow-hidden",
@@ -179,9 +180,9 @@ export function IdCardView({ user }: IdCardViewProps) {
           </div>
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-[10px] mb-1.5">{companyDetails.name}</p>}
+            {companyDetails && <p className="font-bold text-xs mb-1">{companyDetails.name}</p>}
             {addressLine1 && (
-                <div className="text-[8px] leading-[1.6] space-y-px">
+                <div className="text-[8px] leading-tight space-y-0.5">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
                 </div>
@@ -220,18 +221,7 @@ export function IdCardView({ user }: IdCardViewProps) {
                         </Select>
                     </div>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="position">Horizontal Position</Label>
-                    <Slider
-                    id="position"
-                    min={-20}
-                    max={20}
-                    step={1}
-                    value={position}
-                    onValueChange={setPosition}
-                    />
-                </div>
-                <div className="flex justify-center mt-4">
+                <div className="flex justify-center mt-4 pt-8">
                     <Button onClick={handlePrint} className="w-full" disabled={!selectedCompany || !selectedLocation}>
                         <Printer className="mr-2 h-4 w-4" />
                         Print ID Card
@@ -245,13 +235,13 @@ export function IdCardView({ user }: IdCardViewProps) {
             {/* Hidden card for printing */}
             <div className="absolute opacity-0 pointer-events-none -z-10" aria-hidden>
                 <div ref={cardRef}>
-                    <CardComponent positionX={position[0]} />
+                    <CardComponent />
                 </div>
             </div>
             
             {/* Visible card for interaction */}
             <div className="cursor-zoom-in" onClick={() => setIsZoomed(true)}>
-                <CardComponent positionX={position[0]}/>
+                <CardComponent />
             </div>
         </div>
 
@@ -264,10 +254,12 @@ export function IdCardView({ user }: IdCardViewProps) {
                     className="scale-[2.5] cursor-default"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <CardComponent positionX={position[0]}/>
+                    <CardComponent />
                 </div>
             </div>
         )}
     </div>
   );
 }
+
+    
