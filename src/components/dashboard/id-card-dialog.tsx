@@ -164,7 +164,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           {LogoComponent && <LogoComponent />}
         </div>
         <div
-          className="flex-grow flex items-center pr-1 relative"
+          className="flex-grow flex items-center pr-8 relative"
           style={{ transform: `translateX(${positionX}px)` }}
         >
           <div className="w-2/5 flex-shrink-0 flex justify-center pl-1">
@@ -182,7 +182,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
               className="flex flex-col justify-center items-center text-center whitespace-nowrap origin-center"
               style={{ transform: 'rotate(-90deg)' }}
             >
-              <p className="font-bold text-base leading-tight" style={{ color: '#009966' }}>{user.name}</p>
+              <p className="font-bold text-lg leading-tight" style={{ color: '#009966' }}>{user.name}</p>
               <p className="text-xs leading-tight mt-1">{user.designation || 'N/A'}</p>
               <p className="text-xs leading-tight">Employee Code : {user.id}</p>
               <p className="text-xs leading-tight">Blood Group : <span className="font-bold">{user.bloodGroup || 'N/A'}</span></p>
@@ -190,9 +190,13 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           </div>
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-          {companyDetails && <p className="font-bold text-xs mb-1">{companyDetails.name}</p>}
+          {companyDetails && (
+              <p className="font-bold text-xs mb-1.5 break-words">
+                  {companyDetails.name}
+              </p>
+          )}
           {addressLine1 && (
-            <div className="text-[8px] leading-tight space-y-0.5">
+            <div className="text-[8px] leading-tight space-y-1">
               <p>{addressLine1}</p>
               <p>{addressLine2}</p>
             </div>
@@ -237,6 +241,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                         </Select>
                     </div>
                 </div>
+
                 <div className="flex justify-center mt-4 pt-8">
                     <Button onClick={handlePrint} className="w-full" disabled={!selectedCompany || !selectedLocation}>
                         <Printer className="mr-2 h-4 w-4" />
@@ -279,5 +284,3 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
-
-    
