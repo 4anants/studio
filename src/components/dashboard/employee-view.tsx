@@ -4,8 +4,9 @@ import { useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
-import { documents as allDocuments, users as allUsers } from '@/lib/mock-data'
+import { documents as allDocuments, users as allUsers, documentTypesList } from '@/lib/mock-data'
 import type { Document } from '@/lib/mock-data'
+import { Button } from '../ui/button'
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
@@ -17,6 +18,7 @@ export function EmployeeView() {
     allDocuments.filter((doc) => doc.ownerId === currentUserId)
   )
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
 
 
   const handleUploadComplete = useCallback(() => {
@@ -43,9 +45,33 @@ export function EmployeeView() {
       return { key, direction };
     });
   }, []);
+  
+  const handleTypeSelection = useCallback((type: string) => {
+    setSelectedTypes(prevTypes => {
+      if (type === 'All') {
+        return ['All'];
+      }
+      
+      const newTypes = prevTypes.filter(t => t !== 'All');
 
-  const sortedDocuments = useMemo(() => {
-    let sortableItems = [...userDocuments];
+      if (newTypes.includes(type)) {
+        const filteredTypes = newTypes.filter(t => t !== type);
+        return filteredTypes.length === 0 ? ['All'] : filteredTypes;
+      } else {
+        return [...newTypes, type];
+      }
+    });
+  }, []);
+
+  const filteredDocuments = useMemo(() => {
+    return userDocuments.filter(doc => {
+      const typeMatch = selectedTypes.includes('All') || selectedTypes.includes(doc.type);
+      return typeMatch;
+    });
+  }, [userDocuments, selectedTypes]);
+
+  const sortedAndFilteredDocuments = useMemo(() => {
+    let sortableItems = [...filteredDocuments];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         const aValue = a[sortConfig.key];
@@ -61,7 +87,7 @@ export function EmployeeView() {
       });
     }
     return sortableItems;
-  }, [userDocuments, sortConfig]);
+  }, [filteredDocuments, sortConfig]);
 
   return (
     <>
@@ -72,6 +98,32 @@ export function EmployeeView() {
         </div>
         <UploadDialog onUploadComplete={handleUploadComplete} />
       </div>
+
+       <Card className="mb-4">
+          <CardHeader>
+              <CardTitle>Filter by Document Type</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2">
+              <Button
+                  variant={selectedTypes.includes('All') ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleTypeSelection('All')}
+              >
+                  All
+              </Button>
+              {documentTypesList.map(type => (
+                  <Button
+                      key={type}
+                      variant={selectedTypes.includes(type) ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleTypeSelection(type)}
+                  >
+                      {type}
+                  </Button>
+              ))}
+          </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Your Files</CardTitle>
@@ -80,7 +132,7 @@ export function EmployeeView() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DocumentList documents={sortedDocuments} users={allUsers} onSort={requestSort} sortConfig={sortConfig} />
+          <DocumentList documents={sortedAndFilteredDocuments} users={allUsers} onSort={requestSort} sortConfig={sortConfig} />
         </CardContent>
       </Card>
     </>
