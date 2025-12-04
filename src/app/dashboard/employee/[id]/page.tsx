@@ -1,5 +1,4 @@
 
-
 'use client';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
@@ -9,7 +8,7 @@ import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Buildin
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, use } from 'react';
 import { Separator } from '@/components/ui/separator';
 import type { User as UserType, Document } from '@/lib/mock-data';
 import {
@@ -45,13 +44,14 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   
   const role = searchParams.get('role');
   const isSelfView = role !== 'admin';
+  const { id } = params;
   
   useEffect(() => {
-    if (params.id) {
-      const foundUser = users.find(u => u.id === params.id);
+    if (id) {
+      const foundUser = users.find(u => u.id === id);
       setUser(foundUser);
     }
-  }, [params.id, users]);
+  }, [id, users]);
   
   useEffect(() => {
       if (user) {
@@ -62,7 +62,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
   const handleEmployeeSave = useCallback((employee: Partial<UserType> & { originalId?: string }) => {
     setUsers(currentUsers => {
-        const userIndex = currentUsers.findIndex(u => u.id === (employee.originalId || params.id));
+        const userIndex = currentUsers.findIndex(u => u.id === (employee.originalId || id));
         if (userIndex > -1) {
             const updatedUsers = [...currentUsers];
             const existingUser = updatedUsers[userIndex];
@@ -85,7 +85,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
         }
         return currentUsers;
     });
-  }, [router, params.id]);
+  }, [router, id]);
 
   const handleTypeSelection = useCallback((type: string) => {
     setSelectedTypes(prevTypes => {
@@ -334,3 +334,5 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     </div>
   )
 }
+
+    
