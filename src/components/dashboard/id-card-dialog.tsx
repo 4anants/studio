@@ -169,30 +169,32 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                     style={{ fontFamily: "'Segoe UI', sans-serif" }}
                 >
                     {/* Header */}
-                    <div className="flex flex-col items-center pt-4 px-4">
+                    <div className="flex flex-col items-center justify-center pt-4 px-4 h-[90px]">
                        {LogoComponent && <LogoComponent />}
                     </div>
 
                     {/* Body */}
-                    <div className="flex-grow grid grid-cols-2 gap-2 p-2">
-                        <div className="flex flex-col items-center justify-center text-center">
-                            <p className="font-bold text-lg leading-tight text-gray-800">{user.name}</p>
-                            <p className="text-xs text-gray-600 mt-1">{user.designation || 'N/A'}</p>
-                            <div className="text-xs text-gray-600 mt-2 space-y-1">
-                                <p>Emp Code: {user.id}</p>
-                                <p>Blood Group: <span className="font-bold text-red-600">{user.bloodGroup || 'N/A'}</span></p>
-                            </div>
-                        </div>
+                     <div className="flex-grow grid grid-cols-2 gap-2 p-4">
                         <div className="flex items-center justify-center">
                             <Image
                                 src={`https://picsum.photos/seed/${user.avatar}/200/200`}
                                 width={120}
-                                height={145}
+                                height={150}
                                 className="rounded-md border-2 border-gray-300 object-cover"
                                 style={{ aspectRatio: '4/5' }}
                                 alt={user.name}
                                 data-ai-hint="person passport"
                             />
+                        </div>
+                        <div className="flex items-center justify-center">
+                            <div className="flex flex-col items-center justify-center text-center -rotate-90 whitespace-nowrap">
+                                <p className="font-bold text-lg leading-tight text-gray-800">{user.name}</p>
+                                <p className="text-xs text-gray-600 mt-1">{user.designation || 'N/A'}</p>
+                                <div className="text-xs text-gray-600 mt-2">
+                                    <p>Emp Code: {user.id}</p>
+                                    <p>Blood Group: <span className="font-bold text-red-600">{user.bloodGroup || 'N/A'}</span></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
