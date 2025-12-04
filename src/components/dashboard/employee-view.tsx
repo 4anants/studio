@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
-import { documents as allDocuments, users as allUsers, documentTypesList, holidays as initialHolidays, HolidayLocation, holidayLocations } from '@/lib/mock-data'
+import { documents as allDocuments, users as allUsers, documentTypesList, holidays as initialHolidays, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
 import type { Document } from '@/lib/mock-data'
 import { Button } from '../ui/button'
 import {
@@ -28,8 +28,9 @@ import {
     TableHeader,
     TableRow,
   } from '@/components/ui/table'
-import { Calendar } from 'lucide-react'
+import { Calendar, Megaphone, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
@@ -43,6 +44,7 @@ export function EmployeeView() {
     allDocuments.filter((doc) => doc.ownerId === currentUserId)
   )
   const [holidays] = useState(initialHolidays);
+  const [announcements] = useState(initialAnnouncements.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -147,6 +149,8 @@ export function EmployeeView() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [holidays, holidayLocationFilter]);
 
+  const latestAnnouncement = announcements[0];
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -157,10 +161,19 @@ export function EmployeeView() {
         <UploadDialog onUploadComplete={handleUploadComplete} />
       </div>
       
+      {latestAnnouncement && (
+        <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>{latestAnnouncement.title}</AlertTitle>
+            <AlertDescription>{latestAnnouncement.message}</AlertDescription>
+        </Alert>
+      )}
+
        <Tabs defaultValue="documents">
             <TabsList>
                 <TabsTrigger value="documents">My Documents</TabsTrigger>
                 <TabsTrigger value="holidays">Holiday List</TabsTrigger>
+                <TabsTrigger value="announcements">Announcements</TabsTrigger>
             </TabsList>
             <TabsContent value="documents">
                 <Card className="mb-4">
@@ -294,6 +307,32 @@ export function EmployeeView() {
                            )}
                         </TableBody>
                     </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="announcements">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Company Announcements</CardTitle>
+                        <CardDescription>Stay up to date with the latest news and updates.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {announcements.length > 0 ? announcements.map(announcement => (
+                            <div key={announcement.id} className="p-4 border rounded-lg">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <Megaphone className="h-5 w-5 text-primary" />
+                                    {announcement.title}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Posted on {new Date(announcement.date).toLocaleString()} by {announcement.author}
+                                </p>
+                                <p className="mt-2 text-sm">{announcement.message}</p>
+                            </div>
+                        )) : (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>No announcements right now.</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </TabsContent>

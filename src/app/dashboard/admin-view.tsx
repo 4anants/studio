@@ -9,8 +9,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus } from 'lucide-react'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Megaphone } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -54,6 +54,8 @@ import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-
 import { AddDepartmentDialog } from '@/components/dashboard/add-department-dialog'
 import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department-dialog'
 import { AddHolidayDialog } from '@/components/dashboard/add-holiday-dialog'
+import { AddAnnouncementDialog } from '@/components/dashboard/add-announcement-dialog'
+import { DeleteAnnouncementDialog } from '@/components/dashboard/delete-announcement-dialog'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -61,6 +63,7 @@ export function AdminView() {
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
   const [departments, setDepartments] = useState(initialDepartments);
   const [holidays, setHolidays] = useState(initialHolidays);
+  const [announcements, setAnnouncements] = useState(initialAnnouncements);
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
@@ -220,6 +223,29 @@ export function AdminView() {
     });
   }, [toast]);
 
+  const handleAddAnnouncement = useCallback((announcement: { title: string, message: string }) => {
+    const newAnnouncement: Announcement = {
+      id: `anno-${Date.now()}`,
+      title: announcement.title,
+      message: announcement.message,
+      date: new Date().toISOString(),
+      author: 'Admin',
+    };
+    setAnnouncements(prev => [newAnnouncement, ...prev]);
+    toast({
+      title: 'Announcement Published',
+      description: 'A notification has been sent to all employees.',
+    });
+  }, [toast]);
+
+  const handleDeleteAnnouncement = useCallback((announcementId: string) => {
+    setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+    toast({
+      title: 'Announcement Deleted',
+      description: 'The announcement has been removed.',
+    });
+  }, [toast]);
+
   const activeUsers = useMemo(() => users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending'), [users]);
   const deletedUsers = useMemo(() => users.filter(user => user.status === 'deleted'), [users]);
 
@@ -273,6 +299,13 @@ export function AdminView() {
     ).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }, [holidays, searchTerm, holidayLocationFilter]);
   
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter(announcement =>
+        announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        announcement.message.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [announcements, searchTerm]);
+
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
   const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
@@ -363,6 +396,7 @@ export function AdminView() {
                 <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                 <TabsTrigger value="departments">Departments</TabsTrigger>
                 <TabsTrigger value="holidays">Holidays</TabsTrigger>
+                <TabsTrigger value="announcements">Announcements</TabsTrigger>
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
@@ -375,6 +409,7 @@ export function AdminView() {
                             : activeTab === 'doc-types' ? 'Search document types...'
                             : activeTab === 'departments' ? 'Search departments...'
                             : activeTab === 'holidays' ? 'Search holidays...'
+                            : activeTab === 'announcements' ? 'Search announcements...'
                             : 'Search users...'
                         }
                         className="w-full sm:w-[300px] pl-8"
@@ -698,6 +733,53 @@ export function AdminView() {
                            )) : (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center text-muted-foreground">No holidays found.</TableCell>
+                                </TableRow>
+                           )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="announcements">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Manage Announcements</CardTitle>
+                        <CardDescription>Create and publish announcements for all employees.</CardDescription>
+                    </div>
+                     <AddAnnouncementDialog onAdd={handleAddAnnouncement}>
+                        <Button variant="outline">
+                            <Megaphone className="mr-2 h-4 w-4" /> New Announcement
+                        </Button>
+                    </AddAnnouncementDialog>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Title</TableHead>
+                                <TableHead className="hidden md:table-cell">Message</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => (
+                                <TableRow key={announcement.id}>
+                                    <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                    <TableCell>{announcement.title}</TableCell>
+                                    <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)}>
+                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </DeleteAnnouncementDialog>
+                                    </TableCell>
+                                </TableRow>
+                           )) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No announcements found.</TableCell>
                                 </TableRow>
                            )}
                         </TableBody>

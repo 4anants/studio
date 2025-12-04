@@ -33,6 +33,15 @@ export type Holiday = {
   location: HolidayLocation;
 };
 
+export type Announcement = {
+  id: string;
+  title: string;
+  message: string;
+  date: string; // ISO 8601 format
+  author: string;
+};
+
+
 export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
 
 export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales'];
@@ -59,4 +68,9 @@ export const holidays: Holiday[] = [
     { id: 'h-4', date: '2024-10-17', name: 'Diwali', location: 'HYD' },
     { id: 'h-5', date: '2024-11-28', name: 'Thanksgiving Day', location: 'US' },
     { id: 'h-3', date: '2024-12-25', name: 'Christmas Day', location: 'ALL' },
+];
+
+export const announcements: Announcement[] = [
+  { id: 'anno-1', title: 'System Maintenance Scheduled', message: 'The internal portal will be down for scheduled maintenance on Sunday from 2:00 AM to 4:00 AM. We apologize for any inconvenience.', date: '2024-07-25T10:00:00Z', author: 'Admin' },
+  { id: 'anno-2', title: 'Welcome New Team Members!', message: 'Please join us in welcoming our new software engineers, David and Fiona, who are joining the Engineering team this week!', date: '2024-07-22T14:30:00Z', author: 'Admin' },
 ];
