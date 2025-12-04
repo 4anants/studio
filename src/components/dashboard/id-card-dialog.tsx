@@ -120,25 +120,46 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   
   const LogoComponent = selectedCompany ? companyLogos[selectedCompany] : null;
   const companyDetails = selectedCompany ? companies.find(c => c.name === selectedCompany) : null;
-  const address = selectedLocation ? locations[selectedLocation] : '';
+  
+  const getAddressLines = (locationKey?: LocationKey) => {
+    if (!locationKey) return { line1: '', line2: '' };
+    
+    const fullAddress = locations[locationKey];
+    if (locationKey === 'AMD') {
+        return {
+            line1: 'B-813, K P Epitome, Near Makarba Lake,',
+            line2: 'Makarba, Ahmedabad - 380051.'
+        }
+    }
+     if (locationKey === 'HYD') {
+        return {
+            line1: '8-1-305/306, 4th Floor, Anand Silicon Chip,',
+            line2: 'Shaikpet, Hyderabad - 500008.'
+        }
+    }
+    // Fallback for other locations
+    const parts = fullAddress.split(', ');
+    const midpoint = Math.ceil(parts.length / 2);
+    return {
+      line1: parts.slice(0, midpoint).join(', '),
+      line2: parts.slice(midpoint).join(', ')
+    };
+  }
 
-  const addressParts = address.split(', ');
-  const addressLine1 = addressParts.slice(0, 2).join(', ');
-  const addressLine2 = addressParts.slice(2).join(', ');
+  const { line1: addressLine1, line2: addressLine2 } = getAddressLines(selectedLocation);
 
-  const CardComponent = ({ isForPrint = false, ...props }: { isForPrint?: boolean } & React.HTMLAttributes<HTMLDivElement>) => (
+  const CardComponent = ({ isForPrint = false, className }: { isForPrint?: boolean, className?: string }) => (
     <div
       ref={isForPrint ? cardRef : null}
       className={cn(
         "id-card-print-area bg-white shadow-lg overflow-hidden",
-        props.className
+        className
       )}
       style={{
         width: '204px',
         height: '324px',
         fontFamily: "'Segoe UI', sans-serif",
       }}
-      {...props}
     >
       <div className="flex flex-col h-full">
         <div className="flex flex-col items-center justify-center pt-3 px-2 flex-shrink-0">
@@ -168,8 +189,8 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           </div>
         </div>
         <div className="text-white text-center text-[7px] p-2 leading-tight flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-[10px]">{companyDetails.name}</p>}
-            {address && (
+            {companyDetails && <p className="font-bold text-[10px] mb-0.5">{companyDetails.name}</p>}
+            {addressLine1 && (
                 <div className="text-[7px]">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
@@ -257,4 +278,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
+    
+
     
