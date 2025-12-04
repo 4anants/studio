@@ -37,19 +37,21 @@ export function AnnouncementBell() {
 
   // For employee-view to tell the header bell to clear its notification
   const handleClick = () => {
-     // This is a simple way to communicate between components without a complex state manager.
-     // It tells other parts of the app that the announcements have been seen.
-    localStorage.setItem('announcements_tab_clicked', 'true');
-    const event = new Event('storage');
-    window.dispatchEvent(event);
+    // Programmatically find and click the 'Announcements' tab trigger
+    const tabTrigger = document.querySelector('button[role="tab"][value="announcements"]');
+    if (tabTrigger instanceof HTMLElement) {
+      tabTrigger.click();
+      tabTrigger.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
     
     // Also update local state immediately
     setAnnouncements(prev => prev.map(a => ({...a, isRead: true})))
 
-    // Scroll to announcements tab if it exists
-    const tabTrigger = document.querySelector('button[role="tab"][value="announcements"]');
-    tabTrigger?.scrollIntoView({ behavior: 'smooth' });
-    (tabTrigger as HTMLElement)?.click();
+    // This is a simple way to communicate between components without a complex state manager.
+    // It tells other parts of the app that the announcements have been seen.
+    localStorage.setItem('announcements_tab_clicked', 'true');
+    const event = new Event('storage');
+    window.dispatchEvent(event);
   };
 
   return (
