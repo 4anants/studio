@@ -13,13 +13,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { UploadCloud, FileCheck2, Loader2 } from 'lucide-react'
 
@@ -29,8 +22,10 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [fileName, setFileName] = useState('');
 
   const handleUpload = async () => {
+    if (!fileName) return;
     setIsUploading(true)
     setIsComplete(false)
     setUploadProgress(0)
@@ -65,11 +60,23 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
     setTimeout(() => {
         setIsComplete(false)
         setUploadProgress(0)
+        setFileName('')
     }, 500)
   }
 
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+        // Reset state when closing
+        setIsUploading(false);
+        setIsComplete(false);
+        setUploadProgress(0);
+        setFileName('');
+    }
+    setOpen(isOpen);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <UploadCloud className="mr-2 h-4 w-4" />
@@ -80,7 +87,7 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
         <DialogHeader>
           <DialogTitle>Upload a new document</DialogTitle>
           <DialogDescription>
-            Choose a file and select its type. Click upload when you're ready.
+            Choose a file to upload. It will be saved as a "Personal" document.
           </DialogDescription>
         </DialogHeader>
         {isUploading || isComplete ? (
@@ -103,25 +110,15 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
             <div className="grid gap-4 py-4">
               <div className="grid w-full max-w-sm items-center gap-1.5">
                 <Label htmlFor="document">Document</Label>
-                <Input id="document" type="file" />
+                <Input id="document" type="file" onChange={(e) => setFileName(e.target.files?.[0]?.name || '')} />
               </div>
               <div className="grid w-full max-w-sm items-center gap-1.5">
                 <Label htmlFor="doc-type">Document Type</Label>
-                <Select>
-                  <SelectTrigger id="doc-type">
-                    <SelectValue placeholder="Select a type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="salary">Salary Slip</SelectItem>
-                    <SelectItem value="medical">Medical Report</SelectItem>
-                    <SelectItem value="appraisal">Appraisal Letter</SelectItem>
-                    <SelectItem value="personal">Personal Document</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input id="doc-type" type="text" value="Personal" disabled readOnly />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" onClick={handleUpload}>
+              <Button type="button" onClick={handleUpload} disabled={!fileName}>
                 Upload
               </Button>
             </DialogFooter>
