@@ -124,7 +124,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   const getAddressLines = (locationKey?: LocationKey) => {
     if (!locationKey) return { line1: '', line2: '' };
     
-    const fullAddress = locations[locationKey];
     if (locationKey === 'AMD') {
         return {
             line1: 'B-813, K P Epitome, Near Makarba Lake,',
@@ -138,6 +137,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         }
     }
     // Fallback for other locations
+    const fullAddress = locations[locationKey];
     const parts = fullAddress.split(', ');
     const midpoint = Math.ceil(parts.length / 2);
     return {
@@ -148,9 +148,8 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
 
   const { line1: addressLine1, line2: addressLine2 } = getAddressLines(selectedLocation);
 
-  const CardComponent = ({ isForPrint = false, className }: { isForPrint?: boolean, className?: string }) => (
+  const CardComponent = ({ className }: { className?: string }) => (
     <div
-      ref={isForPrint ? cardRef : null}
       className={cn(
         "id-card-print-area bg-white shadow-lg overflow-hidden",
         className
@@ -188,10 +187,10 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
             </div>
           </div>
         </div>
-        <div className="text-white text-center text-[7px] p-2 leading-tight flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-[10px] mb-0.5">{companyDetails.name}</p>}
+        <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
+            {companyDetails && <p className="font-bold text-base mb-0.5">{companyDetails.name}</p>}
             {addressLine1 && (
-                <div className="text-[7px]">
+                <div className="text-[7px] leading-tight space-y-0">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
                 </div>
@@ -248,7 +247,9 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
             <div className="flex justify-center items-center p-4 bg-gray-100 rounded-lg relative min-h-[360px]">
                 {/* Hidden card for printing */}
                 <div className="absolute opacity-0 pointer-events-none -z-10" aria-hidden>
-                    <CardComponent isForPrint={true} />
+                    <div ref={cardRef}>
+                        <CardComponent />
+                    </div>
                 </div>
                 
                 {/* Visible card for interaction */}
