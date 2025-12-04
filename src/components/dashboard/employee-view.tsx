@@ -50,6 +50,7 @@ export function EmployeeView() {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
+  const [activeTab, setActiveTab] = useState('documents');
 
   const hasUnreadAnnouncements = useMemo(() => announcements.some(a => !a.isRead), [announcements]);
 
@@ -62,9 +63,15 @@ export function EmployeeView() {
       }
     };
 
+    const handleViewAnnouncements = () => {
+      setActiveTab('announcements');
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('view-announcements', handleViewAnnouncements);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('view-announcements', handleViewAnnouncements);
     };
   }, []);
 
@@ -170,6 +177,7 @@ export function EmployeeView() {
   const sortedAnnouncements = useMemo(() => [...announcements].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [announcements]);
 
   const onTabChange = useCallback((value: string) => {
+    setActiveTab(value);
     if (value === 'announcements') {
       setTimeout(() => {
         setAnnouncements(prev => prev.map(a => ({ ...a, isRead: true })));
@@ -200,7 +208,7 @@ export function EmployeeView() {
         </Alert>
       )}
 
-       <Tabs defaultValue="documents" onValueChange={onTabChange}>
+       <Tabs value={activeTab} onValueChange={onTabChange}>
             <TabsList>
                 <TabsTrigger value="documents">My Documents</TabsTrigger>
                 <TabsTrigger value="holidays">Holiday List</TabsTrigger>

@@ -18,8 +18,6 @@ export function AnnouncementBell() {
   
   const hasUnreadAnnouncements = useMemo(() => announcements.some(a => !a.isRead), [announcements])
 
-  // A simple way to sync state if another component marks items as read.
-  // This is a basic example; a more robust solution would use a global event bus or state manager.
   useEffect(() => {
     const handleStorageChange = () => {
       const allRead = localStorage.getItem('announcements_all_read');
@@ -35,23 +33,12 @@ export function AnnouncementBell() {
     };
   }, []);
 
-  // For employee-view to tell the header bell to clear its notification
   const handleClick = () => {
-    // Programmatically find and click the 'Announcements' tab trigger
-    const tabTrigger = document.querySelector('button[role="tab"][value="announcements"]');
-    if (tabTrigger instanceof HTMLElement) {
-      tabTrigger.click();
-      tabTrigger.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    // Dispatch a custom event that the dashboard views can listen for.
+    window.dispatchEvent(new CustomEvent('view-announcements'));
     
-    // Also update local state immediately
-    setAnnouncements(prev => prev.map(a => ({...a, isRead: true})))
-
-    // This is a simple way to communicate between components without a complex state manager.
-    // It tells other parts of the app that the announcements have been seen.
-    localStorage.setItem('announcements_tab_clicked', 'true');
-    const event = new Event('storage');
-    window.dispatchEvent(event);
+    // Also update local state immediately for the bell icon
+    setAnnouncements(prev => prev.map(a => ({...a, isRead: true})));
   };
 
   return (

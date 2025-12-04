@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -73,6 +73,16 @@ export function AdminView() {
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    const handleViewAnnouncements = () => {
+      setActiveTab('announcements');
+    };
+    window.addEventListener('view-announcements', handleViewAnnouncements);
+    return () => {
+      window.removeEventListener('view-announcements', handleViewAnnouncements);
+    };
+  }, []);
 
   const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
     const fullNewDocs: Document[] = newDocs.map(d => ({
@@ -389,7 +399,7 @@ export function AdminView() {
         </div>
       </div>
       
-      <Tabs defaultValue={activeTab} onValueChange={onTabChange}>
+      <Tabs value={activeTab} onValueChange={onTabChange}>
         <div className="flex items-center mb-4">
             <TabsList>
                 <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
