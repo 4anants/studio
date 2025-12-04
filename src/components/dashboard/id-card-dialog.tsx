@@ -119,6 +119,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   };
   
   const LogoComponent = selectedCompany ? companyLogos[selectedCompany] : null;
+  const companyDetails = selectedCompany ? companies.find(c => c.name === selectedCompany) : null;
   const address = selectedLocation ? locations[selectedLocation] : '';
   const [line1, ...restOfAddress] = address.split(', ');
   const addressLine2 = restOfAddress.join(', ');
@@ -128,8 +129,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
       ref={isForPrint ? cardRef : null}
       className={cn(
         "id-card-print-area bg-white shadow-lg overflow-hidden",
-        !isForPrint && "cursor-pointer transition-transform duration-300",
-        !isForPrint && isZoomed && "scale-[2] z-50",
         props.className
       )}
       style={{
@@ -140,12 +139,9 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
       {...props}
     >
       <div className="flex flex-col h-full">
-        {/* Header */}
         <div className="flex flex-col items-center justify-center pt-3 px-2 flex-shrink-0">
           {LogoComponent && <LogoComponent />}
         </div>
-
-        {/* Body */}
         <div className="flex-grow flex items-center pt-3 px-2">
           <div className="w-2/5 flex-shrink-0 flex justify-center">
             <Image
@@ -169,16 +165,14 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
         <div className="text-white text-center text-[7px] p-2 leading-tight flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-          {selectedCompany && <p className="font-bold text-[8px]">{selectedCompany}</p>}
-          {address && (
-            <div className="text-[7px]">
-              <p>{line1},</p>
-              <p>{addressLine2}</p>
-            </div>
-          )}
+            {companyDetails && <p className="font-bold text-[8px]">{companyDetails.name}</p>}
+            {address && (
+                <div className="text-[7px]">
+                    <p>{line1},</p>
+                    <p>{addressLine2}</p>
+                </div>
+            )}
         </div>
       </div>
     </div>
@@ -235,30 +229,25 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                 </div>
                 
                 {/* Visible card for interaction */}
-                <div className={cn(
-                    "transition-transform duration-300",
-                    isZoomed ? "scale-[2] z-50" : "scale-100"
-                )}
-                onClick={() => !isZoomed && setIsZoomed(true)}
-                >
-                    <CardComponent className={cn(isZoomed ? "cursor-zoom-out" : "cursor-zoom-in")} />
+                 <div className="cursor-zoom-in" onClick={() => setIsZoomed(true)}>
+                    <CardComponent />
                 </div>
-
-                {isZoomed && (
-                  <div 
-                    className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center"
-                    onClick={() => setIsZoomed(false)}
-                  >
-                     <div
-                        className="scale-[2] cursor-default"
-                        onClick={(e) => e.stopPropagation()}
-                     >
-                        <CardComponent />
-                     </div>
-                  </div>
-                )}
             </div>
         </div>
+
+        {isZoomed && (
+            <div 
+                className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center cursor-zoom-out"
+                onClick={() => setIsZoomed(false)}
+            >
+                <div
+                    className="scale-[2.5] cursor-default"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <CardComponent />
+                </div>
+            </div>
+        )}
 
         <DialogFooter>
         </DialogFooter>
