@@ -31,7 +31,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const router = useRouter();
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
-  const [user, setUser] = useState<UserType | undefined>(undefined);
+  const [user, setUser] = useState<UserType | undefined>(() => initialUsers.find(u => u.id === params.id));
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
   const [documentTypes, setDocumentTypes] = useState<string[]>(documentTypesList);
 
@@ -44,16 +44,11 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const isSelfView = role !== 'admin';
 
   useEffect(() => {
-    const foundUser = initialUsers.find(u => u.id === params.id);
-
-    if (foundUser) {
+    const foundUser = users.find(u => u.id === params.id);
+     if (foundUser) {
       setUser(foundUser);
-    } else {
-      // In a real app, you might want to call notFound() here.
-      // For mock data, we'll just log an error.
-      console.error("User not found");
     }
-  }, [params.id]);
+  }, [params.id, users]);
   
   useEffect(() => {
       if (user) {
@@ -329,5 +324,3 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     </div>
   )
 }
-
-    
