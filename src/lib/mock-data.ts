@@ -11,7 +11,7 @@ export type Document = {
 
 export const companies = [
     { name: 'ASE ENGINEERS PRIVATE LIMITED', shortName: 'ASE' },
-    { name: 'ALLIANCE MEP PRIVATE LIMITED', shortName: 'ALLIANCE' },
+    { name: 'ALLIANCE MEP PRIVATE LIMITED', shortName: 'AMEP' },
     { name: 'POTOMAC CONSULTING SERVICES PRIVATE LIMITED', shortName: 'POTOMAC' },
 ] as const;
 export type Company = typeof companies[number];
@@ -96,3 +96,5 @@ export const announcements: Announcement[] = [
   { id: 'anno-1', title: 'System Maintenance Scheduled', message: 'The internal portal will be down for scheduled maintenance on Sunday from 2:00 AM to 4:00 AM. We apologize for any inconvenience.', date: '2024-07-25T10:00:00Z', author: 'Admin', isRead: false },
   { id: 'anno-2', title: 'Welcome New Team Members!', message: 'Please join us in welcoming our new software engineers, David and Fiona, who are joining the Engineering team this week!', date: '2024-07-22T14:30:00Z', author: 'Admin', isRead: true },
 ];
+
+export const CompanyName = 'AE INTRAWEB';
