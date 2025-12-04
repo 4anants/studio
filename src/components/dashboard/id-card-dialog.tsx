@@ -145,7 +145,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
 
   const { line1: addressLine1, line2: addressLine2 } = getAddressLines(selectedLocation);
   
-  const positionX = 10;
+  const positionX = 20;
 
   const CardComponent = ({ className }: { className?: string; }) => (
     <div
@@ -164,7 +164,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           {LogoComponent && <LogoComponent />}
         </div>
         <div
-          className="flex-grow flex items-center pr-8 relative"
+          className="flex-grow flex items-center relative pr-4"
           style={{ transform: `translateX(${positionX}px)` }}
         >
           <div className="w-2/5 flex-shrink-0 flex justify-center pl-1">
@@ -191,12 +191,12 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
           {companyDetails && (
-              <p className="font-bold text-xs mb-1.5 break-words">
+              <p className="font-bold text-xs break-words mb-1">
                   {companyDetails.name}
               </p>
           )}
           {addressLine1 && (
-            <div className="text-[8px] leading-tight space-y-1">
+            <div className="text-[8px] leading-tight space-y-0.5">
               <p>{addressLine1}</p>
               <p>{addressLine2}</p>
             </div>
@@ -284,3 +284,5 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
+
+    
