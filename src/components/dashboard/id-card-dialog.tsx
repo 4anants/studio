@@ -32,20 +32,20 @@ interface IdCardDialogProps {
 
 const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
-      <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
-        <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
-          <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
-          <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
-          <g transform="translate(32, 48) scale(0.5)">
-            <text x="0" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">s</text>
-            <text x="22" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">e</text>
-          </g>
-        </svg>
-        <div className="flex flex-col">
-          <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
-          <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
+        <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
+            <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
+                <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
+                <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
+                <g transform="translate(32, 48) scale(0.5)">
+                    <text x="0" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">s</text>
+                    <text x="22" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">e</text>
+                </g>
+            </svg>
+            <div className="flex flex-col">
+                <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
+                <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
+            </div>
         </div>
-      </div>
     ),
     'ALLIANCE MEP PRIVATE LIMITED': () => (
         <div className="flex items-center gap-2">
@@ -80,6 +80,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     if (open) {
         setSelectedCompany(user.company);
         setSelectedLocation(user.location);
+        setIsZoomed(false);
     }
   }, [open, user.company, user.location]);
 
@@ -101,7 +102,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
             }
           })
           .join('');
-        printWindow.document.write(`<style>${styles} @page { size: 54mm 86mm; margin: 0; } body { margin: 0; }</style>`);
+        printWindow.document.write(`<style>${styles} @page { size: 54mm 86mm; margin: 0; } body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .id-card-print-area { box-shadow: none !important; border: none !important; }</style>`);
         printWindow.document.write('</head><body>');
         printWindow.document.write('<div style="display:flex; justify-content:center; align-items:center; width:100vw; height:100vh;">');
         printWindow.document.write(printContent.outerHTML);
@@ -122,19 +123,21 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   const [line1, ...restOfAddress] = address.split(', ');
   const addressLine2 = restOfAddress.join(', ');
 
-  const CardComponent = ({ isForPrint = false }: { isForPrint?: boolean }) => (
+  const CardComponent = ({ isForPrint = false, ...props }: { isForPrint?: boolean } & React.HTMLAttributes<HTMLDivElement>) => (
     <div
       ref={isForPrint ? cardRef : null}
       className={cn(
-        "id-card-print-area bg-white shadow-lg overflow-hidden cursor-zoom-in transition-transform duration-300",
-        isZoomed && !isForPrint && "scale-[2] z-50"
+        "id-card-print-area bg-white shadow-lg overflow-hidden",
+        !isForPrint && "cursor-pointer transition-transform duration-300",
+        !isForPrint && isZoomed && "scale-[2] z-50",
+        props.className
       )}
       style={{
         width: '204px',
         height: '324px',
         fontFamily: "'Segoe UI', sans-serif",
       }}
-      onClick={() => !isForPrint && setIsZoomed(true)}
+      {...props}
     >
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -222,82 +225,24 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                         Print ID Card
                     </Button>
                 </div>
+                 <div className="text-sm text-muted-foreground text-center">Click the card to zoom.</div>
             </div>
 
-            <div className="flex justify-center items-center p-4 bg-gray-100 rounded-lg relative">
+            <div className="flex justify-center items-center p-4 bg-gray-100 rounded-lg relative min-h-[360px]">
                 {/* Hidden card for printing */}
-                <div className="absolute opacity-0 pointer-events-none">
+                <div className="absolute opacity-0 pointer-events-none -z-10" aria-hidden>
                     <CardComponent isForPrint={true} />
                 </div>
                 
                 {/* Visible card for interaction */}
-                <CardComponent />
+                <CardComponent onClick={() => setIsZoomed(true)} />
 
                 {isZoomed && (
                   <div 
-                    className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center"
+                    className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center cursor-zoom-out"
                     onClick={() => setIsZoomed(false)}
                   >
-                    <div 
-                      className="bg-white shadow-lg overflow-hidden transition-transform duration-300 scale-[2]"
-                      style={{
-                          width: '204px',
-                          height: '324px',
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                        <div 
-                            className="id-card-print-area bg-white shadow-lg overflow-hidden"
-                            style={{
-                                width: '204px',
-                                height: '324px',
-                                fontFamily: "'Segoe UI', sans-serif",
-                            }}
-                        >
-                            <div className="flex flex-col h-full">
-                                {/* Header */}
-                                <div className="flex flex-col items-center justify-center pt-3 px-2 flex-shrink-0">
-                                {LogoComponent && <LogoComponent />}
-                                </div>
-
-                                {/* Body */}
-                                <div className="flex-grow flex items-center pt-3 px-2">
-                                <div className="w-2/5 flex-shrink-0 flex justify-center">
-                                    <Image
-                                    src={`https://picsum.photos/seed/${user.avatar}/150/200`}
-                                    width={75}
-                                    height={94}
-                                    className="border border-gray-300"
-                                    alt={user.name}
-                                    data-ai-hint="person passport"
-                                    />
-                                </div>
-                                <div className="w-3/5 h-full flex items-center justify-center -ml-2">
-                                    <div
-                                    className="flex flex-col justify-center items-center text-center whitespace-nowrap origin-center"
-                                    style={{ transform: 'rotate(-90deg)' }}
-                                    >
-                                    <p className="font-bold text-base leading-tight" style={{ color: '#009966' }}>{user.name}</p>
-                                    <p className="text-xs leading-tight mt-1">{user.designation || 'N/A'}</p>
-                                    <p className="text-xs leading-tight">Employee Code : {user.id}</p>
-                                    <p className="text-xs leading-tight">Blood Group : <span className="font-bold">{user.bloodGroup || 'N/A'}</span></p>
-                                    </div>
-                                </div>
-                                </div>
-
-                                {/* Footer */}
-                                <div className="text-white text-center text-[7px] p-2 leading-tight flex-shrink-0" style={{ backgroundColor: '#262626' }}>
-                                {selectedCompany && <p className="font-bold text-[8px]">{selectedCompany}</p>}
-                                {address && (
-                                    <div className="text-[7px]">
-                                    <p>{line1},</p>
-                                    <p>{addressLine2}</p>
-                                    </div>
-                                )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <CardComponent className="cursor-default" onClick={(e) => e.stopPropagation()} />
                   </div>
                 )}
             </div>
@@ -309,4 +254,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
+    
+
     
