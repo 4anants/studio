@@ -50,7 +50,7 @@ const formSchema = z.object({
 
 interface EmployeeManagementDialogProps {
   employee?: User;
-  onSave: (employee: Omit<User, 'avatar' | 'deleted'> & { avatar?: string, originalId?: string }) => void;
+  onSave: (employee: Partial<User> & { originalId?: string }) => void;
   children: React.ReactNode;
   departments: string[];
 }
@@ -100,12 +100,16 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
-      const userData = {
-        avatar: employee?.avatar,
+      const userData: Partial<User> & { originalId?: string } = {
         ...validation.data,
         originalId: employee?.id,
       };
-      onSave(userData as any);
+
+      if (!userData.password) {
+        delete userData.password;
+      }
+      
+      onSave(userData);
 
       if (isEditing) {
         toast({

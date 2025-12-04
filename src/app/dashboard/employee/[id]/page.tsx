@@ -1,5 +1,5 @@
 'use client';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
+import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
 
 type SortKey = keyof Document;
@@ -27,6 +28,7 @@ const monthNames = ["January", "February", "March", "April", "May", "June", "Jul
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   const [user, setUser] = useState<UserType | undefined>(undefined);
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
@@ -37,6 +39,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   
+  const role = searchParams.get('role');
+  const isSelfView = role !== 'admin';
+
   useEffect(() => {
     const foundUser = initialUsers.find(u => u.id === params.id);
 
@@ -54,26 +59,26 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
       }
   }, [user]);
 
-  const handleEmployeeSave = useCallback((employee: UserType & { originalId?: string }) => {
+  const handleEmployeeSave = useCallback((employee: Partial<UserType> & { originalId?: string }) => {
     setUsers(currentUsers => {
         const userIndex = currentUsers.findIndex(u => u.id === (employee.originalId || employee.id));
         if (userIndex > -1) {
             const updatedUsers = [...currentUsers];
             const existingUser = updatedUsers[userIndex];
 
-            updatedUsers[userIndex] = {
+            const updatedUser = {
                 ...existingUser,
                 ...employee,
-                id: employee.id, // Ensure ID is updated
-                password: employee.password || existingUser.password
             };
+
+            updatedUsers[userIndex] = updatedUser;
             
-            // If the ID was changed, we need to update the URL
-            if (employee.originalId && employee.id !== employee.originalId) {
-                router.replace(`/dashboard/employee/${employee.id}`);
+            // If the ID was changed (by admin), we need to update the URL
+            if (employee.originalId && employee.id && employee.id !== employee.originalId) {
+                router.replace(`/dashboard/employee/${employee.id}?role=admin`);
             } else {
                 // Force re-render to reflect changes if ID hasn't changed
-                setUser({...updatedUsers[userIndex]});
+                setUser(updatedUser);
             }
             return updatedUsers;
         }
@@ -211,11 +216,19 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                                 <CardTitle className="text-2xl">{user.name}</CardTitle>
                                 <CardDescription>Employee ID: {user.id}</CardDescription>
                             </div>
-                            <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
-                                <Button variant="ghost" size="icon">
-                                    <Edit className="h-4 w-4"/>
-                                </Button>
-                            </EmployeeManagementDialog>
+                            {isSelfView ? (
+                                <EmployeeSelfEditDialog employee={user} onSave={handleEmployeeSave}>
+                                    <Button variant="ghost" size="icon">
+                                        <Edit className="h-4 w-4"/>
+                                    </Button>
+                                </EmployeeSelfEditDialog>
+                            ) : (
+                                <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
+                                    <Button variant="ghost" size="icon">
+                                        <Edit className="h-4 w-4"/>
+                                    </Button>
+                                </EmployeeManagementDialog>
+                            )}
                         </CardHeader>
                         <CardContent>
                             <Separator className="my-4" />

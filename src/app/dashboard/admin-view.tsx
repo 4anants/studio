@@ -95,39 +95,40 @@ export function AdminView() {
     setDocs(prev => [...fullNewDocs, ...prev]);
   }, []);
 
-  const handleEmployeeSave = useCallback((employee: User & { originalId?: string }) => {
+  const handleEmployeeSave = useCallback((employee: Partial<User> & { originalId?: string }) => {
     setUsers(prevUsers => {
       const userIndex = prevUsers.findIndex(u => u.id === (employee.originalId || employee.id));
       if (userIndex > -1) {
         // Update existing user
         const updatedUsers = [...prevUsers];
         const existingUser = updatedUsers[userIndex];
-        updatedUsers[userIndex] = {
+        const updatedUser = {
             ...existingUser,
             ...employee,
-            password: employee.password || existingUser.password // Keep old password if not provided
         };
-        if (employee.id !== (employee.originalId || employee.id)) {
+        updatedUsers[userIndex] = updatedUser;
+        
+        if ('id' in employee && employee.id !== employee.originalId) {
             toast({
                 title: "Profile Updated",
-                description: `An email notification has been sent to the admins regarding the update of ${employee.name}'s profile.`,
+                description: `An email notification has been sent to the admins regarding the update of ${updatedUser.name}'s profile.`,
             });
         }
         return updatedUsers;
       } else {
         // Add new user
         const newUser: User = {
-           id: employee.id,
-           name: employee.name,
-           email: employee.email,
-           avatar: String(Date.now()), // new avatar
+           id: employee.id || `user-${Date.now()}`,
+           name: employee.name || 'New User',
+           email: employee.email || 'new@user.com',
+           avatar: employee.avatar || String(Date.now()),
            mobile: employee.mobile,
            password: employee.password,
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
            resignationDate: employee.resignationDate,
            designation: employee.designation,
-           status: employee.status,
+           status: employee.status || 'pending',
            department: employee.department
         };
         return [...prevUsers, newUser];
@@ -472,7 +473,7 @@ export function AdminView() {
                             <Card 
                                 key={user.id} 
                                 className="cursor-pointer hover:border-primary transition-all"
-                                onClick={() => router.push(`/dashboard/employee/${user.id}`)}
+                                onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
                             >
                                 <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                     <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
