@@ -7,11 +7,20 @@ import { UploadDialog } from './upload-dialog'
 import { documents as allDocuments, users as allUsers, documentTypesList } from '@/lib/mock-data'
 import type { Document } from '@/lib/mock-data'
 import { Button } from '../ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
 type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
+
+const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export function EmployeeView() {
   const [userDocuments, setUserDocuments] = useState(
@@ -19,6 +28,8 @@ export function EmployeeView() {
   )
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
 
   const handleUploadComplete = useCallback(() => {
@@ -63,12 +74,35 @@ export function EmployeeView() {
     });
   }, []);
 
+  const { availableYears, availableMonths } = useMemo(() => {
+    const years = new Set<string>();
+    const months = new Set<number>();
+    
+    userDocuments
+      .filter(doc => selectedTypes.includes('All') || selectedTypes.includes(doc.type))
+      .forEach(doc => {
+        const date = new Date(doc.uploadDate);
+        years.add(date.getFullYear().toString());
+        if (selectedYear === 'all' || date.getFullYear().toString() === selectedYear) {
+            months.add(date.getMonth());
+        }
+    });
+
+    return { 
+        availableYears: Array.from(years).sort((a, b) => Number(b) - Number(a)),
+        availableMonths: Array.from(months).sort((a, b) => a - b)
+    };
+  }, [userDocuments, selectedTypes, selectedYear]);
+
   const filteredDocuments = useMemo(() => {
     return userDocuments.filter(doc => {
+      const date = new Date(doc.uploadDate);
       const typeMatch = selectedTypes.includes('All') || selectedTypes.includes(doc.type);
-      return typeMatch;
+      const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
+      const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
+      return typeMatch && yearMatch && monthMatch;
     });
-  }, [userDocuments, selectedTypes]);
+  }, [userDocuments, selectedTypes, selectedYear, selectedMonth]);
 
   const sortedAndFilteredDocuments = useMemo(() => {
     let sortableItems = [...filteredDocuments];
@@ -101,26 +135,57 @@ export function EmployeeView() {
 
        <Card className="mb-4">
           <CardHeader>
-              <CardTitle>Filter by Document Type</CardTitle>
+              <CardTitle>Filter by</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
-              <Button
-                  variant={selectedTypes.includes('All') ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleTypeSelection('All')}
-              >
-                  All
-              </Button>
-              {documentTypesList.map(type => (
-                  <Button
-                      key={type}
-                      variant={selectedTypes.includes(type) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleTypeSelection(type)}
-                  >
-                      {type}
-                  </Button>
-              ))}
+          <CardContent className="space-y-4">
+               <div>
+                  <label className="text-sm font-medium">Document Type</label>
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                      <Button
+                          variant={selectedTypes.includes('All') ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleTypeSelection('All')}
+                      >
+                          All
+                      </Button>
+                      {documentTypesList.map(type => (
+                          <Button
+                              key={type}
+                              variant={selectedTypes.includes(type) ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handleTypeSelection(type)}
+                          >
+                              {type}
+                          </Button>
+                      ))}
+                  </div>
+              </div>
+               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <div className="flex-grow min-w-[120px]">
+                      <label className="text-sm font-medium">Year</label>
+                      <Select value={selectedYear} onValueChange={setSelectedYear}>
+                          <SelectTrigger className="w-full mt-1">
+                              <SelectValue placeholder="Select Year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="all">All Years</SelectItem>
+                              {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="flex-grow min-w-[120px]">
+                        <label className="text-sm font-medium">Month</label>
+                        <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
+                          <SelectTrigger className="w-full mt-1">
+                              <SelectValue placeholder="Select Month" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="all">All Months</SelectItem>
+                              {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </div>
           </CardContent>
       </Card>
 
