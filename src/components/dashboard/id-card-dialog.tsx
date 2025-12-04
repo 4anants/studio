@@ -31,17 +31,24 @@ interface IdCardDialogProps {
 
 const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
-        <div className="flex items-center gap-1 text-2xl font-bold" style={{ color: '#2c3e50' }}>
-            <svg width="30" height="30" viewBox="0 0 100 100">
-                <path d="M60 10 L100 90 L20 90 Z" fill="none" stroke="#334b6c" strokeWidth="10" transform="rotate(10 60 50)"/>
-                <path d="M40 70 C 50 50, 70 50, 80 70" fill="none" stroke="#334b6c" strokeWidth="9" />
-                <path d="M60 10 L20 90" fill="none" stroke="#334b6c" strokeWidth="10" />
-                <path d="M22 68 C 30 75, 40 75, 48 68" fill="none" stroke="#334b6c" strokeWidth="8" />
-                <path d="M25 68 C 30 60, 40 60, 45 68" fill="none" stroke="white" strokeWidth="6" />
+        <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
+            <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
+                {/* The main 'A' like shape */}
+                <path d="M5,70 L50,5 L95,70" stroke="#334b6c" strokeWidth="10" fill="none" strokeLinecap="round" />
+                {/* The small vertical bar on the right leg of 'A' */}
+                <path d="M68,55 L68,65" stroke="#334b6c" strokeWidth="6" fill="none" />
+                <path d="M65,60 L71,60" stroke="#334b6c" strokeWidth="6" fill="none" />
+                 {/* The 'se' part */}
+                <g transform="translate(18, 40) scale(0.6)">
+                    <text x="0" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">s</text>
+                    <text x="20" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">e</text>
+                     {/* The swoosh over 'se' */}
+                    <path d="M-5 5 C 20 -15, 40 -15, 60 10" stroke="#334b6c" strokeWidth="7" fill="none" />
+                </g>
             </svg>
-            <div className="flex flex-col -ml-2">
-                <span className="tracking-[0.2em] text-2xl" style={{color: '#334b6c'}}>A S E</span>
-                <span className="text-xs tracking-wider font-semibold" style={{color: '#334b6c'}}>ENGINEERS PL</span>
+            <div className="flex flex-col">
+                <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
+                <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
             </div>
         </div>
     ),
