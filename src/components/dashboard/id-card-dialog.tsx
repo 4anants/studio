@@ -186,9 +186,9 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           </div>
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-base mb-0.5">{companyDetails.name}</p>}
+            {companyDetails && <p className="font-bold text-sm mb-0.5 whitespace-nowrap">{companyDetails.name}</p>}
             {addressLine1 && (
-                <div className="text-[8px] leading-snug space-y-0.5">
+                <div className="text-[8px] leading-snug space-y-1">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
                 </div>
@@ -281,3 +281,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
 
     
 
+
+
+    
