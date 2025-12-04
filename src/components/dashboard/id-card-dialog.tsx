@@ -121,8 +121,10 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   const LogoComponent = selectedCompany ? companyLogos[selectedCompany] : null;
   const companyDetails = selectedCompany ? companies.find(c => c.name === selectedCompany) : null;
   const address = selectedLocation ? locations[selectedLocation] : '';
-  const [line1, ...restOfAddress] = address.split(', ');
-  const addressLine2 = restOfAddress.join(', ');
+
+  const addressParts = address.split(', ');
+  const addressLine1 = addressParts.slice(0, -2).join(', ');
+  const addressLine2 = addressParts.slice(-2).join(', ');
 
   const CardComponent = ({ isForPrint = false, ...props }: { isForPrint?: boolean } & React.HTMLAttributes<HTMLDivElement>) => (
     <div
@@ -169,7 +171,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
             {companyDetails && <p className="font-bold text-[8px]">{companyDetails.name}</p>}
             {address && (
                 <div className="text-[7px]">
-                    <p>{line1},</p>
+                    <p>{addressLine1},</p>
                     <p>{addressLine2}</p>
                 </div>
             )}
