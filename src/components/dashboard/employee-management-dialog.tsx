@@ -37,7 +37,8 @@ import { useToast } from '@/hooks/use-toast';
 const formSchema = z.object({
   id: z.string().min(1, { message: 'Employee ID is required.' }),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  email: z.string().email({ message: 'Please enter a valid email.' }),
+  email: z.string().email({ message: 'Please enter a valid official email.' }),
+  personalEmail: z.string().email({ message: 'Please enter a valid personal email.' }).optional().or(z.literal('')),
   mobile: z.string().optional(),
   password: z.string().optional(),
   dateOfBirth: z.string().optional(),
@@ -67,6 +68,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       id: employee?.id || '',
       name: employee?.name || '',
       email: employee?.email || '',
+      personalEmail: employee?.personalEmail || '',
       mobile: employee?.mobile || '',
       password: '',
       dateOfBirth: employee?.dateOfBirth || '',
@@ -121,7 +123,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ id: '', name: '', email: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '' });
+        form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '' });
       } else {
         form.reset({ ...values, password: '' }); // Clear password field after edit
       }
@@ -135,6 +137,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             id: employee?.id || '',
             name: employee?.name || '',
             email: employee?.email || '',
+            personalEmail: employee?.personalEmail || '',
             mobile: employee?.mobile || '',
             password: '',
             dateOfBirth: employee?.dateOfBirth || '',
@@ -159,7 +162,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
              <FormField
               control={form.control}
               name="id"
@@ -191,9 +194,22 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               name="email"
               render={({ field }) => (
                 <FormItem className="col-span-2 sm:col-span-1">
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Official Email</FormLabel>
                   <FormControl>
                     <Input placeholder="john.doe@company.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="personalEmail"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Personal Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="john.doe@personal.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

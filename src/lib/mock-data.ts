@@ -11,7 +11,8 @@ export type Document = {
 export type User = {
   id: string;
   name: string;
-  email: string;
+  email: string; // Official Email
+  personalEmail?: string;
   avatar: string;
   mobile?: string;
   password?: string;
@@ -48,9 +49,9 @@ export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Ap
 export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales'];
 
 export const users: User[] = [
-  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer' },
-  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager' },
-  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer' },
+  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', personalEmail: 'alice.personal@email.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer' },
+  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', personalEmail: 'bob.personal@email.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager' },
+  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', personalEmail: 'charlie.personal@email.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer' },
 ];
 
 export const documents: Document[] = [

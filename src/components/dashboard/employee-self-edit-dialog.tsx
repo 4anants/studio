@@ -30,7 +30,7 @@ import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email.' }),
+  personalEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
   mobile: z.string().optional(),
   password: z.string().optional(),
   avatar: z.string().optional(), // Can be the existing seed or a new data URI
@@ -51,7 +51,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: employee?.email || '',
+      personalEmail: employee?.personalEmail || '',
       mobile: employee?.mobile || '',
       password: '',
       avatar: employee?.avatar,
@@ -113,7 +113,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
         form.reset({
-            email: employee?.email || '',
+            personalEmail: employee?.personalEmail || '',
             mobile: employee?.mobile || '',
             password: '',
             avatar: employee?.avatar,
@@ -153,14 +153,20 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                     </div>
                 </div>
             </div>
+             <FormItem>
+                <FormLabel>Official Email</FormLabel>
+                <FormControl>
+                    <Input value={employee.email} disabled />
+                </FormControl>
+             </FormItem>
              <FormField
               control={form.control}
-              name="email"
+              name="personalEmail"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Personal Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="your.email@company.com" {...field} />
+                    <Input placeholder="your.personal@email.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

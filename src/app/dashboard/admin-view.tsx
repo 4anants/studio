@@ -121,6 +121,7 @@ export function AdminView() {
            id: employee.id || `user-${Date.now()}`,
            name: employee.name || 'New User',
            email: employee.email || 'new@user.com',
+           personalEmail: employee.personalEmail,
            avatar: employee.avatar || String(Date.now()),
            mobile: employee.mobile,
            password: employee.password,

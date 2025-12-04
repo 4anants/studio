@@ -181,7 +181,8 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   }
   
   const userDetails = [
-    { icon: Mail, label: 'Email', value: user.email },
+    { icon: Mail, label: 'Official Email', value: user.email },
+    { icon: Mail, label: 'Personal Email', value: user.personalEmail || 'N/A' },
     { icon: Phone, label: 'Mobile', value: user.mobile || 'N/A' },
     { icon: Building, label: 'Department', value: user.department || 'N/A' },
     { icon: Award, label: 'Designation', value: user.designation || 'N/A' },
