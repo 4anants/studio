@@ -28,7 +28,19 @@ export function DashboardHeader() {
     router.push('/login')
   }
 
+  // In a real app, this would come from an auth context
+  const employeeUserId = 'user-1';
+
   const user = role === 'admin' ? { name: 'Admin User', email: 'admin@company.com' } : { name: 'Employee User', email: 'employee@company.com' }
+
+  const handleProfileClick = () => {
+    if (role === 'admin') {
+      // Admins don't have a profile page, maybe go to dashboard?
+      router.push('/dashboard?role=admin');
+    } else {
+      router.push(`/dashboard/employee/${employeeUserId}`);
+    }
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
@@ -54,7 +66,7 @@ export function DashboardHeader() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleProfileClick}>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
