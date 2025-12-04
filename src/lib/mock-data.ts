@@ -23,10 +23,14 @@ export type User = {
   department?: string;
 };
 
+export const holidayLocations = ['ALL', 'AMD', 'HYD', 'US'] as const;
+export type HolidayLocation = typeof holidayLocations[number];
+
 export type Holiday = {
   id: string;
   date: string; // YYYY-MM-DD
   name: string;
+  location: HolidayLocation;
 };
 
 export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
@@ -50,7 +54,9 @@ export const documents: Document[] = [
 ];
 
 export const holidays: Holiday[] = [
-    { id: 'h-1', date: '2024-01-01', name: 'New Year\'s Day' },
-    { id: 'h-2', date: '2024-10-17', name: 'Diwali' },
-    { id: 'h-3', date: '2024-12-25', name: 'Christmas Day' },
+    { id: 'h-1', date: '2024-01-01', name: 'New Year\'s Day', location: 'ALL' },
+    { id: 'h-2', date: '2024-10-17', name: 'Diwali', location: 'AMD' },
+    { id: 'h-4', date: '2024-10-17', name: 'Diwali', location: 'HYD' },
+    { id: 'h-5', date: '2024-11-28', name: 'Thanksgiving Day', location: 'US' },
+    { id: 'h-3', date: '2024-12-25', name: 'Christmas Day', location: 'ALL' },
 ];

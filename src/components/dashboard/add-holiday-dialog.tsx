@@ -16,11 +16,19 @@ import { Label } from '@/components/ui/label';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { holidayLocations, type HolidayLocation } from '@/lib/mock-data';
 
 interface AddHolidayDialogProps {
-  onAdd: (newHoliday: { name: string; date: Date }) => void;
+  onAdd: (newHoliday: { name: string; date: Date, location: HolidayLocation }) => void;
   children: React.ReactNode;
 }
 
@@ -28,12 +36,14 @@ export function AddHolidayDialog({ onAdd, children }: AddHolidayDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [date, setDate] = useState<Date>();
+  const [location, setLocation] = useState<HolidayLocation>('ALL');
 
   const handleAdd = () => {
-    if (name.trim() && date) {
-      onAdd({ name: name.trim(), date });
+    if (name.trim() && date && location) {
+      onAdd({ name: name.trim(), date, location });
       setName('');
       setDate(undefined);
+      setLocation('ALL');
       setOpen(false);
     }
   };
@@ -85,6 +95,21 @@ export function AddHolidayDialog({ onAdd, children }: AddHolidayDialogProps) {
                 />
               </PopoverContent>
             </Popover>
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="location" className="text-right">
+              Location
+            </Label>
+            <Select onValueChange={(value: HolidayLocation) => setLocation(value)} defaultValue={location}>
+                <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                    {holidayLocations.map(loc => (
+                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

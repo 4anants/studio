@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday } from '@/lib/mock-data'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations } from '@/lib/mock-data'
 import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus } from 'lucide-react'
 import {
   Tabs,
@@ -67,6 +67,7 @@ export function AdminView() {
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
   const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
+  const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -197,11 +198,12 @@ export function AdminView() {
     });
   }, [toast]);
 
-  const handleAddHoliday = useCallback((newHoliday: {name: string, date: Date}) => {
+  const handleAddHoliday = useCallback((newHoliday: {name: string, date: Date, location: HolidayLocation}) => {
     const newHolidayItem: Holiday = {
       id: `h-${Date.now()}`,
       name: newHoliday.name,
       date: newHoliday.date.toISOString().split('T')[0],
+      location: newHoliday.location,
     };
     setHolidays(prev => [...prev, newHolidayItem].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
     toast({
@@ -264,9 +266,12 @@ export function AdminView() {
     dept.toLowerCase().includes(searchTerm.toLowerCase())
   ), [departments, searchTerm]);
 
-  const filteredHolidays = useMemo(() => holidays.filter(holiday => 
-    holiday.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ), [holidays, searchTerm]);
+  const filteredHolidays = useMemo(() => {
+    return holidays.filter(holiday => 
+      holiday.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (holidayLocationFilter === 'all' || holiday.location === holidayLocationFilter)
+    ).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  }, [holidays, searchTerm, holidayLocationFilter]);
   
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
@@ -314,6 +319,7 @@ export function AdminView() {
     setSelectedUserIds([]);
     setSearchTerm('');
     setDepartmentFilters(['all']);
+    setHolidayLocationFilter('all');
   }, []);
 
   const numSelected = selectedUserIds.length;
@@ -628,16 +634,40 @@ export function AdminView() {
         </TabsContent>
         <TabsContent value="holidays">
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <CardTitle>Manage Holidays</CardTitle>
                         <CardDescription>Add or remove holidays for the organization.</CardDescription>
                     </div>
-                     <AddHolidayDialog onAdd={handleAddHoliday}>
-                        <Button variant="outline">
-                            <CalendarPlus className="mr-2 h-4 w-4" /> Add Holiday
-                        </Button>
-                    </AddHolidayDialog>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex-grow sm:flex-grow-0">
+                           <p className="text-sm font-medium text-muted-foreground">Location</p>
+                           <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <Button
+                                    variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setHolidayLocationFilter('all')}
+                                >
+                                    All
+                                </Button>
+                                {holidayLocations.filter(l => l !== 'ALL').map(loc => (
+                                    <Button
+                                        key={loc}
+                                        variant={holidayLocationFilter === loc ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setHolidayLocationFilter(loc)}
+                                    >
+                                        {loc}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                         <AddHolidayDialog onAdd={handleAddHoliday}>
+                            <Button variant="outline">
+                                <CalendarPlus className="mr-2 h-4 w-4" /> Add Holiday
+                            </Button>
+                        </AddHolidayDialog>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -645,6 +675,7 @@ export function AdminView() {
                             <TableRow>
                                 <TableHead>Date</TableHead>
                                 <TableHead>Name</TableHead>
+                                <TableHead>Location</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -653,6 +684,11 @@ export function AdminView() {
                                 <TableRow key={holiday.id}>
                                     <TableCell className="font-medium">{new Date(holiday.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</TableCell>
                                     <TableCell>{holiday.name}</TableCell>
+                                    <TableCell>
+                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                                           {holiday.location}
+                                        </span>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteHoliday(holiday.id)}>
                                             <Trash2 className="h-4 w-4" />
@@ -661,7 +697,7 @@ export function AdminView() {
                                 </TableRow>
                            )) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center text-muted-foreground">No holidays found.</TableCell>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No holidays found.</TableCell>
                                 </TableRow>
                            )}
                         </TableBody>

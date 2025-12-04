@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
-import { documents as allDocuments, users as allUsers, documentTypesList, holidays as initialHolidays } from '@/lib/mock-data'
+import { documents as allDocuments, users as allUsers, documentTypesList, holidays as initialHolidays, HolidayLocation, holidayLocations } from '@/lib/mock-data'
 import type { Document } from '@/lib/mock-data'
 import { Button } from '../ui/button'
 import {
@@ -29,6 +29,7 @@ import {
     TableRow,
   } from '@/components/ui/table'
 import { Calendar } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
@@ -46,6 +47,7 @@ export function EmployeeView() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
 
 
   const handleUploadComplete = useCallback(() => {
@@ -139,9 +141,11 @@ export function EmployeeView() {
     return sortableItems;
   }, [filteredDocuments, sortConfig]);
   
-  const sortedHolidays = useMemo(() => {
-      return [...holidays].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [holidays]);
+  const filteredHolidays = useMemo(() => {
+    return [...holidays]
+      .filter(holiday => holidayLocationFilter === 'all' || holiday.location === 'ALL' || holiday.location === holidayLocationFilter)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [holidays, holidayLocationFilter]);
 
   return (
     <>
@@ -234,15 +238,38 @@ export function EmployeeView() {
                         <CardDescription>Upcoming company holidays for the year.</CardDescription>
                     </CardHeader>
                     <CardContent>
+                    <div className="mb-4">
+                        <label className="text-sm font-medium">Filter by Location</label>
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                             <Button
+                                variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setHolidayLocationFilter('all')}
+                            >
+                                All
+                            </Button>
+                            {holidayLocations.filter(l => l !== 'ALL').map(loc => (
+                                <Button
+                                    key={loc}
+                                    variant={holidayLocationFilter === loc ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setHolidayLocationFilter(loc)}
+                                >
+                                    {loc}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Date</TableHead>
                                 <TableHead>Holiday Name</TableHead>
+                                <TableHead>Location</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {sortedHolidays.length > 0 ? sortedHolidays.map(holiday => (
+                           {filteredHolidays.length > 0 ? filteredHolidays.map(holiday => (
                                 <TableRow key={holiday.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-2">
@@ -251,10 +278,18 @@ export function EmployeeView() {
                                         </div>
                                     </TableCell>
                                     <TableCell>{holiday.name}</TableCell>
+                                    <TableCell>
+                                         <span className={cn('px-2 py-1 rounded-full text-xs font-medium', 
+                                            holiday.location === 'ALL' ? 'bg-blue-100 text-blue-800' : 
+                                            'bg-secondary text-secondary-foreground'
+                                        )}>
+                                           {holiday.location}
+                                        </span>
+                                    </TableCell>
                                 </TableRow>
                            )) : (
                                 <TableRow>
-                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No holidays found.</TableCell>
+                                    <TableCell colSpan={3} className="text-center text-muted-foreground">No holidays found for selected location.</TableCell>
                                 </TableRow>
                            )}
                         </TableBody>
