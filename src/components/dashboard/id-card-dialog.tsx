@@ -19,8 +19,8 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select';
-import { IdCard, Printer } from 'lucide-react';
-import type { User, Company, CompanyName, LocationKey } from '@/lib/mock-data';
+import { Printer } from 'lucide-react';
+import type { User, CompanyName, LocationKey } from '@/lib/mock-data';
 import { companies, locations } from '@/lib/mock-data';
 import Image from 'next/image';
 
@@ -31,21 +31,21 @@ interface IdCardDialogProps {
 
 const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
-      <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
-          <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
-              <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
-              <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
-               <g transform="translate(32, 48) scale(0.5)">
-                  <text x="0" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">s</text>
-                  <text x="22" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">e</text>
-              </g>
-          </svg>
-          <div className="flex flex-col">
-              <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
-              <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
-          </div>
-      </div>
-    ),
+        <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
+            <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
+                <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
+                <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
+                 <g transform="translate(32, 48) scale(0.5)">
+                    <text x="0" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">s</text>
+                    <text x="22" y="30" fontFamily="sans-serif" fontSize="48" fontWeight="bold" fill="currentColor">e</text>
+                </g>
+            </svg>
+            <div className="flex flex-col">
+                <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
+                <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
+            </div>
+        </div>
+      ),
     'ALLIANCE MEP PRIVATE LIMITED': () => (
         <div className="flex items-center gap-2">
             <svg width="30" height="30" viewBox="0 0 100 100">
@@ -117,6 +117,8 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   
   const LogoComponent = selectedCompany ? companyLogos[selectedCompany] : null;
   const address = selectedLocation ? locations[selectedLocation] : '';
+  const [line1, line2, line3] = address.split(',').map(s => s.trim());
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -153,40 +155,39 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
              </div>
 
             <div className="flex justify-center">
-                 <div ref={cardRef} className="id-card-print-area w-[320px] h-[512px] bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col justify-between p-4 shadow-md">
+                <div ref={cardRef} className="id-card-print-area w-[320px] h-[512px] bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col justify-between p-4 shadow-md">
                     {/* Header */}
                     <div className="flex flex-col items-center">
                        {LogoComponent && <LogoComponent />}
                     </div>
 
                     {/* Body */}
-                    <div className="flex-grow flex items-center gap-2">
-                        <div className="w-1/2 flex justify-center">
-                            <Image
-                                src={`https://picsum.photos/seed/${user.avatar}/200/200`}
-                                width={120}
-                                height={120}
-                                className="rounded-md border-2 border-gray-300"
-                                alt={user.name}
-                                data-ai-hint="person portrait"
-                            />
-                        </div>
-                        <div className="w-1/2 h-full flex items-center justify-center">
-                            <div className="relative h-full flex items-center justify-center">
-                                <div style={{ writingMode: 'vertical-rl' }} className="transform rotate-180 whitespace-nowrap text-right space-y-2">
-                                    <p className="font-bold text-xl text-green-600">{user.name}</p>
-                                    <p className="text-sm">{user.department || 'N/A'}</p>
-                                    <p className="text-sm">Employee Code : {user.id}</p>
-                                    <p className="text-sm">Blood Group : <span className="text-red-600 font-bold">{user.bloodGroup || 'N/A'}</span></p>
-                                </div>
-                            </div>
+                    <div className="flex-grow flex flex-col items-center justify-center gap-4">
+                        <Image
+                            src={`https://picsum.photos/seed/${user.avatar}/200/200`}
+                            width={130}
+                            height={130}
+                            className="rounded-md border-2 border-gray-300 aspect-square object-cover"
+                            alt={user.name}
+                            data-ai-hint="person portrait"
+                        />
+                        <div className="text-center">
+                            <p className="font-bold text-xl text-gray-800">{user.name}</p>
+                            <p className="text-sm text-gray-600">{user.designation || 'N/A'}</p>
+                            <p className="text-sm text-gray-600">Emp Code: {user.id}</p>
+                            <p className="text-sm text-gray-600">Blood Group: <span className="text-red-600 font-bold">{user.bloodGroup || 'N/A'}</span></p>
                         </div>
                     </div>
 
                     {/* Footer */}
-                     <div className="text-center text-xs text-gray-800">
+                    <div className="text-center text-xs text-gray-700">
                         {selectedCompany && <p className="font-bold">{selectedCompany}</p>}
-                        {address.split(',').map((line, i) => <p key={i}>{line.trim()}</p>)}
+                        {address && (
+                            <>
+                                <p>{line1}</p>
+                                <p>{line2}, {line3}</p>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
