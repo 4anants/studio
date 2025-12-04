@@ -1,13 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -23,10 +16,10 @@ import { companies, locations } from '@/lib/mock-data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
+import { Card } from '../ui/card';
 
-interface IdCardDialogProps {
+interface IdCardViewProps {
   user: User;
-  children: React.ReactNode;
 }
 
 const companyLogos = {
@@ -67,8 +60,7 @@ const companyLogos = {
 };
 
 
-export function IdCardDialog({ user, children }: IdCardDialogProps) {
-  const [open, setOpen] = useState(false);
+export function IdCardView({ user }: IdCardViewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -77,13 +69,11 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
   const [position, setPosition] = useState([0]);
   
   useEffect(() => {
-    if (open) {
-        setSelectedCompany(user.company);
-        setSelectedLocation(user.location);
-        setIsZoomed(false);
-        setPosition([0]);
-    }
-  }, [open, user.company, user.location]);
+    setSelectedCompany(user.company);
+    setSelectedLocation(user.location);
+    setIsZoomed(false);
+    setPosition([0]);
+  }, [user.company, user.location]);
 
   const handlePrint = () => {
     const printContent = cardRef.current;
@@ -189,7 +179,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
           </div>
         </div>
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
-            {companyDetails && <p className="font-bold text-xs mb-1.5">{companyDetails.name}</p>}
+            {companyDetails && <p className="font-bold text-[10px] mb-1.5">{companyDetails.name}</p>}
             {addressLine1 && (
                 <div className="text-[8px] leading-[1.6] space-y-px">
                     <p>{addressLine1}</p>
@@ -203,14 +193,8 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
 
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Generate ID Card</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card className="p-6">
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -236,38 +220,38 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                         </Select>
                     </div>
                 </div>
-                 <div className="space-y-2">
+                <div className="space-y-2">
                     <Label htmlFor="position">Horizontal Position</Label>
                     <Slider
-                      id="position"
-                      min={-20}
-                      max={20}
-                      step={1}
-                      value={position}
-                      onValueChange={setPosition}
+                    id="position"
+                    min={-20}
+                    max={20}
+                    step={1}
+                    value={position}
+                    onValueChange={setPosition}
                     />
-                 </div>
+                </div>
                 <div className="flex justify-center mt-4">
                     <Button onClick={handlePrint} className="w-full" disabled={!selectedCompany || !selectedLocation}>
                         <Printer className="mr-2 h-4 w-4" />
                         Print ID Card
                     </Button>
                 </div>
-                 <div className="text-sm text-muted-foreground text-center">Click the card to zoom.</div>
+                <div className="text-sm text-muted-foreground text-center">Click the card to zoom.</div>
             </div>
+        </Card>
 
-            <div className="flex justify-center items-center p-4 bg-gray-100 rounded-lg relative min-h-[360px]">
-                {/* Hidden card for printing */}
-                <div className="absolute opacity-0 pointer-events-none -z-10" aria-hidden>
-                    <div ref={cardRef}>
-                        <CardComponent positionX={position[0]} />
-                    </div>
+        <div className="flex justify-center items-center p-4 bg-gray-100 rounded-lg relative min-h-[360px]">
+            {/* Hidden card for printing */}
+            <div className="absolute opacity-0 pointer-events-none -z-10" aria-hidden>
+                <div ref={cardRef}>
+                    <CardComponent positionX={position[0]} />
                 </div>
-                
-                {/* Visible card for interaction */}
-                 <div className="cursor-zoom-in" onClick={() => setIsZoomed(true)}>
-                    <CardComponent positionX={position[0]}/>
-                </div>
+            </div>
+            
+            {/* Visible card for interaction */}
+            <div className="cursor-zoom-in" onClick={() => setIsZoomed(true)}>
+                <CardComponent positionX={position[0]}/>
             </div>
         </div>
 
@@ -284,8 +268,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                 </div>
             </div>
         )}
-
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }
