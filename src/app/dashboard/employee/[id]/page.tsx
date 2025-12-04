@@ -1,4 +1,5 @@
 
+
 'use client';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
@@ -28,7 +29,6 @@ type SortDirection = 'ascending' | 'descending';
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
-  const { id } = params;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
@@ -45,10 +45,13 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   
   const role = searchParams.get('role');
   const isSelfView = role !== 'admin';
+  const { id } = params;
 
   useEffect(() => {
-    const foundUser = users.find(u => u.id === id);
-    setUser(foundUser);
+    if (id) {
+      const foundUser = users.find(u => u.id === id);
+      setUser(foundUser);
+    }
   }, [id, users]);
   
   useEffect(() => {
