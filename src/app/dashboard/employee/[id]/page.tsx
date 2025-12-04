@@ -1,4 +1,5 @@
 
+
 'use client';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
@@ -32,7 +33,10 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
-  const [user, setUser] = useState<UserType | undefined>(undefined);
+  // Use React.use() to correctly unwrap the promise-like params object
+  const { id } = use(params);
+
+  const [user, setUser] = useState<UserType | undefined>(() => users.find(u => u.id === id));
   
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
   const [documentTypes, setDocumentTypes] = useState<string[]>(documentTypesList);
@@ -44,9 +48,9 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   
   const role = searchParams.get('role');
   const isSelfView = role !== 'admin';
-  const { id } = params;
   
   useEffect(() => {
+    // This effect ensures the user state is updated if the id or users list changes.
     if (id) {
       const foundUser = users.find(u => u.id === id);
       setUser(foundUser);
@@ -57,6 +61,8 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
       if (user) {
           const userDocs = allDocuments.filter(doc => doc.ownerId === user.id);
           setEmployeeDocs(userDocs);
+      } else {
+          setEmployeeDocs([]);
       }
   }, [user]);
 
@@ -334,5 +340,6 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     </div>
   )
 }
+    
 
     
