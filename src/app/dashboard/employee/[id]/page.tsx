@@ -1,5 +1,4 @@
 
-
 'use client';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
@@ -34,7 +33,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
-  const [user, setUser] = useState<UserType | undefined>(() => users.find(u => u.id === id));
+  const [user, setUser] = useState<UserType | undefined>(undefined);
   
   const [employeeDocs, setEmployeeDocs] = useState<Document[]>([]);
   const [documentTypes, setDocumentTypes] = useState<string[]>(documentTypesList);
