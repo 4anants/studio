@@ -45,14 +45,13 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   
   const role = searchParams.get('role');
   const isSelfView = role !== 'admin';
-  const { id } = params;
-
+  
   useEffect(() => {
-    if (id) {
-      const foundUser = users.find(u => u.id === id);
+    if (params.id) {
+      const foundUser = users.find(u => u.id === params.id);
       setUser(foundUser);
     }
-  }, [id, users]);
+  }, [params.id, users]);
   
   useEffect(() => {
       if (user) {
@@ -63,7 +62,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
 
   const handleEmployeeSave = useCallback((employee: Partial<UserType> & { originalId?: string }) => {
     setUsers(currentUsers => {
-        const userIndex = currentUsers.findIndex(u => u.id === (employee.originalId || employee.id));
+        const userIndex = currentUsers.findIndex(u => u.id === (employee.originalId || params.id));
         if (userIndex > -1) {
             const updatedUsers = [...currentUsers];
             const existingUser = updatedUsers[userIndex];
@@ -86,7 +85,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
         }
         return currentUsers;
     });
-  }, [router]);
+  }, [router, params.id]);
 
   const handleTypeSelection = useCallback((type: string) => {
     setSelectedTypes(prevTypes => {
