@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -24,17 +25,25 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Camera } from 'lucide-react';
-import type { User } from '@/lib/mock-data';
+import type { User, CompanyName, LocationKey } from '@/lib/mock-data';
+import { companies, locations } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
+const companyNames = companies.map(c => c.name) as [string, ...string[]];
+const locationKeys = Object.keys(locations) as [string, ...string[]];
+
 
 const formSchema = z.object({
   personalEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
   mobile: z.string().optional(),
   password: z.string().optional(),
-  avatar: z.string().optional(), // Can be the existing seed or a new data URI
+  avatar: z.string().optional(),
   bloodGroup: z.string().optional(),
+  company: z.enum(companyNames).optional(),
+  location: z.enum(locationKeys).optional(),
 });
 
 interface EmployeeSelfEditDialogProps {
@@ -57,6 +66,8 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
       password: '',
       avatar: employee?.avatar,
       bloodGroup: employee?.bloodGroup || '',
+      company: employee?.company,
+      location: employee?.location,
     },
   });
 
@@ -92,9 +103,6 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
         userData.password = password;
       }
       
-      // If avatar is a data URI, it means it's a new upload.
-      // In a real app, you'd upload this and get back a URL/ID.
-      // For mock, we'll just assign a new random seed if it's a new image.
       if (values.avatar?.startsWith('data:image')) {
         userData.avatar = String(Date.now());
       }
@@ -120,6 +128,8 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
             password: '',
             avatar: employee?.avatar,
             bloodGroup: employee?.bloodGroup || '',
+            company: employee?.company,
+            location: employee?.location,
         });
         setAvatarPreview(null);
     }
@@ -139,7 +149,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-6">
             <div className="flex justify-center">
                  <div {...getRootProps()} className="relative cursor-pointer group">
                     <input {...getInputProps()} />
@@ -203,6 +213,50 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
             />
             <FormField
               control={form.control}
+              name="company"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a company" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {companies.map(c => (
+                        <SelectItem key={c.name} value={c.name}>{c.shortName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.keys(locations).map(loc => (
+                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
@@ -214,7 +268,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                 </FormItem>
               )}
             />
-             <DialogFooter>
+             <DialogFooter className="pt-4">
                 <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes

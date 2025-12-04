@@ -1,3 +1,4 @@
+
 export type Document = {
   id: string;
   name: string;
@@ -7,6 +8,21 @@ export type Document = {
   ownerId: string;
   fileType: 'pdf' | 'doc' | 'image';
 };
+
+export const companies = [
+    { name: 'ASE ENGINEERS PRIVATE LIMITED', shortName: 'ASE' },
+    { name: 'ALLIANCE MEP PRIVATE LIMITED', shortName: 'ALLIANCE' },
+    { name: 'POTOMAC CONSULTING SERVICES PRIVATE LIMITED', shortName: 'POTOMAC' },
+] as const;
+export type Company = typeof companies[number];
+export type CompanyName = Company['name'];
+
+export const locations = {
+    'AMD': 'B-813, K P Epitome, Near Makarba Lake, Makarba, Ahmedabad - 380051.',
+    'HYD': '8-1-305/306, 4th Floor, Anand Silicon Chip, Shaikpet, Hyderabad - 500008.'
+};
+export type LocationKey = keyof typeof locations;
+
 
 export type User = {
   id: string;
@@ -23,6 +39,8 @@ export type User = {
   status: 'active' | 'inactive' | 'pending' | 'deleted';
   department?: string;
   bloodGroup?: string;
+  company?: CompanyName;
+  location?: LocationKey;
 };
 
 export const holidayLocations = ['ALL', 'AMD', 'HYD', 'US'] as const;
@@ -50,10 +68,10 @@ export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Ap
 export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales', 'Information & Technology'];
 
 export const users: User[] = [
-  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', personalEmail: 'alice.personal@email.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer', bloodGroup: 'O+' },
-  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', personalEmail: 'bob.personal@email.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager', bloodGroup: 'A-' },
-  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', personalEmail: 'charlie.personal@email.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer', bloodGroup: 'B+' },
-  { id: 'A-134', name: 'Anant Upenkumar Shah', email: 'anant.shah@company.com', personalEmail: 'anant.personal@email.com', avatar: '134', mobile: '123-456-7893', password: 'password123', dateOfBirth: '1995-02-20', joiningDate: '2022-08-01', status: 'active', department: 'Information & Technology', designation: 'IT Specialist', bloodGroup: 'A+' },
+  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', personalEmail: 'alice.personal@email.com', avatar: '1', mobile: '123-456-7890', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer', bloodGroup: 'O+', company: 'ASE ENGINEERS PRIVATE LIMITED', location: 'AMD' },
+  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', personalEmail: 'bob.personal@email.com', avatar: '2', mobile: '123-456-7891', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager', bloodGroup: 'A-', company: 'ALLIANCE MEP PRIVATE LIMITED', location: 'HYD' },
+  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', personalEmail: 'charlie.personal@email.com', avatar: '3', mobile: '123-456-7892', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer', bloodGroup: 'B+', company: 'POTOMAC CONSULTING SERVICES PRIVATE LIMITED', location: 'AMD' },
+  { id: 'A-134', name: 'Anant Upenkumar Shah', email: 'anant.shah@company.com', personalEmail: 'anant.personal@email.com', avatar: '134', mobile: '123-456-7893', password: 'password123', dateOfBirth: '1995-02-20', joiningDate: '2022-08-01', status: 'active', department: 'Information & Technology', designation: 'IT Specialist', bloodGroup: 'A+', company: 'ASE ENGINEERS PRIVATE LIMITED', location: 'HYD' },
 ];
 
 export const documents: Document[] = [

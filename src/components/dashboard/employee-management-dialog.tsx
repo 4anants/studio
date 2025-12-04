@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -24,7 +25,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-import type { User } from '@/lib/mock-data';
+import type { User, CompanyName, LocationKey } from '@/lib/mock-data';
+import { companies, locations } from '@/lib/mock-data';
 import {
   Select,
   SelectContent,
@@ -33,6 +35,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+
+const companyNames = companies.map(c => c.name) as [string, ...string[]];
+const locationKeys = Object.keys(locations) as [string, ...string[]];
 
 const formSchema = z.object({
   id: z.string().min(1, { message: 'Employee ID is required.' }),
@@ -48,6 +53,8 @@ const formSchema = z.object({
   status: z.enum(['active', 'inactive', 'pending']),
   department: z.string().optional(),
   bloodGroup: z.string().optional(),
+  company: z.enum(companyNames).optional(),
+  location: z.enum(locationKeys).optional(),
 });
 
 interface EmployeeManagementDialogProps {
@@ -79,6 +86,8 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
       department: employee?.department || '',
       bloodGroup: employee?.bloodGroup || '',
+      company: employee?.company,
+      location: employee?.location,
     },
   });
   
@@ -92,7 +101,6 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const validation = finalSchema.safeParse(values);
     if (!validation.success) {
-        // This part is to show errors in the form
         Object.entries(validation.error.flatten().fieldErrors).forEach(([name, errors]) => {
             if (errors) {
                  form.setError(name as any, { type: 'manual', message: errors[0] });
@@ -102,7 +110,6 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
     }
 
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
       const userData: Partial<User> & { originalId?: string } = {
         ...validation.data,
@@ -127,12 +134,11 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       if (!isEditing) {
         form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '', bloodGroup: '' });
       } else {
-        form.reset({ ...values, password: '' }); // Clear password field after edit
+        form.reset({ ...values, password: '' }); 
       }
     }, 1000);
   };
   
-  // Reset form when dialog opens
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
         form.reset({
@@ -149,6 +155,8 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
             department: employee?.department || '',
             bloodGroup: employee?.bloodGroup || '',
+            company: employee?.company,
+            location: employee?.location,
         });
     }
     setOpen(isOpen);
@@ -157,7 +165,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
           <DialogDescription>
@@ -285,6 +293,50 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             />
              <FormField
               control={form.control}
+              name="company"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Company</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a company" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {companies.map(c => (
+                        <SelectItem key={c.name} value={c.name}>{c.shortName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Location</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.keys(locations).map(loc => (
+                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
               name="department"
               render={({ field }) => (
                 <FormItem className="col-span-2 sm:col-span-1">
@@ -353,7 +405,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 </FormItem>
               )}
             />
-             <DialogFooter className="col-span-2">
+             <DialogFooter className="col-span-2 pt-4">
                 <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isEditing ? 'Save Changes' : 'Create Employee'}

@@ -2,10 +2,10 @@
 
 'use client';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
-import { users as initialUsers, documents as allDocuments, documentTypesList, departments } from '@/lib/mock-data';
+import { users as initialUsers, documents as allDocuments, documentTypesList, departments, CompanyName } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, IdCard, Droplet } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, IdCard, Droplet, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { UploadDialog } from '@/components/dashboard/upload-dialog';
@@ -189,6 +189,8 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   }
   
   const userDetails = [
+    { icon: Briefcase, label: 'Company', value: user.company || 'N/A' },
+    { icon: MapPin, label: 'Location', value: user.location || 'N/A' },
     { icon: Mail, label: 'Official Email', value: user.email },
     { icon: Mail, label: 'Personal Email', value: user.personalEmail || 'N/A' },
     { icon: Phone, label: 'Mobile', value: user.mobile || 'N/A' },
