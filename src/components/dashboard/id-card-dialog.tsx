@@ -31,26 +31,22 @@ interface IdCardDialogProps {
 
 const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
-        <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
-            <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
-                {/* The main 'A' like shape */}
-                <path d="M5,70 L50,5 L95,70" stroke="#334b6c" strokeWidth="10" fill="none" strokeLinecap="round" />
-                {/* The small vertical bar on the right leg of 'A' */}
-                <path d="M68,55 L68,65" stroke="#334b6c" strokeWidth="6" fill="none" />
-                <path d="M65,60 L71,60" stroke="#334b6c" strokeWidth="6" fill="none" />
-                 {/* The 'se' part */}
-                <g transform="translate(18, 40) scale(0.6)">
-                    <text x="0" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">s</text>
-                    <text x="20" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">e</text>
-                     {/* The swoosh over 'se' */}
-                    <path d="M-5 5 C 20 -15, 40 -15, 60 10" stroke="#334b6c" strokeWidth="7" fill="none" />
-                </g>
-            </svg>
-            <div className="flex flex-col">
-                <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
-                <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
-            </div>
-        </div>
+      <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
+          <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
+              <path d="M5,70 L50,5 L95,70" stroke="#334b6c" strokeWidth="10" fill="none" strokeLinecap="round" />
+              <path d="M68,55 L68,65" stroke="#334b6c" strokeWidth="6" fill="none" />
+              <path d="M65,60 L71,60" stroke="#334b6c" strokeWidth="6" fill="none" />
+              <g transform="translate(18, 40) scale(0.6)">
+                  <text x="0" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">s</text>
+                  <text x="20" y="30" fontFamily="serif" fontSize="48" fontWeight="bold" fill="#334b6c">e</text>
+                  <path d="M-5 5 C 20 -15, 40 -15, 60 10" stroke="#334b6c" strokeWidth="7" fill="none" />
+              </g>
+          </svg>
+          <div className="flex flex-col">
+              <span className="text-3xl font-serif tracking-[0.2em]">A S E</span>
+              <span className="text-sm font-semibold tracking-wider -mt-1">ENGINEERS PL</span>
+          </div>
+      </div>
     ),
     'ALLIANCE MEP PRIVATE LIMITED': () => (
         <div className="flex items-center gap-2">
