@@ -138,11 +138,9 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     }
     // Fallback for other locations
     const fullAddress = locations[locationKey];
-    const parts = fullAddress.split(', ');
-    const midpoint = Math.ceil(parts.length / 2);
     return {
-      line1: parts.slice(0, midpoint).join(', '),
-      line2: parts.slice(midpoint).join(', ')
+      line1: 'B-813, K P Epitome, Near Makarba Lake,',
+      line2: 'Makarba, Ahmedabad - 380051.'
     };
   }
 
@@ -190,7 +188,7 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
         <div className="text-white text-center p-2 flex-shrink-0" style={{ backgroundColor: '#334b6c' }}>
             {companyDetails && <p className="font-bold text-base mb-0.5">{companyDetails.name}</p>}
             {addressLine1 && (
-                <div className="text-[7px] leading-tight space-y-0">
+                <div className="text-[8px] leading-snug space-y-0.5">
                     <p>{addressLine1}</p>
                     <p>{addressLine2}</p>
                 </div>
@@ -282,3 +280,4 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     
 
     
+
