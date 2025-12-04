@@ -28,7 +28,7 @@ import {
     TableHeader,
     TableRow,
   } from '@/components/ui/table'
-import { Calendar, Bell, Info } from 'lucide-react'
+import { Calendar, Bell, Info, MailOpen, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 
@@ -188,6 +188,10 @@ export function EmployeeView() {
 
       }, 200); // Small delay to allow tab to switch
     }
+  }, []);
+
+  const toggleAnnouncementRead = useCallback((id: string) => {
+    setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isRead: !a.isRead } : a));
   }, []);
 
   return (
@@ -364,6 +368,21 @@ export function EmployeeView() {
                     <CardContent className="space-y-4">
                         {sortedAnnouncements.length > 0 ? sortedAnnouncements.map(announcement => (
                             <div key={announcement.id} className={cn("p-4 border rounded-lg relative overflow-hidden", !announcement.isRead && "bg-blue-50/50 border-blue-200")}>
+                                <div className="absolute top-2 right-2">
+                                    <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)}>
+                                        {announcement.isRead ? (
+                                            <>
+                                                <Mail className="mr-2 h-4 w-4" />
+                                                Mark as Unread
+                                            </>
+                                        ) : (
+                                            <>
+                                                <MailOpen className="mr-2 h-4 w-4" />
+                                                Mark as Read
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
                                 {!announcement.isRead && <div className="absolute left-0 top-0 h-full w-1.5 bg-primary"></div>}
                                 <h3 className="font-semibold flex items-center gap-2">
                                     <Bell className="h-5 w-5 text-primary" />
@@ -372,7 +391,7 @@ export function EmployeeView() {
                                 <p className="text-sm text-muted-foreground mt-1">
                                     Posted on {new Date(announcement.date).toLocaleString()} by {announcement.author}
                                 </p>
-                                <p className="mt-2 text-sm">{announcement.message}</p>
+                                <p className="mt-2 text-sm pr-32">{announcement.message}</p>
                             </div>
                         )) : (
                             <div className="text-center text-muted-foreground py-8">
@@ -386,3 +405,4 @@ export function EmployeeView() {
     </>
   )
 }
+ 
