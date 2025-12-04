@@ -32,7 +32,7 @@ interface IdCardDialogProps {
 const companyLogos = {
     'ASE ENGINEERS PRIVATE LIMITED': () => (
         <div className="flex items-end gap-2" style={{ color: '#334b6c' }}>
-            <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
+             <svg width="60" height="45" viewBox="0 0 100 75" className="-mb-1">
                 <path d="M5,70 L50,5 L95,70" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" />
                 <line x1="25" y1="45" x2="75" y2="45" stroke="currentColor" strokeWidth="8" />
                  <g transform="translate(32, 48) scale(0.5)">
@@ -168,21 +168,19 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                     ref={cardRef} 
                     className="id-card-print-area bg-white shadow-lg overflow-hidden"
                     style={{
-                        width: '324px', // 86mm at 96 DPI
-                        height: '204px', // 54mm at 96 DPI
+                        width: '204px', // 54mm at 96 DPI
+                        height: '324px', // 86mm at 96 DPI
                         fontFamily: "'Segoe UI', sans-serif",
-                        transform: 'rotate(90deg) scale(1.5)',
-                        transformOrigin: 'center',
                     }}
                 >
                     <div className="flex flex-col h-full">
                         {/* Header */}
-                        <div className="flex flex-col items-center justify-center pt-2 px-4 flex-shrink-0">
+                        <div className="flex flex-col items-center justify-center pt-3 px-2 flex-shrink-0">
                            {LogoComponent && <LogoComponent />}
                         </div>
 
                         {/* Body */}
-                        <div className="flex-grow flex items-center pt-2 px-3">
+                        <div className="flex-grow flex items-center pt-3 px-2">
                             <div className="w-2/5 flex-shrink-0 flex justify-center">
                                 <Image
                                     src={`https://picsum.photos/seed/${user.avatar}/150/200`}
@@ -193,12 +191,15 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
                                     data-ai-hint="person passport"
                                 />
                             </div>
-                            <div className="w-3/5 h-full flex items-center justify-center -ml-2">
-                                <div className="flex flex-col justify-center items-start text-left whitespace-nowrap" style={{ transform: 'rotate(-90deg)' }}>
+                             <div className="w-3/5 h-full flex items-center justify-center -ml-2">
+                                <div 
+                                    className="flex flex-col justify-center items-center text-center whitespace-nowrap origin-center" 
+                                    style={{ transform: 'rotate(-90deg)' }}
+                                >
                                     <p className="font-bold text-base leading-tight" style={{ color: '#009966' }}>{user.name}</p>
-                                    <p className="text-xs leading-tight mt-1">{user.department || 'N/A'}</p>
+                                    <p className="text-xs leading-tight mt-1">{user.designation || 'N/A'}</p>
                                     <p className="text-xs leading-tight">Employee Code : {user.id}</p>
-                                    <p className="text-xs leading-tight">Blood Group : <span className="font-bold">{user.bloodGroup ? `${user.bloodGroup}+ve` : 'N/A'}</span></p>
+                                    <p className="text-xs leading-tight">Blood Group : <span className="font-bold">{user.bloodGroup || 'N/A'}</span></p>
                                 </div>
                             </div>
                         </div>
@@ -224,5 +225,6 @@ export function IdCardDialog({ user, children }: IdCardDialogProps) {
     </Dialog>
   );
 }
+    
 
     
