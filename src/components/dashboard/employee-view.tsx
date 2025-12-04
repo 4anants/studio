@@ -28,7 +28,7 @@ import {
     TableHeader,
     TableRow,
   } from '@/components/ui/table'
-import { Calendar, Bell, Info, MailOpen, Mail } from 'lucide-react'
+import { Calendar, Bell, MailOpen, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Simulate a logged-in employee user
@@ -54,22 +54,11 @@ export function EmployeeView() {
   const hasUnreadAnnouncements = useMemo(() => announcements.some(a => !a.isRead), [announcements]);
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      const tabClicked = localStorage.getItem('announcements_tab_clicked');
-      if (tabClicked === 'true') {
-        setAnnouncements(prev => prev.map(a => ({ ...a, isRead: true })));
-        localStorage.removeItem('announcements_tab_clicked');
-      }
-    };
-
     const handleViewAnnouncements = () => {
       setActiveTab('announcements');
     };
-
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('view-announcements', handleViewAnnouncements);
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('view-announcements', handleViewAnnouncements);
     };
   }, []);
@@ -116,7 +105,7 @@ export function EmployeeView() {
     });
   }, []);
 
-  const { availableYears, availableMonths } = useMemo(() => {
+  const { docYears, docMonths } = useMemo(() => {
     const years = new Set<string>();
     const months = new Set<number>();
     
@@ -131,8 +120,8 @@ export function EmployeeView() {
     });
 
     return { 
-        availableYears: Array.from(years).sort((a, b) => Number(b) - Number(a)),
-        availableMonths: Array.from(months).sort((a, b) => a - b)
+        docYears: Array.from(years).sort((a, b) => Number(b) - Number(a)),
+        docMonths: Array.from(months).sort((a, b) => a - b)
     };
   }, [userDocuments, selectedTypes, selectedYear]);
 
@@ -165,25 +154,71 @@ export function EmployeeView() {
     return sortableItems;
   }, [filteredDocuments, sortConfig]);
   
+  const { holidayYears, holidayMonths } = useMemo(() => {
+    const years = new Set<string>();
+    const months = new Set<number>();
+    holidays.forEach(holiday => {
+        const date = new Date(holiday.date);
+        years.add(date.getFullYear().toString());
+        if (selectedYear === 'all' || date.getFullYear().toString() === selectedYear) {
+            months.add(date.getMonth());
+        }
+    });
+    return {
+        holidayYears: Array.from(years).sort((a,b) => Number(b) - Number(a)),
+        holidayMonths: Array.from(months).sort((a,b) => a - b)
+    };
+  }, [holidays, selectedYear]);
+
   const filteredHolidays = useMemo(() => {
     return [...holidays]
-      .filter(holiday => holidayLocationFilter === 'all' || holiday.location === 'ALL' || holiday.location === holidayLocationFilter)
+      .filter(holiday => {
+          const date = new Date(holiday.date);
+          const locationMatch = holidayLocationFilter === 'all' || holiday.location === 'ALL' || holiday.location === holidayLocationFilter;
+          const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
+          const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
+          return locationMatch && yearMatch && monthMatch;
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [holidays, holidayLocationFilter]);
+  }, [holidays, holidayLocationFilter, selectedYear, selectedMonth]);
 
-  const sortedAnnouncements = useMemo(() => [...announcements].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [announcements]);
+  const { announcementYears, announcementMonths } = useMemo(() => {
+    const years = new Set<string>();
+    const months = new Set<number>();
+    announcements.forEach(announcement => {
+        const date = new Date(announcement.date);
+        years.add(date.getFullYear().toString());
+        if (selectedYear === 'all' || date.getFullYear().toString() === selectedYear) {
+            months.add(date.getMonth());
+        }
+    });
+    return {
+        announcementYears: Array.from(years).sort((a,b) => Number(b) - Number(a)),
+        announcementMonths: Array.from(months).sort((a,b) => a - b)
+    };
+    }, [announcements, selectedYear]);
+
+  const filteredAnnouncements = useMemo(() => {
+      return [...announcements]
+      .filter(announcement => {
+          const date = new Date(announcement.date);
+          const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
+          const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
+          return yearMatch && monthMatch;
+      })
+      .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    }, [announcements, selectedYear, selectedMonth]);
 
   const onTabChange = useCallback((value: string) => {
     setActiveTab(value);
+    setSelectedYear('all');
+    setSelectedMonth('all');
     if (value === 'announcements') {
       setTimeout(() => {
         setAnnouncements(prev => prev.map(a => ({ ...a, isRead: true })));
-        // Tell other components (like the header bell) that we've read everything
         localStorage.setItem('announcements_all_read', 'true');
-        const event = new Event('storage');
-        window.dispatchEvent(event);
-
-      }, 200); // Small delay to allow tab to switch
+        window.dispatchEvent(new Event('storage'));
+      }, 200); 
     }
   }, []);
 
@@ -250,7 +285,7 @@ export function EmployeeView() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Years</SelectItem>
-                                        {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                                        {docYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -262,7 +297,7 @@ export function EmployeeView() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Months</SelectItem>
-                                        {availableMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
+                                        {docMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -289,28 +324,56 @@ export function EmployeeView() {
                         <CardDescription>Upcoming company holidays for the year.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                    <div className="mb-4">
-                        <label className="text-sm font-medium">Filter by Location</label>
-                        <div className="flex flex-wrap items-center gap-2 pt-2">
-                             <Button
-                                variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setHolidayLocationFilter('all')}
-                            >
-                                All
-                            </Button>
-                            {holidayLocations.filter(l => l !== 'ALL').map(loc => (
-                                <Button
-                                    key={loc}
-                                    variant={holidayLocationFilter === loc ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setHolidayLocationFilter(loc)}
-                                >
-                                    {loc}
-                                </Button>
-                            ))}
+                        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                            <div className="flex-grow">
+                                <label className="text-sm font-medium">Filter by Location</label>
+                                <div className="flex flex-wrap items-center gap-2 pt-2">
+                                    <Button
+                                        variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setHolidayLocationFilter('all')}
+                                    >
+                                        All
+                                    </Button>
+                                    {holidayLocations.filter(l => l !== 'ALL').map(loc => (
+                                        <Button
+                                            key={loc}
+                                            variant={holidayLocationFilter === loc ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setHolidayLocationFilter(loc)}
+                                        >
+                                            {loc}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-2">
+                                <div className="flex-grow min-w-[120px]">
+                                    <label className="text-sm font-medium">Year</label>
+                                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                        <SelectTrigger className="w-full mt-1">
+                                            <SelectValue placeholder="Select Year" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Years</SelectItem>
+                                            {holidayYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex-grow min-w-[120px]">
+                                    <label className="text-sm font-medium">Month</label>
+                                    <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
+                                        <SelectTrigger className="w-full mt-1">
+                                            <SelectValue placeholder="Select Month" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Months</SelectItem>
+                                            {holidayMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </div>
-                    </div>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -340,7 +403,7 @@ export function EmployeeView() {
                                 </TableRow>
                            )) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center text-muted-foreground">No holidays found for selected location.</TableCell>
+                                    <TableCell colSpan={3} className="text-center text-muted-foreground">No holidays found for selected filters.</TableCell>
                                 </TableRow>
                            )}
                         </TableBody>
@@ -354,39 +417,67 @@ export function EmployeeView() {
                         <CardTitle>Company Announcements</CardTitle>
                         <CardDescription>Stay up to date with the latest news and updates.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        {sortedAnnouncements.length > 0 ? sortedAnnouncements.map(announcement => (
-                            <div key={announcement.id} className={cn("p-4 border rounded-lg relative overflow-hidden", !announcement.isRead && "bg-blue-50/50 border-blue-200")}>
-                                <div className="absolute top-2 right-2">
-                                    <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)}>
-                                        {announcement.isRead ? (
-                                            <>
-                                                <Mail className="mr-2 h-4 w-4" />
-                                                Mark as Unread
-                                            </>
-                                        ) : (
-                                            <>
-                                                <MailOpen className="mr-2 h-4 w-4" />
-                                                Mark as Read
-                                            </>
-                                        )}
-                                    </Button>
+                    <CardContent>
+                         <div className="flex items-center gap-2 mb-4">
+                            <div className="flex-grow min-w-[120px]">
+                                <label className="text-sm font-medium">Year</label>
+                                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                    <SelectTrigger className="w-full mt-1">
+                                        <SelectValue placeholder="Select Year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Years</SelectItem>
+                                        {announcementYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex-grow min-w-[120px]">
+                                <label className="text-sm font-medium">Month</label>
+                                <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
+                                    <SelectTrigger className="w-full mt-1">
+                                        <SelectValue placeholder="Select Month" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Months</SelectItem>
+                                        {announcementMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => (
+                                <div key={announcement.id} className={cn("p-4 border rounded-lg relative overflow-hidden", !announcement.isRead && "bg-blue-50/50 border-blue-200")}>
+                                    <div className="absolute top-2 right-2">
+                                        <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)}>
+                                            {announcement.isRead ? (
+                                                <>
+                                                    <Mail className="mr-2 h-4 w-4" />
+                                                    Mark as Unread
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <MailOpen className="mr-2 h-4 w-4" />
+                                                    Mark as Read
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                    {!announcement.isRead && <div className="absolute left-0 top-0 h-full w-1.5 bg-primary"></div>}
+                                    <h3 className="font-semibold flex items-center gap-2">
+                                        <Bell className="h-5 w-5 text-primary" />
+                                        {announcement.title}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Posted on {new Date(announcement.date).toLocaleString()} by {announcement.author}
+                                    </p>
+                                    <p className="mt-2 text-sm pr-32">{announcement.message}</p>
                                 </div>
-                                {!announcement.isRead && <div className="absolute left-0 top-0 h-full w-1.5 bg-primary"></div>}
-                                <h3 className="font-semibold flex items-center gap-2">
-                                    <Bell className="h-5 w-5 text-primary" />
-                                    {announcement.title}
-                                </h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Posted on {new Date(announcement.date).toLocaleString()} by {announcement.author}
-                                </p>
-                                <p className="mt-2 text-sm pr-32">{announcement.message}</p>
-                            </div>
-                        )) : (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>No announcements right now.</p>
-                            </div>
-                        )}
+                            )) : (
+                                <div className="text-center text-muted-foreground py-8">
+                                    <p>No announcements found for the selected period.</p>
+                                </div>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -394,5 +485,3 @@ export function EmployeeView() {
     </>
   )
 }
- 
-    
