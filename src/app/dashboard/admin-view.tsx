@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -56,6 +56,7 @@ import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department
 import { AddHolidayDialog } from '@/components/dashboard/add-holiday-dialog'
 import { AddAnnouncementDialog } from '@/components/dashboard/add-announcement-dialog'
 import { DeleteAnnouncementDialog } from '@/components/dashboard/delete-announcement-dialog'
+import { Label } from '@/components/ui/label'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -71,6 +72,7 @@ export function AdminView() {
   const [activeTab, setActiveTab] = useState('all-docs');
   const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -79,10 +81,40 @@ export function AdminView() {
       setActiveTab('announcements');
     };
     window.addEventListener('view-announcements', handleViewAnnouncements);
+    const storedLogo = localStorage.getItem('companyLogo');
+    if (storedLogo) {
+      setLogoSrc(storedLogo);
+    }
     return () => {
       window.removeEventListener('view-announcements', handleViewAnnouncements);
     };
   }, []);
+
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const newLogo = e.target?.result as string;
+        setLogoSrc(newLogo);
+        localStorage.setItem('companyLogo', newLogo);
+        toast({
+          title: 'Logo Updated',
+          description: 'The company logo has been changed successfully.',
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleResetLogo = () => {
+    setLogoSrc(null);
+    localStorage.removeItem('companyLogo');
+    toast({
+      title: 'Logo Reset',
+      description: 'The company logo has been reset to the default.',
+    });
+  };
 
   const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
     const fullNewDocs: Document[] = newDocs.map(d => ({
@@ -106,7 +138,7 @@ export function AdminView() {
             ...existingUser,
             ...employee,
         };
-        updatedUsers[userIndex] = updatedUser;
+        updatedUsers[userIndex] = updatedUser as User;
         
         if ('id' in employee && employee.id !== employee.originalId) {
             toast({
@@ -412,6 +444,7 @@ export function AdminView() {
                 <TabsTrigger value="announcements">
                     Announcements
                 </TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
@@ -799,6 +832,50 @@ export function AdminView() {
                            )}
                         </TableBody>
                     </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="settings">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Application Settings</CardTitle>
+                    <CardDescription>Manage global settings for the application.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                        <Label>Company Logo</Label>
+                        <div className="flex items-center gap-4">
+                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                                {logoSrc ? (
+                                    <Image src={logoSrc} alt="Current Logo" width={80} height={80} className="rounded-full object-cover"/>
+                                ) : (
+                                    <FileLock2 className="w-8 h-8 text-muted-foreground"/>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button asChild variant="outline">
+                                    <label htmlFor="logo-upload">
+                                        <UploadCloud className="mr-2" />
+                                        Change Logo
+                                        <input
+                                            type="file"
+                                            id="logo-upload"
+                                            className="sr-only"
+                                            accept="image/*"
+                                            onChange={handleLogoChange}
+                                        />
+                                    </label>
+                                </Button>
+                                {logoSrc && (
+                                <Button variant="ghost" className="text-destructive" onClick={handleResetLogo}>
+                                    <X className="mr-2" />
+                                    Reset
+                                </Button>
+                                )}
+                            </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Upload a new logo for the login screen.</p>
+                    </div>
                 </CardContent>
             </Card>
         </TabsContent>

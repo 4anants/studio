@@ -1,38 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LoginForm } from '@/components/login-form';
-import { FileLock2, UploadCloud } from 'lucide-react';
+import { FileLock2 } from 'lucide-react';
 import Image from 'next/image';
 
 export default function LoginPage() {
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
-  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setLogoSrc(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+  useEffect(() => {
+    setIsClient(true);
+    const storedLogo = localStorage.getItem('companyLogo');
+    if (storedLogo) {
+      setLogoSrc(storedLogo);
     }
-  };
+  }, []);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <label htmlFor="logo-upload" className="group relative mx-auto mb-4 flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-primary">
-            <input
-              type="file"
-              id="logo-upload"
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              accept="image/*"
-              onChange={handleLogoChange}
-              style={{ display: 'none' }} // Keep it hidden but available
-            />
-            {logoSrc ? (
+          <div className="group relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary">
+            {isClient && logoSrc ? (
               <Image
                 src={logoSrc}
                 alt="Custom Logo"
@@ -43,10 +33,7 @@ export default function LoginPage() {
             ) : (
               <FileLock2 className="h-8 w-8 text-primary-foreground" />
             )}
-            <div className="absolute inset-0 flex h-full w-full items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-              <UploadCloud className="h-8 w-8 text-white" />
-            </div>
-          </label>
+          </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-primary">
             AE INTRAWEB
