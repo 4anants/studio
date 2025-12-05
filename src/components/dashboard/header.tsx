@@ -18,6 +18,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { AnnouncementBell } from './announcement-bell'
+import { ThemeToggle } from '../theme-toggle'
 
 export function DashboardHeader() {
   const router = useRouter()
@@ -55,6 +56,7 @@ export function DashboardHeader() {
       </nav>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial" />
+        <ThemeToggle />
         <AnnouncementBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
