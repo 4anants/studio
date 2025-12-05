@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -9,8 +9,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, Award } from 'lucide-react'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/tabs"
 import Image from 'next/image'
 import { BulkUploadDialog } from '@/components/dashboard/bulk-upload-dialog'
-import { Button } from '../ui/button'
+import { Button } from '@/components/ui/button'
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog'
 import { DeleteEmployeeDialog } from '@/components/dashboard/delete-employee-dialog'
 import {
@@ -53,20 +53,36 @@ import { cn } from '@/lib/utils'
 import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-dialog'
 import { AddDepartmentDialog } from '@/components/dashboard/add-department-dialog'
 import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department-dialog'
+import { AddHolidayDialog } from '@/components/dashboard/add-holiday-dialog'
+import { AddAnnouncementDialog } from '@/components/dashboard/add-announcement-dialog'
+import { DeleteAnnouncementDialog } from '@/components/dashboard/delete-announcement-dialog'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
   const [users, setUsers] = useState(initialUsers)
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
   const [departments, setDepartments] = useState(initialDepartments);
+  const [holidays, setHolidays] = useState(initialHolidays);
+  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: true}))); // Admins see all as read initially
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
   const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
+  const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    const handleViewAnnouncements = () => {
+      setActiveTab('announcements');
+    };
+    window.addEventListener('view-announcements', handleViewAnnouncements);
+    return () => {
+      window.removeEventListener('view-announcements', handleViewAnnouncements);
+    };
+  }, []);
 
   const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
     const fullNewDocs: Document[] = newDocs.map(d => ({
@@ -79,39 +95,41 @@ export function AdminView() {
     setDocs(prev => [...fullNewDocs, ...prev]);
   }, []);
 
-  const handleEmployeeSave = useCallback((employee: User & { originalId?: string }) => {
+  const handleEmployeeSave = useCallback((employee: Partial<User> & { originalId?: string }) => {
     setUsers(prevUsers => {
       const userIndex = prevUsers.findIndex(u => u.id === (employee.originalId || employee.id));
       if (userIndex > -1) {
         // Update existing user
         const updatedUsers = [...prevUsers];
         const existingUser = updatedUsers[userIndex];
-        updatedUsers[userIndex] = {
+        const updatedUser = {
             ...existingUser,
             ...employee,
-            password: employee.password || existingUser.password // Keep old password if not provided
         };
-        if (employee.id !== (employee.originalId || employee.id)) {
+        updatedUsers[userIndex] = updatedUser;
+        
+        if ('id' in employee && employee.id !== employee.originalId) {
             toast({
                 title: "Profile Updated",
-                description: `An email notification has been sent to the admins regarding the update of ${employee.name}'s profile.`,
+                description: `An email notification has been sent to the admins regarding the update of ${updatedUser.name}'s profile.`,
             });
         }
         return updatedUsers;
       } else {
         // Add new user
         const newUser: User = {
-           id: employee.id,
-           name: employee.name,
-           email: employee.email,
-           avatar: String(Date.now()), // new avatar
+           id: employee.id || `user-${Date.now()}`,
+           name: employee.name || 'New User',
+           email: employee.email || 'new@user.com',
+           personalEmail: employee.personalEmail,
+           avatar: employee.avatar || String(Date.now()),
            mobile: employee.mobile,
            password: employee.password,
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
            resignationDate: employee.resignationDate,
            designation: employee.designation,
-           status: employee.status,
+           status: employee.status || 'pending',
            department: employee.department
         };
         return [...prevUsers, newUser];
@@ -195,6 +213,52 @@ export function AdminView() {
     });
   }, [toast]);
 
+  const handleAddHoliday = useCallback((newHoliday: {name: string, date: Date, location: HolidayLocation}) => {
+    const newHolidayItem: Holiday = {
+      id: `h-${Date.now()}`,
+      name: newHoliday.name,
+      date: newHoliday.date.toISOString().split('T')[0],
+      location: newHoliday.location,
+    };
+    setHolidays(prev => [...prev, newHolidayItem].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+    toast({
+      title: 'Holiday Added',
+      description: `"${newHoliday.name}" has been added to the holiday list.`,
+    });
+  }, [toast]);
+
+  const handleDeleteHoliday = useCallback((holidayId: string) => {
+    setHolidays(prev => prev.filter(h => h.id !== holidayId));
+    toast({
+      title: 'Holiday Deleted',
+      description: 'The holiday has been removed from the list.',
+    });
+  }, [toast]);
+
+  const handleAddAnnouncement = useCallback((announcement: { title: string, message: string }) => {
+    const newAnnouncement: Announcement = {
+      id: `anno-${Date.now()}`,
+      title: announcement.title,
+      message: announcement.message,
+      date: new Date().toISOString(),
+      author: 'Admin',
+      isRead: true, // New announcements by admin are 'read' for them
+    };
+    setAnnouncements(prev => [newAnnouncement, ...prev]);
+    toast({
+      title: 'Announcement Published',
+      description: 'A notification has been sent to all employees.',
+    });
+  }, [toast]);
+
+  const handleDeleteAnnouncement = useCallback((announcementId: string) => {
+    setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+    toast({
+      title: 'Announcement Deleted',
+      description: 'The announcement has been removed.',
+    });
+  }, [toast]);
+
   const activeUsers = useMemo(() => users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending'), [users]);
   const deletedUsers = useMemo(() => users.filter(user => user.status === 'deleted'), [users]);
 
@@ -240,7 +304,21 @@ export function AdminView() {
   const filteredDepartments = useMemo(() => departments.filter(dept =>
     dept.toLowerCase().includes(searchTerm.toLowerCase())
   ), [departments, searchTerm]);
+
+  const filteredHolidays = useMemo(() => {
+    return holidays.filter(holiday => 
+      holiday.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (holidayLocationFilter === 'all' || holiday.location === holidayLocationFilter)
+    ).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  }, [holidays, searchTerm, holidayLocationFilter]);
   
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter(announcement =>
+        announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        announcement.message.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [announcements, searchTerm]);
+
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
   const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
@@ -287,6 +365,7 @@ export function AdminView() {
     setSelectedUserIds([]);
     setSearchTerm('');
     setDepartmentFilters(['all']);
+    setHolidayLocationFilter('all');
   }, []);
 
   const numSelected = selectedUserIds.length;
@@ -322,13 +401,17 @@ export function AdminView() {
         </div>
       </div>
       
-      <Tabs defaultValue={activeTab} onValueChange={onTabChange}>
+      <Tabs value={activeTab} onValueChange={onTabChange}>
         <div className="flex items-center mb-4">
             <TabsList>
                 <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
                 <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                 <TabsTrigger value="departments">Departments</TabsTrigger>
+                <TabsTrigger value="holidays">Holidays</TabsTrigger>
+                <TabsTrigger value="announcements">
+                    Announcements
+                </TabsTrigger>
                 <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
@@ -340,6 +423,8 @@ export function AdminView() {
                             activeTab === 'all-docs' ? 'Search employees by name...' 
                             : activeTab === 'doc-types' ? 'Search document types...'
                             : activeTab === 'departments' ? 'Search departments...'
+                            : activeTab === 'holidays' ? 'Search holidays...'
+                            : activeTab === 'announcements' ? 'Search announcements...'
                             : 'Search users...'
                         }
                         className="w-full sm:w-[300px] pl-8"
@@ -389,7 +474,7 @@ export function AdminView() {
                             <Card 
                                 key={user.id} 
                                 className="cursor-pointer hover:border-primary transition-all"
-                                onClick={() => router.push(`/dashboard/employee/${user.id}`)}
+                                onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
                             >
                                 <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                     <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
@@ -590,6 +675,126 @@ export function AdminView() {
                            )) : (
                                 <TableRow>
                                     <TableCell colSpan={2} className="text-center text-muted-foreground">No departments found.</TableCell>
+                                </TableRow>
+                           )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="holidays">
+            <Card>
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <CardTitle>Manage Holidays</CardTitle>
+                        <CardDescription>Add or remove holidays for the organization.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex-grow sm:flex-grow-0">
+                           <p className="text-sm font-medium text-muted-foreground">Location</p>
+                           <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <Button
+                                    variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setHolidayLocationFilter('all')}
+                                >
+                                    All
+                                </Button>
+                                {holidayLocations.filter(l => l !== 'ALL').map(loc => (
+                                    <Button
+                                        key={loc}
+                                        variant={holidayLocationFilter === loc ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setHolidayLocationFilter(loc)}
+                                    >
+                                        {loc}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                         <AddHolidayDialog onAdd={handleAddHoliday}>
+                            <Button variant="outline">
+                                <CalendarPlus className="mr-2 h-4 w-4" /> Add Holiday
+                            </Button>
+                        </AddHolidayDialog>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Location</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {filteredHolidays.length > 0 ? filteredHolidays.map(holiday => (
+                                <TableRow key={holiday.id}>
+                                    <TableCell className="font-medium">{new Date(holiday.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</TableCell>
+                                    <TableCell>{holiday.name}</TableCell>
+                                    <TableCell>
+                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                                           {holiday.location}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteHoliday(holiday.id)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                           )) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No holidays found.</TableCell>
+                                </TableRow>
+                           )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="announcements">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Manage Announcements</CardTitle>
+                        <CardDescription>Create and publish announcements for all employees.</CardDescription>
+                    </div>
+                     <AddAnnouncementDialog onAdd={handleAddAnnouncement}>
+                        <Button variant="outline">
+                            <Bell className="mr-2 h-4 w-4" /> New Announcement
+                        </Button>
+                    </AddAnnouncementDialog>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Title</TableHead>
+                                <TableHead className="hidden md:table-cell">Message</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => (
+                                <TableRow key={announcement.id}>
+                                    <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                    <TableCell>{announcement.title}</TableCell>
+                                    <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)}>
+                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </DeleteAnnouncementDialog>
+                                    </TableCell>
+                                </TableRow>
+                           )) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No announcements found.</TableCell>
                                 </TableRow>
                            )}
                         </TableBody>
