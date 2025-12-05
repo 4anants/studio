@@ -459,9 +459,9 @@ export function EmployeeView() {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
                                 <div key={announcement.id} className={cn(
-                                    "p-4 border rounded-lg relative overflow-hidden", 
-                                    isUpcoming && "bg-blue-500/10 animate-pulse",
-                                    !isUpcoming && !announcement.isRead && "bg-secondary"
+                                    "p-4 border rounded-lg relative overflow-hidden",
+                                    !announcement.isRead && "bg-secondary",
+                                    isUpcoming && "bg-blue-500/10 animate-pulse ring-2 ring-destructive"
                                 )}>
                                     <div className="absolute top-2 right-2">
                                         <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)} disabled={isUpcoming}>
