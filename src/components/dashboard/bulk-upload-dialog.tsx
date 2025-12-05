@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useCallback } from 'react';
@@ -45,7 +46,11 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     setUploadedFiles(prev => [...prev, ...newFiles]);
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, noClick: true });
+  const { getRootProps, getInputProps, isDragActive, open: openFileDialog } = useDropzone({ 
+    onDrop, 
+    noClick: true, // We'll trigger it manually with the button
+    noKeyboard: true 
+  });
 
   const handleProcessFiles = async () => {
     setIsProcessing(true);
@@ -140,7 +145,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
                 <UploadCloud className="h-12 w-12" />
                 <p>Drag & drop files here, or</p>
-                <Button type="button" variant="outline" size="sm" onClick={() => document.querySelector<HTMLInputElement>('input[type="file"][style*="display: none"]')?.click()}>Browse Files</Button>
+                <Button type="button" variant="outline" size="sm" onClick={openFileDialog}>Browse Files</Button>
             </div>
         </div>
 
