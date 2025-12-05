@@ -692,17 +692,15 @@ const handleExportUsers = () => {
 
         <TabsContent value="file-explorer">
             <Card>
-                <CardHeader>
-                    <CardTitle>
-                        {departmentFilter === 'unassigned' ? 'Unassigned Documents' : 'Browse Documents'}
-                    </CardTitle>
-                    <CardDescription>
-                        {departmentFilter === 'unassigned'
-                            ? 'These documents could not be automatically assigned. Please assign them to an employee.'
-                            : 'Browse all documents by type, then by employee.'}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
+                {departmentFilter === 'unassigned' && (
+                    <CardHeader>
+                        <CardTitle>Unassigned Documents</CardTitle>
+                        <CardDescription>
+                            These documents could not be automatically assigned. Please assign them to an employee.
+                        </CardDescription>
+                    </CardHeader>
+                )}
+                <CardContent className={cn(departmentFilter !== 'unassigned' && "pt-6")}>
                     {departmentFilter === 'unassigned' ? (
                         unassignedDocuments.length > 0 ? (
                             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -959,7 +957,7 @@ const handleExportUsers = () => {
                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
-                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-red-500/10 animate-pulse ring-2 ring-destructive")}>
+                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-500/10 animate-pulse ring-2 ring-destructive")}>
                                     <TableCell className="font-medium hidden sm:table-cell">
                                         {new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </TableCell>
