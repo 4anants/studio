@@ -1,4 +1,5 @@
 
+
 export type Document = {
   id: string;
   name: string;
@@ -62,6 +63,7 @@ export type Announcement = {
   author: string;
   isRead?: boolean;
   status: 'published' | 'deleted';
+  eventDate?: string; // YYYY-MM-DD
 };
 
 
@@ -95,7 +97,7 @@ export const holidays: Holiday[] = [
 ];
 
 export const announcements: Announcement[] = [
-  { id: 'anno-1', title: 'System Maintenance Scheduled', message: 'The internal portal will be down for scheduled maintenance on Sunday from 2:00 AM to 4:00 AM. We apologize for any inconvenience.', date: '2024-07-25T10:00:00Z', author: 'Admin', isRead: false, status: 'published' },
+  { id: 'anno-1', title: 'System Maintenance Scheduled', message: 'The internal portal will be down for scheduled maintenance on Sunday from 2:00 AM to 4:00 AM. We apologize for any inconvenience.', date: '2024-07-25T10:00:00Z', author: 'Admin', isRead: false, status: 'published', eventDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] },
   { id: 'anno-2', title: 'Welcome New Team Members!', message: 'Please join us in welcoming our new software engineers, David and Fiona, who are joining the Engineering team this week!', date: '2024-07-22T14:30:00Z', author: 'Admin', isRead: true, status: 'published' },
 ];
 

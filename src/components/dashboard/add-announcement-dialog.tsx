@@ -14,10 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '../ui/textarea';
-import { Bell } from 'lucide-react';
+import { Bell, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface AddAnnouncementDialogProps {
-  onAdd: (announcement: { title: string, message: string }) => void;
+  onAdd: (announcement: { title: string, message: string, eventDate?: string }) => void;
   children: React.ReactNode;
 }
 
@@ -25,12 +29,18 @@ export function AddAnnouncementDialog({ onAdd, children }: AddAnnouncementDialog
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
+  const [eventDate, setEventDate] = useState<Date | undefined>();
 
   const handleAdd = () => {
     if (title.trim() && message.trim()) {
-      onAdd({ title: title.trim(), message: message.trim() });
+      onAdd({ 
+        title: title.trim(), 
+        message: message.trim(), 
+        eventDate: eventDate ? eventDate.toISOString().split('T')[0] : undefined 
+      });
       setTitle('');
       setMessage('');
+      setEventDate(undefined);
       setOpen(false);
     }
   };
@@ -68,6 +78,55 @@ export function AddAnnouncementDialog({ onAdd, children }: AddAnnouncementDialog
                 placeholder="Enter the announcement details here..."
                 rows={5}
             />
+          </div>
+          <div className="grid gap-2">
+             <Label htmlFor="event-date">
+                Event Date (Optional)
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={'outline'}
+                  className={cn(
+                    'justify-start text-left font-normal',
+                    !eventDate && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {eventDate ? format(eventDate, 'PPP') : <span>Pick an event date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="flex w-auto flex-col space-y-2 p-2">
+                <Select
+                    onValueChange={(value) =>
+                        setEventDate(new Date(new Date().setDate(new Date().getDate() + parseInt(value))))
+                    }
+                    >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Quick Select" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                        <SelectItem value="1">Tomorrow</SelectItem>
+                        <SelectItem value="3">In 3 days</SelectItem>
+                        <SelectItem value="7">In a week</SelectItem>
+                    </SelectContent>
+                </Select>
+                <div className="rounded-md border">
+                    <Calendar
+                        mode="single"
+                        selected={eventDate}
+                        onSelect={setEventDate}
+                        initialFocus
+                    />
+                </div>
+                 {eventDate && (
+                    <Button variant="ghost" size="sm" onClick={() => setEventDate(undefined)}>
+                        <X className="mr-2 h-4 w-4" />
+                        Clear
+                    </Button>
+                )}
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         <DialogFooter>

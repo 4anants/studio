@@ -28,7 +28,7 @@ import {
     TableHeader,
     TableRow,
   } from '@/components/ui/table'
-import { Calendar, Bell, MailOpen, Mail } from 'lucide-react'
+import { Calendar, Bell, MailOpen, Mail, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Simulate a logged-in employee user
@@ -225,6 +225,15 @@ export function EmployeeView() {
   const toggleAnnouncementRead = useCallback((id: string) => {
     setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, isRead: !a.isRead } : a));
   }, []);
+
+  const isEventUpcoming = (eventDate?: string) => {
+      if (!eventDate) return false;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const eDate = new Date(eventDate);
+      eDate.setTime(eDate.getTime() + eDate.getTimezoneOffset() * 60 * 1000); // Adjust for timezone
+      return eDate >= today;
+  }
 
   return (
     <>
@@ -445,10 +454,17 @@ export function EmployeeView() {
                             </div>
                         </div>
                         <div className="space-y-4">
-                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => (
-                                <div key={announcement.id} className={cn("p-4 border rounded-lg relative overflow-hidden", !announcement.isRead && "bg-blue-50/50 border-blue-200")}>
+                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
+                                const isUpcoming = isEventUpcoming(announcement.eventDate);
+                                return (
+                                <div key={announcement.id} className={cn(
+                                    "p-4 border rounded-lg relative overflow-hidden", 
+                                    isUpcoming && "bg-blue-50/50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700",
+                                    !isUpcoming && !announcement.isRead && "bg-secondary"
+                                )}>
+                                     {isUpcoming && <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-500"></div>}
                                     <div className="absolute top-2 right-2">
-                                        <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)}>
+                                        <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)} disabled={isUpcoming}>
                                             {announcement.isRead ? (
                                                 <>
                                                     <Mail className="mr-2 h-4 w-4" />
@@ -462,17 +478,23 @@ export function EmployeeView() {
                                             )}
                                         </Button>
                                     </div>
-                                    {!announcement.isRead && <div className="absolute left-0 top-0 h-full w-1.5 bg-primary"></div>}
                                     <h3 className="font-semibold flex items-center gap-2">
                                         <Bell className="h-5 w-5 text-primary" />
                                         {announcement.title}
                                     </h3>
+                                    {announcement.eventDate && (
+                                        <div className={cn("mt-1 flex items-center gap-2 text-sm", isUpcoming ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground")}>
+                                            <Calendar className="h-4 w-4" />
+                                            <span>Event Date: {new Date(announcement.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</span>
+                                            {isUpcoming && <span className="text-xs font-bold">(UPCOMING)</span>}
+                                        </div>
+                                    )}
                                     <p className="text-sm text-muted-foreground mt-1">
                                         Posted on {new Date(announcement.date).toLocaleString()} by {announcement.author}
                                     </p>
                                     <p className="mt-2 text-sm pr-32">{announcement.message}</p>
                                 </div>
-                            )) : (
+                            )}) : (
                                 <div className="text-center text-muted-foreground py-8">
                                     <p>No announcements found for the selected period.</p>
                                 </div>

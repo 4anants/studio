@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -365,7 +365,7 @@ const handleExportUsers = () => {
     });
   }, [toast]);
 
-  const handleAddAnnouncement = useCallback((announcement: { title: string, message: string }) => {
+  const handleAddAnnouncement = useCallback((announcement: { title: string, message: string, eventDate?: string }) => {
     const newAnnouncement: Announcement = {
       id: `anno-${Date.now()}`,
       title: announcement.title,
@@ -374,6 +374,7 @@ const handleExportUsers = () => {
       author: 'Admin',
       isRead: true, // New announcements by admin are 'read' for them
       status: 'published',
+      eventDate: announcement.eventDate
     };
     setAnnouncements(prev => [newAnnouncement, ...prev]);
     toast({
@@ -917,6 +918,7 @@ const handleExportUsers = () => {
                                 <TableHead>Date</TableHead>
                                 <TableHead>Title</TableHead>
                                 <TableHead className="hidden md:table-cell">Message</TableHead>
+                                <TableHead>Event Date</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -926,6 +928,18 @@ const handleExportUsers = () => {
                                     <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
                                     <TableCell>{announcement.title}</TableCell>
                                     <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
+                                     <TableCell>
+                                        {announcement.eventDate ? (
+                                            <div className="flex items-center gap-2">
+                                                 <span className={cn(
+                                                    'px-2 py-1 rounded-full text-xs font-medium',
+                                                    new Date(announcement.eventDate) > new Date() ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                                )}>
+                                                    {new Date(announcement.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                                                </span>
+                                            </div>
+                                        ): <span className="text-muted-foreground">-</span>}
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)} isPermanent={false}>
                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -936,7 +950,7 @@ const handleExportUsers = () => {
                                 </TableRow>
                            )) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No announcements found.</TableCell>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground">No announcements found.</TableCell>
                                 </TableRow>
                            )}
                         </TableBody>
@@ -1351,5 +1365,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
