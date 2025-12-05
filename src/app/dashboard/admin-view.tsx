@@ -688,67 +688,69 @@ const handleExportUsers = () => {
         <TabsContent value="file-explorer">
             <Card>
                 <CardHeader>
-                    <CardTitle>Employee Folders</CardTitle>
-                    <CardDescription>Browse all documents by employee. Unassigned documents are at the top.</CardDescription>
+                    <CardTitle>
+                        {departmentFilter === 'unassigned' ? 'Unassigned Documents' : 'Employee Folders'}
+                    </CardTitle>
+                    <CardDescription>
+                        {departmentFilter === 'unassigned'
+                            ? 'These documents could not be automatically assigned. Please assign them to an employee.'
+                            : 'Browse all documents by employee.'}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Accordion type="multiple" className="w-full" defaultValue={unassignedDocuments.length > 0 && (departmentFilter === 'all' || departmentFilter === 'unassigned') ? ['unassigned'] : []}>
-                       {(departmentFilter === 'all' || departmentFilter === 'unassigned') && unassignedDocuments.length > 0 && (
-                            <AccordionItem value="unassigned" className="border-b-0">
-                                <AccordionTrigger>
-                                     <div className="flex items-center gap-3">
-                                        <FileLock2 className="h-5 w-5 text-destructive" />
-                                        <span className="font-medium text-destructive">Unassigned Documents</span>
-                                        <span className="text-sm text-muted-foreground">({unassignedDocuments.length} documents)</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pl-8 pt-0">
-                                     <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                        <h3 className="flex items-center gap-2 font-semibold text-red-800 dark:text-red-300">
-                                            <FileLock2 className="h-5 w-5" />
-                                            Action Required
-                                        </h3>
-                                        <p className="text-sm text-red-700 dark:text-red-400 mt-1 mb-4">
-                                            These documents could not be automatically assigned. Please select them and assign them to an employee.
-                                        </p>
-                                        <DocumentList 
-                                            documents={unassignedDocuments}
+                    {departmentFilter === 'unassigned' ? (
+                        unassignedDocuments.length > 0 ? (
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                <h3 className="flex items-center gap-2 font-semibold text-red-800 dark:text-red-300">
+                                    <FileLock2 className="h-5 w-5" />
+                                    Action Required
+                                </h3>
+                                <p className="text-sm text-red-700 dark:text-red-400 mt-1 mb-4">
+                                    These documents could not be automatically assigned. Please select them and assign them to an employee.
+                                </p>
+                                <DocumentList
+                                    documents={unassignedDocuments}
+                                    users={users}
+                                    onSort={() => { }}
+                                    sortConfig={null}
+                                    showOwner={true}
+                                    onReassign={handleReassignDocument}
+                                />
+                            </div>
+                        ) : (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>No unassigned documents found.</p>
+                            </div>
+                        )
+                    ) : (
+                        <Accordion type="multiple" className="w-full">
+                            {filteredActiveUsersForGrid.map(user => (
+                                <AccordionItem value={user.id} key={user.id}>
+                                    <AccordionTrigger>
+                                        <div className="flex items-center gap-3">
+                                            <Folder className="h-5 w-5 text-primary" />
+                                            <span className="font-medium">{user.name}</span>
+                                            <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pl-8">
+                                        <DocumentList
+                                            documents={documentsByOwner[user.id] || []}
                                             users={users}
-                                            onSort={() => {}} 
+                                            onSort={() => { }}
                                             sortConfig={null}
-                                            showOwner={true}
                                             onReassign={handleReassignDocument}
                                         />
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
-                        )}
-                        {departmentFilter !== 'unassigned' && filteredActiveUsersForGrid.map(user => (
-                            <AccordionItem value={user.id} key={user.id}>
-                                <AccordionTrigger>
-                                    <div className="flex items-center gap-3">
-                                        <Folder className="h-5 w-5 text-primary" />
-                                        <span className="font-medium">{user.name}</span>
-                                        <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pl-8">
-                                    <DocumentList 
-                                        documents={documentsByOwner[user.id] || []}
-                                        users={users}
-                                        onSort={() => {}} 
-                                        sortConfig={null} 
-                                        onReassign={handleReassignDocument}
-                                    />
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                         {departmentFilter !== 'unassigned' && filteredActiveUsersForGrid.length === 0 && (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>No employees found based on the current filters.</p>
-                            </div>
-                        )}
-                    </Accordion>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                            {filteredActiveUsersForGrid.length === 0 && (
+                                <div className="text-center text-muted-foreground py-8">
+                                    <p>No employees found based on the current filters.</p>
+                                </div>
+                            )}
+                        </Accordion>
+                    )}
                 </CardContent>
             </Card>
         </TabsContent>
@@ -1368,3 +1370,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
