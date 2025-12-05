@@ -569,9 +569,6 @@ const handleExportUsers = () => {
                 <Button variant="destructive" onClick={() => setIsBulkDeleteDialogOpen(true)}>
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
                 </Button>
-                <Button onClick={handleExportUsers} variant="outline">
-                    <Download className="mr-2 h-4 w-4" /> Export Selected ({numSelected})
-                </Button>
             </>
           ) : (
             <div className="flex items-center gap-2">
@@ -808,40 +805,64 @@ const handleExportUsers = () => {
             </Card>
         </TabsContent>
         <TabsContent value="file-explorer">
-            <Card>
-                <CardHeader>
-                    <CardTitle>File Explorer</CardTitle>
-                    <CardDescription>Browse all documents by employee.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Accordion type="single" collapsible className="w-full">
-                        {filteredActiveUsersForGrid.map(user => (
-                            <AccordionItem value={user.id} key={user.id}>
-                                <AccordionTrigger>
-                                    <div className="flex items-center gap-3">
-                                        <Folder className="h-5 w-5 text-primary" />
-                                        <span className="font-medium">{user.name}</span>
-                                        <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pl-8">
-                                    <DocumentList 
-                                        documents={documentsByOwner[user.id] || []}
-                                        users={users}
-                                        onSort={() => {}} 
-                                        sortConfig={null} 
-                                    />
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
-                     {filteredActiveUsersForGrid.length === 0 && (
-                        <div className="text-center text-muted-foreground py-8">
-                            <p>No employees found based on filters.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+            <div className="space-y-4">
+                {unassignedDocuments.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileLock2 className="h-5 w-5 text-destructive" />
+                                Unassigned Documents
+                            </CardTitle>
+                            <CardDescription>
+                                These documents could not be automatically assigned to an employee. Please review and assign them manually.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <DocumentList 
+                                documents={unassignedDocuments}
+                                users={users}
+                                onSort={() => {}} 
+                                sortConfig={null}
+                                showOwner={true}
+                            />
+                        </CardContent>
+                    </Card>
+                )}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Employee Folders</CardTitle>
+                        <CardDescription>Browse all documents by employee.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Accordion type="single" collapsible className="w-full">
+                            {filteredActiveUsersForGrid.map(user => (
+                                <AccordionItem value={user.id} key={user.id}>
+                                    <AccordionTrigger>
+                                        <div className="flex items-center gap-3">
+                                            <Folder className="h-5 w-5 text-primary" />
+                                            <span className="font-medium">{user.name}</span>
+                                            <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pl-8">
+                                        <DocumentList 
+                                            documents={documentsByOwner[user.id] || []}
+                                            users={users}
+                                            onSort={() => {}} 
+                                            sortConfig={null} 
+                                        />
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
+                        {filteredActiveUsersForGrid.length === 0 && (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>No employees found based on filters.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </TabsContent>
         <TabsContent value="holidays">
             <Card>
@@ -973,7 +994,6 @@ const handleExportUsers = () => {
                 <Tabs defaultValue="branding" className="w-full">
                   <TabsList>
                     <TabsTrigger value="branding">Branding</TabsTrigger>
-                    <TabsTrigger value="unassigned-docs">Unassigned Documents</TabsTrigger>
                     <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                     <TabsTrigger value="departments">Departments</TabsTrigger>
                     <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
@@ -1022,29 +1042,6 @@ const handleExportUsers = () => {
                             </div>
                         </CardContent>
                       </Card>
-                  </TabsContent>
-                  <TabsContent value="unassigned-docs" className="pt-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Unassigned Documents</CardTitle>
-                            <CardDescription>Review documents that could not be automatically assigned to an employee.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           {unassignedDocuments.length > 0 ? (
-                                <DocumentList 
-                                    documents={unassignedDocuments}
-                                    users={users}
-                                    onSort={() => {}} 
-                                    sortConfig={null}
-                                    showOwner={true}
-                                />
-                           ) : (
-                                <div className="text-center text-muted-foreground py-8">
-                                    <p>No unassigned documents found.</p>
-                                </div>
-                           )}
-                        </CardContent>
-                    </Card>
                   </TabsContent>
                   <TabsContent value="doc-types" className="pt-6">
                     <Card>
