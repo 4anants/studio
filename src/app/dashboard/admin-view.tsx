@@ -936,8 +936,7 @@ const handleExportUsers = () => {
                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
-                                <TableRow key={announcement.id} className={cn(isUpcoming && "relative")}>
-                                     {isUpcoming && <td colSpan={5} className="p-0 -z-10"><span className="absolute inset-0 bg-blue-500/10 animate-pulse ring-2 ring-destructive"></span></td>}
+                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-red-500/10 animate-pulse ring-2 ring-destructive")}>
                                     <TableCell className="font-medium hidden sm:table-cell">
                                         {new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </TableCell>
