@@ -23,13 +23,14 @@ export default function LoginPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <div className="group relative mx-auto mb-4 flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-primary">
+          <label htmlFor="logo-upload" className="group relative mx-auto mb-4 flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-primary">
             <input
               type="file"
               id="logo-upload"
               className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               accept="image/*"
               onChange={handleLogoChange}
+              style={{ display: 'none' }} // Keep it hidden but available
             />
             {logoSrc ? (
               <Image
@@ -45,7 +46,7 @@ export default function LoginPage() {
             <div className="absolute inset-0 flex h-full w-full items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
               <UploadCloud className="h-8 w-8 text-white" />
             </div>
-          </div>
+          </label>
 
           <h1 className="text-3xl font-bold tracking-tight text-primary">
             AE INTRAWEB
