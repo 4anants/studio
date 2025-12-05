@@ -816,27 +816,27 @@ const handleExportUsers = () => {
                     <CardDescription>Browse all documents by employee.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {unassignedDocuments.length > 0 && (
+                        <Card className='mb-4 border-amber-500'>
+                            <CardHeader className='py-4'>
+                                <div className="flex items-center gap-3">
+                                    <FileLock2 className="h-5 w-5 text-amber-500" />
+                                    <span className="font-medium">Unassigned Documents</span>
+                                    <span className="text-sm text-muted-foreground">({unassignedDocuments.length} documents)</span>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <DocumentList 
+                                    documents={unassignedDocuments}
+                                    users={users}
+                                    onSort={() => {}} 
+                                    sortConfig={null}
+                                    showOwner={true}
+                                />
+                            </CardContent>
+                        </Card>
+                    )}
                     <Accordion type="single" collapsible className="w-full">
-                        {unassignedDocuments.length > 0 && (
-                            <Card className='mb-4 border-amber-500'>
-                                <CardHeader className='py-4'>
-                                    <div className="flex items-center gap-3">
-                                        <FileLock2 className="h-5 w-5 text-amber-500" />
-                                        <span className="font-medium">Unassigned Documents</span>
-                                        <span className="text-sm text-muted-foreground">({unassignedDocuments.length} documents)</span>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <DocumentList 
-                                        documents={unassignedDocuments}
-                                        users={initialUsers}
-                                        onSort={() => {}} 
-                                        sortConfig={null}
-                                        showOwner={true}
-                                    />
-                                </CardContent>
-                            </Card>
-                        )}
                         {filteredActiveUsersForGrid.map(user => (
                             <AccordionItem value={user.id} key={user.id}>
                                 <AccordionTrigger>
@@ -849,7 +849,7 @@ const handleExportUsers = () => {
                                 <AccordionContent className="pl-8">
                                     <DocumentList 
                                         documents={documentsByOwner[user.id] || []}
-                                        users={initialUsers}
+                                        users={users}
                                         onSort={() => {}} 
                                         sortConfig={null} 
                                     />
@@ -1276,5 +1276,7 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
 
     
