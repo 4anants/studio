@@ -76,7 +76,7 @@ export function AdminView() {
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
   const [departments, setDepartments] = useState(initialDepartments);
   const [holidays, setHolidays] = useState(initialHolidays);
-  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: true}))); // Admins see all as read initially
+  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: true, status: a.status || 'published'}))); // Admins see all as read initially
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
