@@ -1,7 +1,6 @@
 'use client'
 import Link from 'next/link'
 import {
-  FileLock2,
   LogOut,
   User,
 } from 'lucide-react'
@@ -19,6 +18,37 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { AnnouncementBell } from './announcement-bell'
 import { ThemeToggle } from '../theme-toggle'
+
+const AseLogo = () => (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-6 w-6 text-primary"
+    >
+      <path
+        d="M50 0L95.5 25.5V74.5L50 100L4.5 74.5V25.5L50 0Z"
+        fill="currentColor"
+      />
+      <path
+        d="M26 63.5L50 50L74 63.5M50 75V50"
+        stroke="#fecb00"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M26 36.5L50 25L74 36.5"
+        stroke="#ffffff"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
 
 export function DashboardHeader() {
   const router = useRouter()
@@ -50,7 +80,7 @@ export function DashboardHeader() {
           href={`/dashboard?role=${role || 'employee'}`}
           className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
         >
-          <FileLock2 className="h-6 w-6" />
+          <AseLogo />
           <span className="font-bold">AE INTRAWEB</span>
         </Link>
       </nav>
