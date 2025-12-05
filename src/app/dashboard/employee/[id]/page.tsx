@@ -1,7 +1,7 @@
 
 
 'use client';
-import { notFound, useRouter, useSearchParams } from 'next/navigation';
+import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
 import { users as initialUsers, departments, CompanyName, User as UserType } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,10 @@ import { EmployeeManagementDialog } from '@/components/dashboard/employee-manage
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
 
-export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
+export default function EmployeeProfilePage({ params: routeParams }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams<{ id: string }>();
   
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
