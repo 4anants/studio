@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -68,6 +68,8 @@ import {
 import { BulkRoleChangeDialog } from '@/components/dashboard/bulk-role-change-dialog'
 import { BulkUserImportDialog } from '@/components/dashboard/bulk-user-import-dialog'
 import Papa from 'papaparse'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { DocumentList } from '@/components/dashboard/document-list'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -461,6 +463,16 @@ const handleExportUsers = () => {
     ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [deletedAnnouncements, searchTerm]);
 
+    const documentsByOwner = useMemo(() => {
+        return docs.reduce((acc, doc) => {
+          if (!acc[doc.ownerId]) {
+            acc[doc.ownerId] = [];
+          }
+          acc[doc.ownerId].push(doc);
+          return acc;
+        }, {} as Record<string, Document[]>);
+      }, [docs]);
+
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
   const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
@@ -569,6 +581,7 @@ const handleExportUsers = () => {
             <TabsList>
                 <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
+                <TabsTrigger value="file-explorer">File Explorer</TabsTrigger>
                 <TabsTrigger value="holidays">Holidays</TabsTrigger>
                 <TabsTrigger value="announcements">
                     Announcements
@@ -587,6 +600,7 @@ const handleExportUsers = () => {
                             : activeTab === 'holidays' ? 'Search holidays...'
                             : activeTab === 'announcements' ? 'Search announcements...'
                             : activeTab === 'settings' ? 'Search settings...'
+                            : activeTab === 'file-explorer' ? 'Search employee folders...'
                             : 'Search users...'
                         }
                         className="w-full sm:w-[300px] pl-8"
@@ -597,7 +611,7 @@ const handleExportUsers = () => {
             </div>
         </div>
 
-        {(activeTab === 'all-docs' || activeTab === 'by-employee') && (
+        {(activeTab === 'all-docs' || activeTab === 'by-employee' || activeTab === 'file-explorer') && (
             <Card className="mb-4">
                 <CardHeader>
                     <CardTitle>Filters</CardTitle>
@@ -782,6 +796,42 @@ const handleExportUsers = () => {
                             )}
                         </TableBody>
                     </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="file-explorer">
+            <Card>
+                <CardHeader>
+                    <CardTitle>File Explorer</CardTitle>
+                    <CardDescription>Browse all documents by employee.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Accordion type="single" collapsible className="w-full">
+                        {filteredActiveUsersForGrid.map(user => (
+                            <AccordionItem value={user.id} key={user.id}>
+                                <AccordionTrigger>
+                                    <div className="flex items-center gap-3">
+                                        <Folder className="h-5 w-5 text-primary" />
+                                        <span className="font-medium">{user.name}</span>
+                                        <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pl-8">
+                                    <DocumentList 
+                                        documents={documentsByOwner[user.id] || []}
+                                        users={initialUsers}
+                                        onSort={() => {}} 
+                                        sortConfig={null} 
+                                    />
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                     {filteredActiveUsersForGrid.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                            <p>No employees found.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </TabsContent>
