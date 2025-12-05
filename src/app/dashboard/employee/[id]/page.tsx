@@ -19,7 +19,7 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
   
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
-  const { id } = params;
+  const { id } = use(Promise.resolve(params));
 
   const [user, setUser] = useState<UserType | undefined>(undefined);
   
