@@ -2,37 +2,42 @@
 
 'use client';
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
-import { users as initialUsers, departments, CompanyName, User as UserType } from '@/lib/mock-data';
+import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Document } from '@/lib/mock-data';
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
+import { DocumentList } from '@/components/dashboard/document-list';
 
-export default function EmployeeProfilePage({ params: routeParams }: { params: { id: string } }) {
+type SortKey = keyof Document;
+type SortDirection = 'ascending' | 'descending';
+
+export default function EmployeeProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams<{ id: string }>();
   
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
-  const { id } = params;
+  const id = params?.id;
 
   const [user, setUser] = useState<UserType | undefined>(undefined);
-  
-  const role = searchParams.get('role');
-  const isSelfView = role !== 'admin';
-  
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
+
   useEffect(() => {
     if (id) {
       const foundUser = users.find(u => u.id === id);
       setUser(foundUser);
     }
   }, [id, users]);
+  
+  const role = searchParams.get('role');
+  const isSelfView = role !== 'admin';
   
   const handleEmployeeSave = useCallback((employee: Partial<UserType> & { originalId?: string }) => {
     setUsers(currentUsers => {
@@ -58,6 +63,40 @@ export default function EmployeeProfilePage({ params: routeParams }: { params: {
         return currentUsers;
     });
   }, [router, id]);
+
+  const userDocuments = useMemo(() => {
+    if (!id) return [];
+    return allDocuments.filter(doc => doc.ownerId === id);
+  }, [id]);
+
+  const requestSort = useCallback((key: SortKey) => {
+    setSortConfig(currentSortConfig => {
+      let direction: SortDirection = 'ascending';
+      if (currentSortConfig && currentSortConfig.key === key && currentSortConfig.direction === 'ascending') {
+        direction = 'descending';
+      }
+      return { key, direction };
+    });
+  }, []);
+
+  const sortedDocuments = useMemo(() => {
+    let sortableItems = [...userDocuments];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [userDocuments, sortConfig]);
 
   if (!user) {
     return (
@@ -96,100 +135,113 @@ export default function EmployeeProfilePage({ params: routeParams }: { params: {
                 </Button>
                 <h1 className="text-xl font-semibold tracking-tight">Employee Profile</h1>
             </div>
-            <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
-                <div className="md:col-span-1 lg:col-span-1">
-                    <Card>
-                        <CardHeader className="flex flex-row items-start justify-between">
-                            <div className="flex flex-col items-center text-center w-full">
-                                 <Image 
-                                    src={`https://picsum.photos/seed/${user.avatar}/128/128`} 
-                                    width={128} 
-                                    height={128} 
-                                    className="rounded-full mb-4" 
-                                    alt={user.name}
-                                    data-ai-hint="person portrait" 
-                                 />
-                                <CardTitle className="text-2xl">{user.name}</CardTitle>
-                                <CardDescription>Employee ID: {user.id}</CardDescription>
-                            </div>
-                           
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
-                            {isSelfView ? (
-                                <EmployeeSelfEditDialog employee={user} onSave={handleEmployeeSave}>
-                                    <Button variant="outline" className="w-full">
-                                        <Edit className="mr-2 h-4 w-4"/> Edit Profile
-                                    </Button>
-                                </EmployeeSelfEditDialog>
-                            ) : (
-                                <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
-                                     <Button variant="outline" className="w-full">
-                                        <Edit className="mr-2 h-4 w-4"/> Edit Profile
-                                    </Button>
-                                </EmployeeManagementDialog>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+            <div className="grid gap-6">
+                <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="md:col-span-1 lg:col-span-1">
+                        <Card>
+                            <CardHeader className="flex flex-row items-start justify-between">
+                                <div className="flex flex-col items-center text-center w-full">
+                                    <Image 
+                                        src={`https://picsum.photos/seed/${user.avatar}/128/128`} 
+                                        width={128} 
+                                        height={128} 
+                                        className="rounded-full mb-4" 
+                                        alt={user.name}
+                                        data-ai-hint="person portrait" 
+                                    />
+                                    <CardTitle className="text-2xl">{user.name}</CardTitle>
+                                    <CardDescription>Employee ID: {user.id}</CardDescription>
+                                </div>
+                            
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-4">
+                                {isSelfView ? (
+                                    <EmployeeSelfEditDialog employee={user} onSave={handleEmployeeSave}>
+                                        <Button variant="outline" className="w-full">
+                                            <Edit className="mr-2 h-4 w-4"/> Edit Profile
+                                        </Button>
+                                    </EmployeeSelfEditDialog>
+                                ) : (
+                                    <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
+                                        <Button variant="outline" className="w-full">
+                                            <Edit className="mr-2 h-4 w-4"/> Edit Profile
+                                        </Button>
+                                    </EmployeeManagementDialog>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                <div className="md:col-span-2 lg:col-span-3">
+                    <div className="md:col-span-2 lg:col-span-3">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Personal & Employment Details</CardTitle>
+                                <CardDescription>All information related to {user.name}.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div>
+                                        <ul className="space-y-4 text-sm text-muted-foreground">
+                                            {col1Details.map((detail, index) => (
+                                                <li key={index} className="flex items-start gap-4">
+                                                    <detail.icon className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-foreground">{detail.label}</p>
+                                                        <p className={cn(
+                                                            'break-words',
+                                                            detail.label === 'Status' && (
+                                                                detail.value === 'Active' ? 'text-green-600' : 
+                                                                detail.value === 'Inactive' ? 'text-red-600' :
+                                                                'text-yellow-600'
+                                                            ),
+                                                            detail.label === 'Role' && (
+                                                                detail.value === 'Admin' ? 'text-blue-600' : 'text-gray-600'
+                                                            )
+                                                        )}>{detail.value}</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <ul className="space-y-4 text-sm text-muted-foreground">
+                                            {col2Details.map((detail, index) => (
+                                                <li key={index} className="flex items-start gap-4">
+                                                    <detail.icon className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-foreground">{detail.label}</p>
+                                                        <p className={cn(
+                                                            'break-words',
+                                                            detail.label === 'Status' && (
+                                                                detail.value === 'Active' ? 'text-green-600' : 
+                                                                detail.value === 'Inactive' ? 'text-red-600' :
+                                                                'text-yellow-600'
+                                                            ),
+                                                            detail.label === 'Role' && (
+                                                                detail.value === 'Admin' ? 'text-blue-600' : 'text-gray-600'
+                                                            )
+                                                        )}>{detail.value}</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                            </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+                {!isSelfView && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Personal & Employment Details</CardTitle>
-                            <CardDescription>All information related to {user.name}.</CardDescription>
+                            <CardTitle>Documents</CardTitle>
+                            <CardDescription>All documents uploaded for {user.name}.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                <div>
-                                    <ul className="space-y-4 text-sm text-muted-foreground">
-                                        {col1Details.map((detail, index) => (
-                                            <li key={index} className="flex items-start gap-4">
-                                                <detail.icon className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-foreground">{detail.label}</p>
-                                                    <p className={cn(
-                                                        'break-words',
-                                                        detail.label === 'Status' && (
-                                                            detail.value === 'Active' ? 'text-green-600' : 
-                                                            detail.value === 'Inactive' ? 'text-red-600' :
-                                                            'text-yellow-600'
-                                                        ),
-                                                         detail.label === 'Role' && (
-                                                            detail.value === 'Admin' ? 'text-blue-600' : 'text-gray-600'
-                                                        )
-                                                    )}>{detail.value}</p>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <ul className="space-y-4 text-sm text-muted-foreground">
-                                        {col2Details.map((detail, index) => (
-                                            <li key={index} className="flex items-start gap-4">
-                                                <detail.icon className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-foreground">{detail.label}</p>
-                                                    <p className={cn(
-                                                        'break-words',
-                                                        detail.label === 'Status' && (
-                                                            detail.value === 'Active' ? 'text-green-600' : 
-                                                            detail.value === 'Inactive' ? 'text-red-600' :
-                                                            'text-yellow-600'
-                                                        ),
-                                                        detail.label === 'Role' && (
-                                                            detail.value === 'Admin' ? 'text-blue-600' : 'text-gray-600'
-                                                        )
-                                                    )}>{detail.value}</p>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                           </div>
+                            <DocumentList documents={sortedDocuments} users={initialUsers} onSort={requestSort} sortConfig={sortConfig} />
                         </CardContent>
                     </Card>
-                </div>
+                )}
             </div>
         </main>
     </div>
