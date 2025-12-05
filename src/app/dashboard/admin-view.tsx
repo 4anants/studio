@@ -572,6 +572,15 @@ const handleExportUsers = () => {
 
   const numSelected = selectedUserIds.length;
   const numFiltered = filteredUsersForSelection.length;
+  
+  const isEventUpcoming = (eventDate?: string) => {
+      if (!eventDate) return false;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const eDate = new Date(eventDate);
+      eDate.setTime(eDate.getTime() + eDate.getTimezoneOffset() * 60 * 1000); // Adjust for timezone
+      return eDate >= today;
+  }
 
 
   return (
@@ -923,8 +932,10 @@ const handleExportUsers = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => (
-                                <TableRow key={announcement.id}>
+                           {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
+                                const isUpcoming = isEventUpcoming(announcement.eventDate);
+                                return (
+                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-50/50 dark:bg-blue-900/20 animate-pulse")}>
                                     <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
                                     <TableCell>{announcement.title}</TableCell>
                                     <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
@@ -948,7 +959,7 @@ const handleExportUsers = () => {
                                         </DeleteAnnouncementDialog>
                                     </TableCell>
                                 </TableRow>
-                           )) : (
+                           )}) : (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center text-muted-foreground">No announcements found.</TableCell>
                                 </TableRow>
