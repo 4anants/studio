@@ -396,9 +396,12 @@ const handleExportUsers = () => {
   const deletedAnnouncements = useMemo(() => announcements.filter(a => a.status === 'deleted'), [announcements]);
 
 
-  const filteredByDept = useMemo(() => activeUsers.filter(user => 
-    departmentFilter === 'all' || departmentFilter === 'unassigned' || (user.department && departmentFilter === user.department)
-  ), [activeUsers, departmentFilter]);
+  const filteredByDept = useMemo(() => {
+    if (departmentFilter === 'all' || departmentFilter === 'unassigned') {
+        return activeUsers;
+    }
+    return activeUsers.filter(user => user.department && departmentFilter === user.department);
+  }, [activeUsers, departmentFilter]);
 
   const filteredByRole = useMemo(() => filteredByDept.filter(user => 
     roleFilter === 'all' || user.role === roleFilter
@@ -635,7 +638,7 @@ const handleExportUsers = () => {
                                         {dept}
                                     </SelectItem>
                                 ))}
-                                <SelectItem value="unassigned">Unassigned Documents</SelectItem>
+                                {activeTab === 'file-explorer' && <SelectItem value="unassigned">Unassigned Documents</SelectItem>}
                             </SelectContent>
                         </Select>
                     </div>
@@ -665,7 +668,7 @@ const handleExportUsers = () => {
                     <CardDescription>Browse all documents by employee. Unassigned documents are at the top.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Accordion type="multiple" className="w-full" defaultValue={unassignedDocuments.length > 0 ? ['unassigned'] : []}>
+                    <Accordion type="multiple" className="w-full" defaultValue={unassignedDocuments.length > 0 && (departmentFilter === 'all' || departmentFilter === 'unassigned') ? ['unassigned'] : []}>
                        {unassignedDocuments.length > 0 && (departmentFilter === 'all' || departmentFilter === 'unassigned') && (
                             <AccordionItem value="unassigned" className="border-b-0">
                                 <AccordionTrigger>
@@ -1314,5 +1317,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
