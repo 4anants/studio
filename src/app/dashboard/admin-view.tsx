@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -64,6 +64,7 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select';
+import { BulkRoleChangeDialog } from '@/components/dashboard/bulk-role-change-dialog'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -76,6 +77,7 @@ export function AdminView() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
+  const [isBulkRoleChangeDialogOpen, setIsBulkRoleChangeDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
   const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'employee'>('all');
@@ -404,6 +406,18 @@ export function AdminView() {
     setSelectedUserIds([]);
     setIsBulkResetDialogOpen(false);
   }, [users, selectedUserIds, handleResetPassword, toast]);
+
+  const handleBulkRoleChange = useCallback((newRole: 'admin' | 'employee') => {
+    setUsers(prevUsers => prevUsers.map(u => 
+        selectedUserIds.includes(u.id) ? { ...u, role: newRole } : u
+    ));
+    toast({
+        title: "Bulk Role Change Successful",
+        description: `The role for ${selectedUserIds.length} employee(s) has been changed to ${newRole}.`
+    });
+    setSelectedUserIds([]);
+    setIsBulkRoleChangeDialogOpen(false);
+  }, [selectedUserIds, toast]);
   
   const onTabChange = useCallback((value: string) => {
     setActiveTab(value);
@@ -429,6 +443,11 @@ export function AdminView() {
           {numSelected > 0 && activeTab === 'by-employee' ? (
             <>
                 <span className="text-sm text-muted-foreground">{numSelected} selected</span>
+                <BulkRoleChangeDialog onSave={handleBulkRoleChange}>
+                    <Button variant="outline">
+                        <Users className="mr-2 h-4 w-4" /> Change Roles
+                    </Button>
+                </BulkRoleChangeDialog>
                 <Button variant="outline" onClick={() => setIsBulkResetDialogOpen(true)}>
                     <KeyRound className="mr-2 h-4 w-4" /> Reset Passwords
                 </Button>
