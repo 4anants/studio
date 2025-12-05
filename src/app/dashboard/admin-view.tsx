@@ -651,43 +651,38 @@ const handleExportUsers = () => {
         </div>
 
         {(activeTab === 'employee-management' || activeTab === 'file-explorer') && (
-            <Card className="mb-4">
-                <CardHeader>
-                    <CardTitle>Filters</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium">Department</Label>
-                        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                            <SelectTrigger className="w-[220px]">
-                                <SelectValue placeholder="Select Department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Departments</SelectItem>
-                                {departments.map(dept => (
-                                    <SelectItem key={dept} value={dept}>
-                                        {dept}
-                                    </SelectItem>
-                                ))}
-                                {activeTab === 'file-explorer' && <SelectItem value="unassigned">Unassigned Documents</SelectItem>}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium">Role</Label>
-                        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select Role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Roles</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="employee">Employee</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="mb-4 flex flex-col sm:flex-row items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Department</Label>
+                    <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                        <SelectTrigger className="w-[220px]">
+                            <SelectValue placeholder="Select Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Departments</SelectItem>
+                            {departments.map(dept => (
+                                <SelectItem key={dept} value={dept}>
+                                    {dept}
+                                </SelectItem>
+                            ))}
+                            {activeTab === 'file-explorer' && <SelectItem value="unassigned">Unassigned Documents</SelectItem>}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Role</Label>
+                    <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Roles</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="employee">Employee</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
         )}
 
         <TabsContent value="file-explorer">
