@@ -472,24 +472,27 @@ const handleExportUsers = () => {
     ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [deletedAnnouncements, searchTerm]);
 
-    const { documentsByOwner, unassignedDocuments } = useMemo(() => {
-        const userIds = new Set(users.map(u => u.id));
-        const ownerMap: Record<string, Document[]> = {};
+    const { unassignedDocuments, docsByType } = useMemo(() => {
+        const userMap = new Map(users.map(u => [u.id, u]));
         const unassigned: Document[] = [];
+        const byType: Record<string, Record<string, Document[]>> = {};
     
         docs.forEach(doc => {
-          if (doc.ownerId && userIds.has(doc.ownerId)) {
-            if (!ownerMap[doc.ownerId]) {
-              ownerMap[doc.ownerId] = [];
+            if (doc.ownerId && userMap.has(doc.ownerId)) {
+                if (!byType[doc.type]) {
+                    byType[doc.type] = {};
+                }
+                if (!byType[doc.type][doc.ownerId]) {
+                    byType[doc.type][doc.ownerId] = [];
+                }
+                byType[doc.type][doc.ownerId].push(doc);
+            } else {
+                unassigned.push(doc);
             }
-            ownerMap[doc.ownerId].push(doc);
-          } else {
-            unassigned.push(doc);
-          }
         });
     
-        return { documentsByOwner: ownerMap, unassignedDocuments: unassigned };
-      }, [docs, users]);
+        return { unassignedDocuments: unassigned, docsByType: byType };
+    }, [docs, users]);
 
   const filteredUsersForSelection = activeSubTab === 'manage' ? filteredActiveUsersForTable : [];
 
@@ -585,6 +588,8 @@ const handleExportUsers = () => {
       return eDate >= today;
   }
 
+  const getUserFromId = (id: string) => users.find(u => u.id === id);
+
 
   return (
     <>
@@ -635,7 +640,7 @@ const handleExportUsers = () => {
                     <Input
                         type="search"
                         placeholder={
-                            activeTab === 'file-explorer' ? 'Search employee folders...'
+                            activeTab === 'file-explorer' ? 'Search document types or employees...'
                             : activeTab === 'employee-management' ? 'Search employees...'
                             : activeTab === 'holidays' ? 'Search holidays...'
                             : activeTab === 'announcements' ? 'Search announcements...'
@@ -689,12 +694,12 @@ const handleExportUsers = () => {
             <Card>
                 <CardHeader>
                     <CardTitle>
-                        {departmentFilter === 'unassigned' ? 'Unassigned Documents' : 'Employee Folders'}
+                        {departmentFilter === 'unassigned' ? 'Unassigned Documents' : 'Browse Documents'}
                     </CardTitle>
                     <CardDescription>
                         {departmentFilter === 'unassigned'
                             ? 'These documents could not be automatically assigned. Please assign them to an employee.'
-                            : 'Browse all documents by employee.'}
+                            : 'Browse all documents by type, then by employee.'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -724,31 +729,52 @@ const handleExportUsers = () => {
                         )
                     ) : (
                         <Accordion type="multiple" className="w-full">
-                            {filteredActiveUsersForGrid.map(user => (
-                                <AccordionItem value={user.id} key={user.id}>
-                                    <AccordionTrigger>
-                                        <div className="flex items-center gap-3">
-                                            <Folder className="h-5 w-5 text-primary" />
-                                            <span className="font-medium">{user.name}</span>
-                                            <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pl-8">
-                                        <DocumentList
-                                            documents={documentsByOwner[user.id] || []}
-                                            users={users}
-                                            onSort={() => { }}
-                                            sortConfig={null}
-                                            onReassign={handleReassignDocument}
-                                        />
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                            {filteredActiveUsersForGrid.length === 0 && (
-                                <div className="text-center text-muted-foreground py-8">
-                                    <p>No employees found based on the current filters.</p>
-                                </div>
-                            )}
+                            {Object.entries(docsByType)
+                                .filter(([docType, _]) => docType.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(([docType, owners]) => (
+                                    <AccordionItem value={docType} key={docType}>
+                                        <AccordionTrigger>
+                                            <div className="flex items-center gap-3">
+                                                <Folder className="h-5 w-5 text-primary" />
+                                                <span className="font-medium">{docType}</span>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pl-8">
+                                            <Accordion type="multiple" className="w-full">
+                                                {Object.entries(owners)
+                                                     .map(([ownerId, userDocs]) => ({ user: getUserFromId(ownerId), docs: userDocs }))
+                                                     .filter(({ user }) => user && filteredActiveUsersForGrid.some(u => u.id === user.id))
+                                                     .filter(({user}) => user?.name.toLowerCase().includes(searchTerm.toLowerCase()) || docType.toLowerCase().includes(searchTerm.toLowerCase()))
+                                                     .map(({ user, docs }) => user && (
+                                                        <AccordionItem value={`${docType}-${user.id}`} key={`${docType}-${user.id}`}>
+                                                            <AccordionTrigger>
+                                                                <div className="flex items-center gap-3">
+                                                                    <Folder className="h-5 w-5 text-secondary-foreground" />
+                                                                    <span className="font-medium">{user.name}</span>
+                                                                    <span className="text-sm text-muted-foreground">({docs.length} documents)</span>
+                                                                </div>
+                                                            </AccordionTrigger>
+                                                            <AccordionContent className="pl-8">
+                                                                <DocumentList
+                                                                    documents={docs}
+                                                                    users={users}
+                                                                    onSort={() => { }}
+                                                                    sortConfig={null}
+                                                                    onReassign={handleReassignDocument}
+                                                                />
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    ))
+                                                }
+                                            </Accordion>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                                {Object.keys(docsByType).length === 0 && (
+                                    <div className="text-center text-muted-foreground py-8">
+                                        <p>No documents found.</p>
+                                    </div>
+                                )}
                         </Accordion>
                     )}
                 </CardContent>
@@ -1370,5 +1396,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
