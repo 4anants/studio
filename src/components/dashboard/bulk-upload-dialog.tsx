@@ -124,8 +124,18 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     setUploadedFiles(prev => prev.filter(f => f.file !== fileToRemove));
   }
 
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      // Reset state when dialog is closed
+      setUploadedFiles([]);
+      setIsProcessing(false);
+      setIsComplete(false);
+    }
+    setOpen(isOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <Files className="mr-2 h-4 w-4" />
@@ -140,14 +150,16 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
           </DialogDescription>
         </DialogHeader>
         
-        <div {...getRootProps()} className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}>
-            <input {...getInputProps()} />
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <UploadCloud className="h-12 w-12" />
-                <p>Drag & drop files here, or</p>
-                <Button type="button" variant="outline" size="sm" onClick={openFileDialog}>Browse Files</Button>
+        {!isProcessing && !isComplete && (
+            <div {...getRootProps()} className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}>
+                <input {...getInputProps()} />
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <UploadCloud className="h-12 w-12" />
+                    <p>Drag & drop files here, or</p>
+                    <Button type="button" variant="outline" size="sm" onClick={openFileDialog}>Browse Files</Button>
+                </div>
             </div>
-        </div>
+        )}
 
         {uploadedFiles.length > 0 && (
             <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-4">
@@ -155,7 +167,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                 {uploadedFiles.map(({ file, status, result, error }, index) => (
                     <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
                        <div className="flex items-center gap-3 overflow-hidden">
-                         {status === 'pending' && <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-muted-foreground" />}
+                         {status === 'pending' && <Loader2 className="h-5 w-5 flex-shrink-0 text-muted-foreground" />}
                          {status === 'processing' && <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />}
                          {status === 'success' && <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-500" />}
                          {status === 'error' && <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />}
