@@ -14,8 +14,13 @@ const EmployeeSchema = z.object({
   name: z.string().describe('The full name of the employee.'),
 });
 
+const DocumentInputSchema = z.object({
+  filename: z.string().describe('The original filename of the document.'),
+  dataUri: z.string().describe("The document content as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+});
+
 export const ClassifyDocumentsInputSchema = z.object({
-  documents: z.array(z.string()).describe('An array of document filenames.'),
+  documents: z.array(DocumentInputSchema).describe('An array of documents to classify, including their content.'),
   employees: z.array(EmployeeSchema).describe('An array of available employees.'),
 });
 export type ClassifyDocumentsInput = z.infer<typeof ClassifyDocumentsInputSchema>;

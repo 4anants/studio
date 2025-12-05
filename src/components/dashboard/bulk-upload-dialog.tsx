@@ -12,7 +12,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { classifyDocuments } from '@/ai/flows/classify-documents-flow';
@@ -20,6 +19,7 @@ import type { User, Document } from '@/lib/mock-data'
 
 type UploadedFile = {
   file: File;
+  dataUri: string;
   status: 'pending' | 'processing' | 'success' | 'error';
   result?: {
     employeeId: string;
@@ -42,13 +42,27 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles: UploadedFile[] = acceptedFiles.map(file => ({ file, status: 'pending' }));
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    const newFiles: Promise<UploadedFile>[] = acceptedFiles.map(file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onabort = () => reject('file reading was aborted');
+        reader.onerror = () => reject('file reading has failed');
+        reader.onload = () => {
+          const dataUri = reader.result as string;
+          resolve({ file, dataUri, status: 'pending' });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    
+    Promise.all(newFiles).then(files => {
+      setUploadedFiles(prev => [...prev, ...files]);
+    });
   }, []);
 
   const { getRootProps, getInputProps, isDragActive, open: openFileDialog } = useDropzone({ 
     onDrop, 
-    noClick: true, // We'll trigger it manually with the button
+    noClick: true,
     noKeyboard: true 
   });
 
@@ -59,11 +73,11 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     setUploadedFiles(prev => prev.map(f => ({ ...f, status: 'processing' })));
 
     const employeeList = users.map(u => ({ id: u.id, name: u.name }));
-    const fileNames = uploadedFiles.map(f => f.file.name);
+    const documentsToClassify = uploadedFiles.map(f => ({ filename: f.file.name, dataUri: f.dataUri }));
 
     try {
         const results = await classifyDocuments({
-            documents: fileNames,
+            documents: documentsToClassify,
             employees: employeeList
         });
 
@@ -146,7 +160,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
         <DialogHeader>
           <DialogTitle>Centralized Bulk Upload</DialogTitle>
           <DialogDescription>
-            Drop document files below. The system will automatically classify them and assign them to the correct employee.
+            Drop document files below. The system will analyze their content to automatically classify and assign them to the correct employee.
           </DialogDescription>
         </DialogHeader>
         

@@ -17,13 +17,13 @@ export async function classifyDocuments(input: ClassifyDocumentsInput): Promise<
   const result = await classifyDocumentsFlow(input);
   
   // Genkit output might not be in the same order as input, so we remap it.
-  return input.documents.map(filename => {
-    const found = result.find(r => r.originalFilename === filename);
+  return input.documents.map(doc => {
+    const found = result.find(r => r.originalFilename === doc.filename);
     if (found) {
         return found;
     }
     return {
-        originalFilename: filename,
+        originalFilename: doc.filename,
         error: "Processing failed for this file."
     }
   });
@@ -34,14 +34,14 @@ const prompt = ai.definePrompt({
   input: { schema: ClassifyDocumentsInputSchema },
   output: { schema: ClassifyDocumentsOutputSchema },
   prompt: `You are an intelligent HR assistant responsible for organizing employee documents.
-You will be given a list of document filenames and a list of employees.
-Your task is to analyze each filename and determine which employee it belongs to and what type of document it is.
+You will be given a list of documents (including their content) and a list of employees.
+Your task is to analyze each document's content and filename to determine which employee it belongs to and what type of document it is.
 
-- Match the name in the filename to the closest employee name from the provided list. The filename may contain partial names, nicknames, or be reversed (lastname firstname).
-- Infer the document type from the filename. Common types are: Salary Slip, Medical Report, Appraisal Letter, Personal.
+- Match the name found in the document content or filename to the closest employee name from the provided list.
+- Infer the document type from the document's content and title. Common types are: Salary Slip, Medical Report, Appraisal Letter, Personal.
 - For each document, you MUST return an object with the originalFilename, the matched employeeId, and the determined documentType.
 - If you cannot confidently determine the employee or the document type for a file, you should still return an entry for it, but set employeeId or documentType to null and provide a reason in the 'error' field.
-- It is critical that you return one result object for each and every document filename in the input array.
+- It is critical that you return one result object for each and every document in the input array.
 
 Available Employees:
 {{#each employees}}
@@ -50,7 +50,11 @@ Available Employees:
 
 Documents to classify:
 {{#each documents}}
-- {{{this}}}
+---
+Filename: {{{filename}}}
+Content:
+{{media url=dataUri}}
+---
 {{/each}}
 `,
 });
