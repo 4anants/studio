@@ -82,7 +82,8 @@ export function AdminView() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [isBulkRoleChangeDialogOpen, setIsBulkRoleChangeDialogOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('all-docs');
+  const [activeTab, setActiveTab] = useState('file-explorer');
+  const [activeSubTab, setActiveSubTab] = useState('overview');
   const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'employee'>('all');
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
@@ -481,7 +482,7 @@ const handleExportUsers = () => {
         return { documentsByOwner: ownerMap, unassignedDocuments: unassigned };
       }, [docs, users]);
 
-  const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
+  const filteredUsersForSelection = activeSubTab === 'manage' ? filteredActiveUsersForTable : [];
 
   const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
     if (checked === true) {
@@ -558,6 +559,9 @@ const handleExportUsers = () => {
     setDepartmentFilters(['all']);
     setRoleFilter('all');
     setHolidayLocationFilter('all');
+    if (value === 'employee-management') {
+      setActiveSubTab('overview');
+    }
   }, []);
 
   const numSelected = selectedUserIds.length;
@@ -572,7 +576,7 @@ const handleExportUsers = () => {
             <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
         </div>
         <div className="flex items-center gap-2">
-          {numSelected > 0 && activeTab === 'by-employee' ? (
+          {numSelected > 0 && activeTab === 'employee-management' && activeSubTab === 'manage' ? (
             <>
                 <span className="text-sm text-muted-foreground">{numSelected} selected</span>
                 <BulkRoleChangeDialog onSave={handleBulkRoleChange}>
@@ -601,13 +605,10 @@ const handleExportUsers = () => {
       <Tabs value={activeTab} onValueChange={onTabChange}>
         <div className="flex items-center mb-4">
             <TabsList>
-                <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
-                <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
                 <TabsTrigger value="file-explorer">File Explorer</TabsTrigger>
+                <TabsTrigger value="employee-management">Employee Management</TabsTrigger>
+                <TabsTrigger value="announcements">Announcements</TabsTrigger>
                 <TabsTrigger value="holidays">Holidays</TabsTrigger>
-                <TabsTrigger value="announcements">
-                    Announcements
-                </TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
@@ -616,14 +617,12 @@ const handleExportUsers = () => {
                     <Input
                         type="search"
                         placeholder={
-                            activeTab === 'all-docs' ? 'Search employees by name...' 
-                            : activeTab === 'doc-types' ? 'Search document types...'
-                            : activeTab === 'departments' ? 'Search departments...'
+                            activeTab === 'file-explorer' ? 'Search employee folders...'
+                            : activeTab === 'employee-management' ? 'Search employees...'
                             : activeTab === 'holidays' ? 'Search holidays...'
                             : activeTab === 'announcements' ? 'Search announcements...'
                             : activeTab === 'settings' ? 'Search settings...'
-                            : activeTab === 'file-explorer' ? 'Search employee folders...'
-                            : 'Search users...'
+                            : 'Search...'
                         }
                         className="w-full sm:w-[300px] pl-8"
                         value={searchTerm}
@@ -633,7 +632,7 @@ const handleExportUsers = () => {
             </div>
         </div>
 
-        {(activeTab === 'all-docs' || activeTab === 'by-employee' || activeTab === 'file-explorer') && (
+        {(activeTab === 'employee-management' || activeTab === 'file-explorer') && (
             <Card className="mb-4">
                 <CardHeader>
                     <CardTitle>Filters</CardTitle>
@@ -680,147 +679,6 @@ const handleExportUsers = () => {
             </Card>
         )}
 
-        <TabsContent value="all-docs">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Employee Overview</CardTitle>
-                    <CardDescription>Select an employee to view their detailed profile and documents.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-                        {filteredActiveUsersForGrid.map(user => (
-                            <Card 
-                                key={user.id} 
-                                className="cursor-pointer hover:border-primary transition-all"
-                                onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
-                            >
-                                <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                    <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
-                                    <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                     {filteredActiveUsersForGrid.length === 0 && (
-                        <div className="text-center text-muted-foreground py-8">
-                            <p>No employees found.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="by-employee">
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Manage Employees</CardTitle>
-                            <CardDescription>A list of all active employees in the system.</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <Button onClick={handleExportUsers} variant="outline">
-                                <Download className="mr-2 h-4 w-4" /> 
-                                {numSelected > 0 ? `Export Selected (${numSelected})` : 'Export All Users'}
-                            </Button>
-                            <BulkUserImportDialog onImport={handleBulkUserImport}>
-                                <Button variant="outline">
-                                    <Upload className="mr-2 h-4 w-4" /> Import Users
-                                </Button>
-                            </BulkUserImportDialog>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[40px]">
-                                    <Checkbox
-                                        checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
-                                        onCheckedChange={handleSelectAll}
-                                        aria-label="Select all"
-                                    />
-                                </TableHead>
-                                <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead className="hidden lg:table-cell">Department</TableHead>
-                                <TableHead className="hidden md:table-cell">Role</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredActiveUsersForTable.length > 0 ? filteredActiveUsersForTable.map(user => (
-                                <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
-                                    <TableCell>
-                                        <Checkbox
-                                            checked={selectedUserIds.includes(user.id)}
-                                            onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
-                                            aria-label={`Select ${user.name}`}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell">
-                                        <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
-                                    </TableCell>
-                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{user.department || 'N/A'}</TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
-                                            user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                                        )}>
-                                             {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium', 
-                                            user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                                            user.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                                            'bg-yellow-100 text-yellow-800'
-                                        )}>
-                                            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreVertical className="h-5 w-5" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
-                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Edit Employee
-                                                    </DropdownMenuItem>
-                                                </EmployeeManagementDialog>
-                                                <DropdownMenuItem onClick={() => handleResetPassword(user.name)}>
-                                                    <KeyRound className="mr-2 h-4 w-4" />
-                                                    Reset Password
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
-                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        Delete Employee
-                                                    </DropdownMenuItem>
-                                                </DeleteEmployeeDialog>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-muted-foreground">No active users found.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
         <TabsContent value="file-explorer">
             <Card>
                 <CardHeader>
@@ -829,7 +687,7 @@ const handleExportUsers = () => {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="multiple" className="w-full" defaultValue={unassignedDocuments.length > 0 ? ['unassigned'] : []}>
-                         {unassignedDocuments.length > 0 && (
+                        {unassignedDocuments.length > 0 && (
                              <AccordionItem value="unassigned" className="border-b-0">
                                 <AccordionContent className="pt-0">
                                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -852,7 +710,11 @@ const handleExportUsers = () => {
                                 </AccordionContent>
                             </AccordionItem>
                         )}
-
+                        {filteredActiveUsersForGrid.length > 0 && unassignedDocuments.length === 0 && (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>No employees found based on filters.</p>
+                            </div>
+                        )}
                         {filteredActiveUsersForGrid.map(user => (
                             <AccordionItem value={user.id} key={user.id}>
                                 <AccordionTrigger>
@@ -874,14 +736,208 @@ const handleExportUsers = () => {
                             </AccordionItem>
                         ))}
                     </Accordion>
-                    {filteredActiveUsersForGrid.length === 0 && (
-                        <div className="text-center text-muted-foreground py-8">
-                            <p>No employees found based on filters.</p>
-                        </div>
-                    )}
                 </CardContent>
             </Card>
         </TabsContent>
+
+        <TabsContent value="employee-management">
+          <Tabs defaultValue="overview" value={activeSubTab} onValueChange={setActiveSubTab}>
+            <TabsList>
+              <TabsTrigger value="overview">Employee Overview</TabsTrigger>
+              <TabsTrigger value="manage">Manage Employees</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="mt-4">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Employee Overview</CardTitle>
+                      <CardDescription>Select an employee to view their detailed profile and documents.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                          {filteredActiveUsersForGrid.map(user => (
+                              <Card 
+                                  key={user.id} 
+                                  className="cursor-pointer hover:border-primary transition-all"
+                                  onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
+                              >
+                                  <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
+                                      <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                      <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
+                                  </CardContent>
+                              </Card>
+                          ))}
+                      </div>
+                      {filteredActiveUsersForGrid.length === 0 && (
+                          <div className="text-center text-muted-foreground py-8">
+                              <p>No employees found.</p>
+                          </div>
+                      )}
+                  </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="manage" className="mt-4">
+              <Card>
+                  <CardHeader>
+                      <div className="flex items-center justify-between">
+                          <div>
+                              <CardTitle>Manage Employees</CardTitle>
+                              <CardDescription>A list of all active employees in the system.</CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                              <Button onClick={handleExportUsers} variant="outline">
+                                  <Download className="mr-2 h-4 w-4" /> 
+                                  {numSelected > 0 ? `Export Selected (${numSelected})` : 'Export All Users'}
+                              </Button>
+                              <BulkUserImportDialog onImport={handleBulkUserImport}>
+                                  <Button variant="outline">
+                                      <Upload className="mr-2 h-4 w-4" /> Import Users
+                                  </Button>
+                              </BulkUserImportDialog>
+                          </div>
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead className="w-[40px]">
+                                      <Checkbox
+                                          checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
+                                          onCheckedChange={handleSelectAll}
+                                          aria-label="Select all"
+                                      />
+                                  </TableHead>
+                                  <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
+                                  <TableHead>Name</TableHead>
+                                  <TableHead>Email</TableHead>
+                                  <TableHead className="hidden lg:table-cell">Department</TableHead>
+                                  <TableHead className="hidden md:table-cell">Role</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {filteredActiveUsersForTable.length > 0 ? filteredActiveUsersForTable.map(user => (
+                                  <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
+                                      <TableCell>
+                                          <Checkbox
+                                              checked={selectedUserIds.includes(user.id)}
+                                              onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
+                                              aria-label={`Select ${user.name}`}
+                                          />
+                                      </TableCell>
+                                      <TableCell className="hidden sm:table-cell">
+                                          <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                      </TableCell>
+                                      <TableCell className="font-medium">{user.name}</TableCell>
+                                      <TableCell>{user.email}</TableCell>
+                                      <TableCell className="hidden lg:table-cell">{user.department || 'N/A'}</TableCell>
+                                      <TableCell className="hidden md:table-cell">
+                                          <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
+                                              user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                          )}>
+                                              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                          </span>
+                                      </TableCell>
+                                      <TableCell>
+                                          <span className={cn('px-2 py-1 rounded-full text-xs font-medium', 
+                                              user.status === 'active' ? 'bg-green-100 text-green-800' : 
+                                              user.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                                              'bg-yellow-100 text-yellow-800'
+                                          )}>
+                                              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                                          </span>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                          <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                  <Button variant="ghost" size="icon">
+                                                      <MoreVertical className="h-5 w-5" />
+                                                  </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                  <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
+                                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                          <Edit className="mr-2 h-4 w-4" />
+                                                          Edit Employee
+                                                      </DropdownMenuItem>
+                                                  </EmployeeManagementDialog>
+                                                  <DropdownMenuItem onClick={() => handleResetPassword(user.name)}>
+                                                      <KeyRound className="mr-2 h-4 w-4" />
+                                                      Reset Password
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuSeparator />
+                                                  <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
+                                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                          <Trash2 className="mr-2 h-4 w-4" />
+                                                          Delete Employee
+                                                      </DropdownMenuItem>
+                                                  </DeleteEmployeeDialog>
+                                              </DropdownMenuContent>
+                                          </DropdownMenu>
+                                      </TableCell>
+                                  </TableRow>
+                              )) : (
+                                  <TableRow>
+                                      <TableCell colSpan={8} className="text-center text-muted-foreground">No active users found.</TableCell>
+                                  </TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                  </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="announcements">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Manage Announcements</CardTitle>
+                        <CardDescription>Create and publish announcements for all employees.</CardDescription>
+                    </div>
+                     <AddAnnouncementDialog onAdd={handleAddAnnouncement}>
+                        <Button variant="outline">
+                            <Bell className="mr-2 h-4 w-4" /> New Announcement
+                        </Button>
+                    </AddAnnouncementDialog>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Title</TableHead>
+                                <TableHead className="hidden md:table-cell">Message</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => (
+                                <TableRow key={announcement.id}>
+                                    <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                    <TableCell>{announcement.title}</TableCell>
+                                    <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)} isPermanent={false}>
+                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </DeleteAnnouncementDialog>
+                                    </TableCell>
+                                </TableRow>
+                           )) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No announcements found.</TableCell>
+                                </TableRow>
+                           )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        
         <TabsContent value="holidays">
             <Card>
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -955,53 +1011,7 @@ const handleExportUsers = () => {
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="announcements">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Manage Announcements</CardTitle>
-                        <CardDescription>Create and publish announcements for all employees.</CardDescription>
-                    </div>
-                     <AddAnnouncementDialog onAdd={handleAddAnnouncement}>
-                        <Button variant="outline">
-                            <Bell className="mr-2 h-4 w-4" /> New Announcement
-                        </Button>
-                    </AddAnnouncementDialog>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Title</TableHead>
-                                <TableHead className="hidden md:table-cell">Message</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => (
-                                <TableRow key={announcement.id}>
-                                    <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
-                                    <TableCell>{announcement.title}</TableCell>
-                                    <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
-                                    <TableCell className="text-right">
-                                        <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)} isPermanent={false}>
-                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </DeleteAnnouncementDialog>
-                                    </TableCell>
-                                </TableRow>
-                           )) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No announcements found.</TableCell>
-                                </TableRow>
-                           )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
+        
         <TabsContent value="settings">
           <Card>
               <CardHeader>
@@ -1031,7 +1041,32 @@ const handleExportUsers = () => {
                                         {logoSrc ? (
                                             <Image src={logoSrc} alt="Current Logo" width={80} height={80} className="rounded-full object-cover"/>
                                         ) : (
-                                            <FileLock2 className="w-8 h-8 text-muted-foreground"/>
+                                            <svg
+                                                width="64"
+                                                height="64"
+                                                viewBox="0 0 100 100"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                >
+                                                <path
+                                                    d="M50 0L95.5 25.5V74.5L50 100L4.5 74.5V25.5L50 0Z"
+                                                    fill="#004a99"
+                                                />
+                                                <path
+                                                    d="M26 63.5L50 50L74 63.5M50 75V50"
+                                                    stroke="#fecb00"
+                                                    strokeWidth="5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                                <path
+                                                    d="M26 36.5L50 25L74 36.5"
+                                                    stroke="#ffffff"
+                                                    strokeWidth="5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                                </svg>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1293,3 +1328,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
