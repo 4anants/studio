@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { LoginForm } from '@/components/login-form';
 import Image from 'next/image';
+import { CompanyName } from '@/lib/mock-data';
 
 const AseLogo = () => (
     <svg
@@ -35,6 +36,7 @@ const AseLogo = () => (
 
 export default function LoginPage() {
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState(CompanyName);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -43,6 +45,26 @@ export default function LoginPage() {
     if (storedLogo) {
       setLogoSrc(storedLogo);
     }
+    const storedSiteName = localStorage.getItem('siteName');
+    if (storedSiteName) {
+      setSiteName(storedSiteName);
+      document.title = storedSiteName;
+    } else {
+        document.title = CompanyName;
+    }
+
+    const handleStorageChange = () => {
+        const storedSiteName = localStorage.getItem('siteName');
+        if (storedSiteName) {
+            setSiteName(storedSiteName);
+            document.title = storedSiteName;
+        }
+    }
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    }
+
   }, []);
 
   return (
@@ -64,7 +86,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-primary">
-            AE INTRAWEB
+            {siteName}
           </h1>
           <p className="mt-2 text-muted-foreground">
             Your secure internal document repository.
@@ -75,3 +97,5 @@ export default function LoginPage() {
     </main>
   );
 }
+
+    

@@ -18,6 +18,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { AnnouncementBell } from './announcement-bell'
 import { ThemeToggle } from '../theme-toggle'
+import { useState, useEffect } from 'react'
+import { CompanyName } from '@/lib/mock-data'
 
 const AseLogo = () => (
     <svg
@@ -54,6 +56,28 @@ export function DashboardHeader() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const role = searchParams.get('role')
+  const [siteName, setSiteName] = useState(CompanyName);
+
+  useEffect(() => {
+    const storedSiteName = localStorage.getItem('siteName');
+    if (storedSiteName) {
+      setSiteName(storedSiteName);
+      document.title = storedSiteName;
+    }
+
+    const handleStorageChange = () => {
+      const storedSiteName = localStorage.getItem('siteName');
+      if (storedSiteName) {
+        setSiteName(storedSiteName);
+        document.title = storedSiteName;
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleLogout = () => {
     router.push('/login')
@@ -81,7 +105,7 @@ export function DashboardHeader() {
           className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
         >
           <AseLogo />
-          <span className="font-bold">AE INTRAWEB</span>
+          <span className="font-bold">{siteName}</span>
         </Link>
       </nav>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
@@ -113,3 +137,5 @@ export function DashboardHeader() {
     </header>
   )
 }
+
+    

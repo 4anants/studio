@@ -9,8 +9,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder } from 'lucide-react'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName } from '@/lib/mock-data'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -88,6 +88,8 @@ export function AdminView() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'employee'>('all');
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState(CompanyName);
+  const [tempSiteName, setTempSiteName] = useState(CompanyName);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -100,6 +102,12 @@ export function AdminView() {
     if (storedLogo) {
       setLogoSrc(storedLogo);
     }
+    const storedSiteName = localStorage.getItem('siteName');
+    if (storedSiteName) {
+      setSiteName(storedSiteName);
+      setTempSiteName(storedSiteName);
+    }
+
     return () => {
       window.removeEventListener('view-announcements', handleViewAnnouncements);
     };
@@ -128,6 +136,16 @@ export function AdminView() {
     toast({
       title: 'Logo Reset',
       description: 'The company logo has been reset to the default.',
+    });
+  };
+
+  const handleSiteNameSave = () => {
+    setSiteName(tempSiteName);
+    localStorage.setItem('siteName', tempSiteName);
+    window.dispatchEvent(new Event('storage')); // Notify other tabs/components
+    toast({
+      title: 'Site Name Updated',
+      description: 'The site name has been changed successfully.',
     });
   };
 
@@ -559,7 +577,7 @@ const handleExportUsers = () => {
     <>
       <div className="flex items-center justify-between">
          <div className="grid gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{siteName}</h1>
             <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -669,7 +687,7 @@ const handleExportUsers = () => {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="multiple" className="w-full" defaultValue={unassignedDocuments.length > 0 && (departmentFilter === 'all' || departmentFilter === 'unassigned') ? ['unassigned'] : []}>
-                       {unassignedDocuments.length > 0 && (departmentFilter === 'all' || departmentFilter === 'unassigned') && (
+                       {(departmentFilter === 'all' || departmentFilter === 'unassigned') && unassignedDocuments.length > 0 && (
                             <AccordionItem value="unassigned" className="border-b-0">
                                 <AccordionTrigger>
                                      <div className="flex items-center gap-3">
@@ -1022,7 +1040,7 @@ const handleExportUsers = () => {
                             <CardTitle>Application Branding</CardTitle>
                             <CardDescription>Manage the look and feel of the application.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-8">
                             <div className="space-y-2">
                                 <Label>Company Logo</Label>
                                 <div className="flex items-center gap-4">
@@ -1081,6 +1099,22 @@ const handleExportUsers = () => {
                                     </div>
                                 </div>
                                 <p className="text-sm text-muted-foreground">Upload a new logo for the login screen.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="site-name">Site Name</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        id="site-name"
+                                        value={tempSiteName}
+                                        onChange={(e) => setTempSiteName(e.target.value)}
+                                        className="max-w-xs"
+                                    />
+                                    <Button onClick={handleSiteNameSave}>
+                                        <Save className="mr-2 h-4 w-4" />
+                                        Save Name
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-muted-foreground">This name will appear on the login page and in the header.</p>
                             </div>
                         </CardContent>
                       </Card>
@@ -1317,3 +1351,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
