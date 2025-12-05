@@ -600,7 +600,7 @@ const handleExportUsers = () => {
     
     const userIdsWithDocType = new Set(
         docs
-            .filter(d => d.type === explorerState.docType)
+            .filter(d => d.type === explorerState.docType && d.ownerId)
             .map(d => d.ownerId)
     );
 
@@ -642,7 +642,7 @@ const handleExportUsers = () => {
         </div>
       </div>
       
-      <Tabs value={activeTab} onValueChange={onTabChange}>
+      <Tabs value={activeTab} onValueChange={onTabChange} className="mt-4">
         <div className="flex items-center mb-4">
             <TabsList>
                 <TabsTrigger value="file-explorer">File Explorer</TabsTrigger>
@@ -767,7 +767,7 @@ const handleExportUsers = () => {
                                 <Card 
                                     key={docType}
                                     className="cursor-pointer hover:border-primary transition-all group"
-                                    onClick={()={() => setExplorerState({ view: 'usersInDocType', docType })} }
+                                    onClick={() => setExplorerState({ view: 'usersInDocType', docType })}
                                 >
                                     <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                         <Folder className="h-16 w-16 text-primary group-hover:scale-105 transition-transform" />
@@ -783,7 +783,7 @@ const handleExportUsers = () => {
                                     <Card 
                                         key={user.id} 
                                         className="cursor-pointer hover:border-primary transition-all"
-                                        onClick={()={() => router.push(`/dashboard/employee/${user.id}?role=admin`)} }
+                                        onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
                                     >
                                         <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                             <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
@@ -821,7 +821,7 @@ const handleExportUsers = () => {
                               <Card 
                                   key={user.id} 
                                   className="cursor-pointer hover:border-primary transition-all"
-                                  onClick={()={() => router.push(`/dashboard/employee/${user.id}?role=admin`)} }
+                                  onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
                               >
                                   <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                       <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
@@ -970,7 +970,7 @@ const handleExportUsers = () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Date</TableHead>
+                                <TableHead className="hidden sm:table-cell">Date</TableHead>
                                 <TableHead>Title</TableHead>
                                 <TableHead className="hidden md:table-cell">Message</TableHead>
                                 <TableHead>Event Date</TableHead>
@@ -1269,7 +1269,7 @@ const handleExportUsers = () => {
                                                 <Button variant="ghost" size="sm" disabled>
                                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                                 </Button>
-                                                <DeleteDepartmentDialog departmentName={dept} onDelete={()={() => handleDeleteDepartment(dept)}>
+                                                <DeleteDepartmentDialog departmentName={dept} onDelete={() => handleDeleteDepartment(dept)}>
                                                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                     </Button>
