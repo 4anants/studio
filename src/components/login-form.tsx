@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Label } from './ui/label'
+import { users } from '@/lib/mock-data'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -54,10 +55,45 @@ export function LoginForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>, role: 'employee' | 'admin') {
     setIsLoading(role)
-    // Simulate API call
+    
     setTimeout(() => {
-      router.push(`/dashboard?role=${role}`)
-    }, 1000)
+        const user = users.find(u => u.email.toLowerCase() === values.email.toLowerCase());
+
+        if (!user || user.password !== values.password) {
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: 'Invalid email or password.',
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        if (user.role !== role) {
+            toast({
+                variant: 'destructive',
+                title: 'Access Denied',
+                description: `You do not have permission to log in as an ${role}.`,
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        if (user.status === 'deleted' || user.status === 'inactive') {
+            toast({
+                variant: 'destructive',
+                title: 'Account Disabled',
+                description: 'Your account is not active. Please contact an administrator.',
+            });
+            setIsLoading(false);
+            return;
+        }
+        
+        const targetUserId = role === 'admin' ? 'user-1' : user.id;
+
+        router.push(`/dashboard?role=${role}`);
+
+    }, 1000);
   }
 
   const handleForgotPassword = () => {

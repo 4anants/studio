@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2 } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -57,6 +57,13 @@ import { AddHolidayDialog } from '@/components/dashboard/add-holiday-dialog'
 import { AddAnnouncementDialog } from '@/components/dashboard/add-announcement-dialog'
 import { DeleteAnnouncementDialog } from '@/components/dashboard/delete-announcement-dialog'
 import { Label } from '@/components/ui/label'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from '@/components/ui/select';
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -71,6 +78,7 @@ export function AdminView() {
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('all-docs');
   const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'employee'>('all');
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
   const { toast } = useToast();
@@ -162,7 +170,8 @@ export function AdminView() {
            resignationDate: employee.resignationDate,
            designation: employee.designation,
            status: employee.status || 'pending',
-           department: employee.department
+           department: employee.department,
+           role: employee.role || 'employee',
         };
         return [...prevUsers, newUser];
       }
@@ -315,14 +324,18 @@ export function AdminView() {
     departmentFilters.includes('all') || (user.department && departmentFilters.includes(user.department))
   ), [activeUsers, departmentFilters]);
 
-  const filteredActiveUsersForGrid = useMemo(() => filteredByDept.filter(user => 
+  const filteredByRole = useMemo(() => filteredByDept.filter(user => 
+    roleFilter === 'all' || user.role === roleFilter
+  ), [filteredByDept, roleFilter]);
+
+  const filteredActiveUsersForGrid = useMemo(() => filteredByRole.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ), [filteredByDept, searchTerm]);
+  ), [filteredByRole, searchTerm]);
   
-  const filteredActiveUsersForTable = useMemo(() => filteredByDept.filter(user => 
+  const filteredActiveUsersForTable = useMemo(() => filteredByRole.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  ), [filteredByDept, searchTerm]);
+  ), [filteredByRole, searchTerm]);
 
   const filteredDeletedUsers = useMemo(() => deletedUsers.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -397,6 +410,7 @@ export function AdminView() {
     setSelectedUserIds([]);
     setSearchTerm('');
     setDepartmentFilters(['all']);
+    setRoleFilter('all');
     setHolidayLocationFilter('all');
   }, []);
 
@@ -471,26 +485,46 @@ export function AdminView() {
         {(activeTab === 'all-docs' || activeTab === 'by-employee') && (
             <Card className="mb-4">
                 <CardHeader>
-                    <CardTitle>Filter by Department</CardTitle>
+                    <CardTitle>Filters</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-wrap items-center gap-2">
-                    <Button
-                        variant={departmentFilters.includes('all') ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleDepartmentFilterChange('all')}
-                    >
-                        All Departments
-                    </Button>
-                    {departments.map(dept => (
-                        <Button
-                            key={dept}
-                            variant={departmentFilters.includes(dept) ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handleDepartmentFilterChange(dept)}
-                        >
-                            {dept}
-                        </Button>
-                    ))}
+                <CardContent className="flex flex-col sm:flex-row gap-4">
+                    <div>
+                        <Label className="text-sm font-medium">Department</Label>
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                            <Button
+                                variant={departmentFilters.includes('all') ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => handleDepartmentFilterChange('all')}
+                            >
+                                All Departments
+                            </Button>
+                            {departments.map(dept => (
+                                <Button
+                                    key={dept}
+                                    variant={departmentFilters.includes(dept) ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => handleDepartmentFilterChange(dept)}
+                                >
+                                    {dept}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="sm:pl-4 sm:border-l sm:border-border">
+                        <Label className="text-sm font-medium">Role</Label>
+                         <div className="flex flex-wrap items-center gap-2 pt-2">
+                             <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Select Role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Roles</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="employee">Employee</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         )}
@@ -545,7 +579,7 @@ export function AdminView() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead className="hidden lg:table-cell">Department</TableHead>
-                                <TableHead className="hidden md:table-cell">Mobile</TableHead>
+                                <TableHead className="hidden md:table-cell">Role</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -566,7 +600,13 @@ export function AdminView() {
                                     <TableCell className="font-medium">{user.name}</TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell className="hidden lg:table-cell">{user.department || 'N/A'}</TableCell>
-                                    <TableCell className="hidden md:table-cell">{user.mobile || 'N/A'}</TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
+                                            user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                        )}>
+                                             {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                        </span>
+                                    </TableCell>
                                     <TableCell>
                                         <span className={cn('px-2 py-1 rounded-full text-xs font-medium', 
                                             user.status === 'active' ? 'bg-green-100 text-green-800' : 

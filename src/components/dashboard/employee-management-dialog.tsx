@@ -56,6 +56,7 @@ const formSchema = z.object({
   bloodGroup: z.string().optional(),
   company: z.enum(companyNames).optional(),
   location: z.enum(locationKeys).optional(),
+  role: z.enum(['admin', 'employee']),
 });
 
 interface EmployeeManagementDialogProps {
@@ -89,6 +90,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       bloodGroup: employee?.bloodGroup || '',
       company: employee?.company,
       location: employee?.location,
+      role: employee?.role || 'employee',
     },
   });
   
@@ -133,7 +135,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '', bloodGroup: '' });
+        form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '', bloodGroup: '', role: 'employee' });
       } else {
         form.reset({ ...values, password: '' }); 
       }
@@ -158,6 +160,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             bloodGroup: employee?.bloodGroup || '',
             company: employee?.company,
             location: employee?.location,
+            role: employee?.role || 'employee',
         });
     }
     setOpen(isOpen);
@@ -400,6 +403,27 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Role</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="employee">Employee</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

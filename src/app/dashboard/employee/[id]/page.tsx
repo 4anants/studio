@@ -2,20 +2,20 @@
 
 'use client';
 import { notFound, useRouter, useSearchParams } from 'next/navigation';
-import { users as initialUsers, documents as allDocuments, documentTypesList, departments, CompanyName } from '@/lib/mock-data';
+import { users as initialUsers, departments, CompanyName, User as UserType } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, IdCard, Droplet, MapPin } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect, useCallback, use } from 'react';
-import { Separator } from '@/components/ui/separator';
-import type { User as UserType, Document } from '@/lib/mock-data';
+import type { Document } from '@/lib/mock-data';
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
 
-export default function EmployeeProfilePage({ params, searchParams }: { params: { id: string }, searchParams: { [key: string]: string | string[] | undefined } }) {
+export default function EmployeeProfilePage({ params }: { params: { id: string }, searchParams: { [key: string]: string | string[] | undefined } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
@@ -23,7 +23,7 @@ export default function EmployeeProfilePage({ params, searchParams }: { params: 
 
   const [user, setUser] = useState<UserType | undefined>(undefined);
   
-  const role = searchParams.role;
+  const role = searchParams.get('role');
   const isSelfView = role !== 'admin';
   
   useEffect(() => {
@@ -45,12 +45,12 @@ export default function EmployeeProfilePage({ params, searchParams }: { params: 
                 ...employee,
             };
 
-            updatedUsers[userIndex] = updatedUser;
+            updatedUsers[userIndex] = updatedUser as UserType;
             
             if (employee.originalId && employee.id && employee.id !== employee.originalId) {
                 router.replace(`/dashboard/employee/${employee.id}?role=admin`);
             } else {
-                setUser(updatedUser);
+                setUser(updatedUser as UserType);
             }
             return updatedUsers;
         }
@@ -72,6 +72,7 @@ export default function EmployeeProfilePage({ params, searchParams }: { params: 
     { icon: Phone, label: 'Mobile', value: user.mobile || 'N/A' },
     { icon: Calendar, label: 'Date of Birth', value: user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A' },
     { icon: Droplet, label: 'Blood Group', value: user.bloodGroup || 'N/A' },
+    { icon: Shield, label: 'Role', value: user.role.charAt(0).toUpperCase() + user.role.slice(1) },
     { icon: Briefcase, label: 'Company', value: user.company || 'N/A' },
     { icon: MapPin, label: 'Location', value: user.location || 'N/A' },
     { icon: Building, label: 'Department', value: user.department || 'N/A' },
@@ -81,8 +82,8 @@ export default function EmployeeProfilePage({ params, searchParams }: { params: 
     { icon: User, label: 'Status', value: user.status.charAt(0).toUpperCase() + user.status.slice(1) },
   ];
 
-  const col1Details = userDetails.slice(0, 6);
-  const col2Details = userDetails.slice(6);
+  const col1Details = userDetails.slice(0, Math.ceil(userDetails.length / 2));
+  const col2Details = userDetails.slice(Math.ceil(userDetails.length / 2));
 
 
   return (
@@ -151,6 +152,9 @@ export default function EmployeeProfilePage({ params, searchParams }: { params: 
                                                             detail.value === 'Active' ? 'text-green-600' : 
                                                             detail.value === 'Inactive' ? 'text-red-600' :
                                                             'text-yellow-600'
+                                                        ),
+                                                         detail.label === 'Role' && (
+                                                            detail.value === 'Admin' ? 'text-blue-600' : 'text-gray-600'
                                                         )
                                                     )}>{detail.value}</p>
                                                 </div>
@@ -171,6 +175,9 @@ export default function EmployeeProfilePage({ params, searchParams }: { params: 
                                                             detail.value === 'Active' ? 'text-green-600' : 
                                                             detail.value === 'Inactive' ? 'text-red-600' :
                                                             'text-yellow-600'
+                                                        ),
+                                                        detail.label === 'Role' && (
+                                                            detail.value === 'Admin' ? 'text-blue-600' : 'text-gray-600'
                                                         )
                                                     )}>{detail.value}</p>
                                                 </div>
