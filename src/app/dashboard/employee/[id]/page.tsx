@@ -13,18 +13,17 @@ import type { User as UserType, Document } from '@/lib/mock-data';
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
-import { IdCardDialog } from '@/components/dashboard/id-card-dialog';
 
-export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
+export default function EmployeeProfilePage({ params, searchParams }: { params: { id: string }, searchParams: { [key: string]: string | string[] | undefined } }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
   const { id } = params;
 
   const [user, setUser] = useState<UserType | undefined>(undefined);
   
-  const role = searchParams.get('role');
+  const role = searchParams.role;
   const isSelfView = role !== 'admin';
   
   useEffect(() => {
@@ -127,12 +126,6 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
                                     </Button>
                                 </EmployeeManagementDialog>
                             )}
-                             <IdCardDialog user={user}>
-                                <Button variant="outline" className="w-full">
-                                    <IdCard className="mr-2 h-4 w-4" />
-                                    Generate ID Card
-                                </Button>
-                            </IdCardDialog>
                         </CardContent>
                     </Card>
                 </div>

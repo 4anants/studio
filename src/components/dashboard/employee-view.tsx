@@ -30,7 +30,6 @@ import {
   } from '@/components/ui/table'
 import { Calendar, Bell, MailOpen, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { IdCardView } from './id-card-view'
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
@@ -43,7 +42,6 @@ export function EmployeeView() {
   const [userDocuments, setUserDocuments] = useState(
     allDocuments.filter((doc) => doc.ownerId === currentUserId)
   )
-  const [currentUser] = useState<User | undefined>(allUsers.find(u => u.id === currentUserId));
   const [holidays] = useState(initialHolidays);
   const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: a.isRead ?? false })));
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
@@ -249,7 +247,6 @@ export function EmployeeView() {
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>}
                 </TabsTrigger>
-                <TabsTrigger value="id-card">ID Card</TabsTrigger>
             </TabsList>
             <TabsContent value="documents">
                 <Card className="mb-4">
@@ -481,17 +478,6 @@ export function EmployeeView() {
                                 </div>
                             )}
                         </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
-            <TabsContent value="id-card">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Your ID Card</CardTitle>
-                        <CardDescription>View, customize, and print your employee ID card.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {currentUser ? <IdCardView user={currentUser} /> : <p>Could not load user data.</p>}
                     </CardContent>
                 </Card>
             </TabsContent>
