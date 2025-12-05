@@ -652,8 +652,8 @@ const handleExportUsers = () => {
                 <CardHeader>
                     <CardTitle>Filters</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row gap-4">
-                    <div className="grid gap-2">
+                <CardContent className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <Label className="text-sm font-medium">Department</Label>
                         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                             <SelectTrigger className="w-[220px]">
@@ -670,20 +670,18 @@ const handleExportUsers = () => {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid gap-2">
+                    <div className="flex items-center gap-2">
                         <Label className="text-sm font-medium">Role</Label>
-                         <div className="flex flex-wrap items-center gap-2">
-                             <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Select Role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Roles</SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                    <SelectItem value="employee">Employee</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select Role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Roles</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="employee">Employee</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardContent>
             </Card>
@@ -935,7 +933,8 @@ const handleExportUsers = () => {
                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
-                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-500/10 animate-pulse ring-2 ring-destructive")}>
+                                <TableRow key={announcement.id} className={cn(isUpcoming && "relative")}>
+                                     {isUpcoming && <td colSpan={5} className="p-0 -z-10"><span className="absolute inset-0 bg-blue-500/10 animate-pulse ring-2 ring-destructive"></span></td>}
                                     <TableCell className="font-medium hidden sm:table-cell">
                                         {new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </TableCell>
@@ -980,26 +979,22 @@ const handleExportUsers = () => {
                         <CardDescription>Add or remove holidays for the organization.</CardDescription>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <div className="flex-grow sm:flex-grow-0">
-                           <p className="text-sm font-medium text-muted-foreground">Location</p>
-                           <div className="flex flex-wrap items-center gap-2 pt-1">
-                                <Button
-                                    variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setHolidayLocationFilter('all')}
-                                >
-                                    All
-                                </Button>
-                                {holidayLocations.filter(l => l !== 'ALL').map(loc => (
-                                    <Button
-                                        key={loc}
-                                        variant={holidayLocationFilter === loc ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => setHolidayLocationFilter(loc)}
-                                    >
-                                        {loc}
-                                    </Button>
-                                ))}
+                        <div className="flex items-center gap-2">
+                           <Label className="text-sm font-medium">Location</Label>
+                           <div className="flex flex-wrap items-center gap-2">
+                                <Select value={holidayLocationFilter} onValueChange={(value) => setHolidayLocationFilter(value as any)}>
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Select Location" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Locations</SelectItem>
+                                        {holidayLocations.map(loc => (
+                                            <SelectItem key={loc} value={loc}>
+                                                {loc}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                          <AddHolidayDialog onAdd={handleAddHoliday}>

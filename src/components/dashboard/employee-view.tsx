@@ -30,6 +30,7 @@ import {
   } from '@/components/ui/table'
 import { Calendar, Bell, MailOpen, Mail, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Label } from '../ui/label'
 
 // Simulate a logged-in employee user
 const currentUserId = 'user-1'
@@ -265,7 +266,7 @@ export function EmployeeView() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <label className="text-sm font-medium">Document Type</label>
+                            <Label className="text-sm font-medium">Document Type</Label>
                             <div className="flex flex-wrap items-center gap-2 pt-2">
                                 <Button
                                     variant={selectedTypes.includes('All') ? 'default' : 'outline'}
@@ -286,11 +287,11 @@ export function EmployeeView() {
                                 ))}
                             </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                            <div className="flex-grow min-w-[120px]">
-                                <label className="text-sm font-medium">Year</label>
+                        <div className="flex flex-wrap items-center gap-4 w-full">
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium">Year</Label>
                                 <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                    <SelectTrigger className="w-full mt-1">
+                                    <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Select Year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -299,10 +300,10 @@ export function EmployeeView() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="flex-grow min-w-[120px]">
-                                  <label className="text-sm font-medium">Month</label>
+                            <div className="flex items-center gap-2">
+                                  <Label className="text-sm font-medium">Month</Label>
                                   <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
-                                    <SelectTrigger className="w-full mt-1">
+                                    <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Select Month" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -336,7 +337,7 @@ export function EmployeeView() {
                     <CardContent>
                         <div className="flex flex-col sm:flex-row gap-4 mb-4">
                             <div className="flex-grow">
-                                <label className="text-sm font-medium">Filter by Location</label>
+                                <Label className="text-sm font-medium">Filter by Location</Label>
                                 <div className="flex flex-wrap items-center gap-2 pt-2">
                                     <Button
                                         variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
@@ -357,11 +358,11 @@ export function EmployeeView() {
                                     ))}
                                 </div>
                             </div>
-                            <div className="flex items-end gap-2">
-                                <div className="flex-grow min-w-[120px]">
-                                    <label className="text-sm font-medium">Year</label>
+                            <div className="flex items-end gap-4">
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-sm font-medium">Year</Label>
                                     <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                        <SelectTrigger className="w-full mt-1">
+                                        <SelectTrigger className="w-[180px]">
                                             <SelectValue placeholder="Select Year" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -370,10 +371,10 @@ export function EmployeeView() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="flex-grow min-w-[120px]">
-                                    <label className="text-sm font-medium">Month</label>
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-sm font-medium">Month</Label>
                                     <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
-                                        <SelectTrigger className="w-full mt-1">
+                                        <SelectTrigger className="w-[180px]">
                                             <SelectValue placeholder="Select Month" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -428,11 +429,11 @@ export function EmployeeView() {
                         <CardDescription>Stay up to date with the latest news and updates.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <div className="flex items-center gap-2 mb-4">
-                            <div className="flex-grow min-w-[120px]">
-                                <label className="text-sm font-medium">Year</label>
+                         <div className="flex items-center gap-4 mb-4">
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium">Year</Label>
                                 <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                    <SelectTrigger className="w-full mt-1">
+                                    <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Select Year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -441,10 +442,10 @@ export function EmployeeView() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="flex-grow min-w-[120px]">
-                                <label className="text-sm font-medium">Month</label>
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium">Month</Label>
                                 <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
-                                    <SelectTrigger className="w-full mt-1">
+                                    <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Select Month" />
                                     </SelectTrigger>
                                     <SelectContent>
