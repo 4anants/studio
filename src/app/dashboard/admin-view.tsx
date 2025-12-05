@@ -533,6 +533,23 @@ const handleExportUsers = () => {
     setSelectedUserIds([]);
     setIsBulkRoleChangeDialogOpen(false);
   }, [selectedUserIds, toast]);
+
+  const handleReassignDocument = useCallback((docId: string, newOwnerId: string) => {
+    setDocs(prevDocs => {
+      return prevDocs.map(doc => {
+        if (doc.id === docId) {
+          return { ...doc, ownerId: newOwnerId };
+        }
+        return doc;
+      });
+    });
+    const user = users.find(u => u.id === newOwnerId);
+    const doc = docs.find(d => d.id === docId);
+    toast({
+      title: "Document Reassigned",
+      description: `Document "${doc?.name}" has been assigned to ${user?.name}.`
+    });
+  }, [users, docs, toast]);
   
   const onTabChange = useCallback((value: string) => {
     setActiveTab(value);
@@ -805,64 +822,65 @@ const handleExportUsers = () => {
             </Card>
         </TabsContent>
         <TabsContent value="file-explorer">
-            <div className="space-y-4">
-                {unassignedDocuments.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileLock2 className="h-5 w-5 text-destructive" />
-                                Unassigned Documents
-                            </CardTitle>
-                            <CardDescription>
-                                These documents could not be automatically assigned to an employee. Please review and assign them manually.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <DocumentList 
-                                documents={unassignedDocuments}
-                                users={users}
-                                onSort={() => {}} 
-                                sortConfig={null}
-                                showOwner={true}
-                            />
-                        </CardContent>
-                    </Card>
-                )}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Employee Folders</CardTitle>
-                        <CardDescription>Browse all documents by employee.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Accordion type="single" collapsible className="w-full">
-                            {filteredActiveUsersForGrid.map(user => (
-                                <AccordionItem value={user.id} key={user.id}>
-                                    <AccordionTrigger>
-                                        <div className="flex items-center gap-3">
-                                            <Folder className="h-5 w-5 text-primary" />
-                                            <span className="font-medium">{user.name}</span>
-                                            <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pl-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Employee Folders</CardTitle>
+                    <CardDescription>Browse all documents by employee. Unassigned documents are at the top.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Accordion type="multiple" className="w-full" defaultValue={unassignedDocuments.length > 0 ? ['unassigned'] : []}>
+                         {unassignedDocuments.length > 0 && (
+                             <AccordionItem value="unassigned" className="border-b-0">
+                                <AccordionContent className="pt-0">
+                                     <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                        <h3 className="flex items-center gap-2 font-semibold text-red-800 dark:text-red-300">
+                                            <FileLock2 className="h-5 w-5" />
+                                            Unassigned Documents
+                                        </h3>
+                                        <p className="text-sm text-red-700 dark:text-red-400 mt-1 mb-4">
+                                            These documents could not be automatically assigned. Please select them and assign them to an employee.
+                                        </p>
                                         <DocumentList 
-                                            documents={documentsByOwner[user.id] || []}
+                                            documents={unassignedDocuments}
                                             users={users}
                                             onSort={() => {}} 
-                                            sortConfig={null} 
+                                            sortConfig={null}
+                                            showOwner={true}
+                                            onReassign={handleReassignDocument}
                                         />
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                        {filteredActiveUsersForGrid.length === 0 && (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>No employees found based on filters.</p>
-                            </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
                         )}
-                    </CardContent>
-                </Card>
-            </div>
+
+                        {filteredActiveUsersForGrid.map(user => (
+                            <AccordionItem value={user.id} key={user.id}>
+                                <AccordionTrigger>
+                                    <div className="flex items-center gap-3">
+                                        <Folder className="h-5 w-5 text-primary" />
+                                        <span className="font-medium">{user.name}</span>
+                                        <span className="text-sm text-muted-foreground">({documentsByOwner[user.id]?.length || 0} documents)</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pl-8">
+                                    <DocumentList 
+                                        documents={documentsByOwner[user.id] || []}
+                                        users={users}
+                                        onSort={() => {}} 
+                                        sortConfig={null} 
+                                        onReassign={handleReassignDocument}
+                                    />
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                    {filteredActiveUsersForGrid.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                            <p>No employees found based on filters.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </TabsContent>
         <TabsContent value="holidays">
             <Card>
