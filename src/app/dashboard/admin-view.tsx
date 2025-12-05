@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -10,7 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -352,6 +353,7 @@ const handleExportUsers = () => {
       date: new Date().toISOString(),
       author: 'Admin',
       isRead: true, // New announcements by admin are 'read' for them
+      status: 'published',
     };
     setAnnouncements(prev => [newAnnouncement, ...prev]);
     toast({
@@ -361,15 +363,35 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handleDeleteAnnouncement = useCallback((announcementId: string) => {
-    setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'deleted' } : a));
     toast({
       title: 'Announcement Deleted',
-      description: 'The announcement has been removed.',
+      description: 'The announcement has been moved to the deleted list.',
     });
   }, [toast]);
 
+  const handleRestoreAnnouncement = useCallback((announcementId: string) => {
+    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'published' } : a));
+    toast({
+      title: 'Announcement Restored',
+      description: 'The announcement has been restored and is now visible to employees.',
+    });
+  }, [toast]);
+
+  const handlePermanentDeleteAnnouncement = useCallback((announcementId: string) => {
+    setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+    toast({
+      title: 'Announcement Permanently Deleted',
+      description: 'The announcement has been permanently removed from the system.',
+    });
+  }, [toast]);
+
+
   const activeUsers = useMemo(() => users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending'), [users]);
   const deletedUsers = useMemo(() => users.filter(user => user.status === 'deleted'), [users]);
+  
+  const publishedAnnouncements = useMemo(() => announcements.filter(a => a.status === 'published'), [announcements]);
+  const deletedAnnouncements = useMemo(() => announcements.filter(a => a.status === 'deleted'), [announcements]);
 
   const handleDepartmentFilterChange = useCallback((dept: string) => {
     setDepartmentFilters(prev => {
@@ -426,11 +448,18 @@ const handleExportUsers = () => {
   }, [holidays, searchTerm, holidayLocationFilter]);
   
   const filteredAnnouncements = useMemo(() => {
-    return announcements.filter(announcement =>
+    return publishedAnnouncements.filter(announcement =>
         announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         announcement.message.toLowerCase().includes(searchTerm.toLowerCase())
     ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [announcements, searchTerm]);
+  }, [publishedAnnouncements, searchTerm]);
+
+  const filteredDeletedAnnouncements = useMemo(() => {
+    return deletedAnnouncements.filter(announcement =>
+        announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        announcement.message.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [deletedAnnouncements, searchTerm]);
 
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
@@ -859,7 +888,7 @@ const handleExportUsers = () => {
                                     <TableCell>{announcement.title}</TableCell>
                                     <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
                                     <TableCell className="text-right">
-                                        <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)}>
+                                        <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)} isPermanent={false}>
                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -889,6 +918,7 @@ const handleExportUsers = () => {
                     <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                     <TabsTrigger value="departments">Departments</TabsTrigger>
                     <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
+                    <TabsTrigger value="deleted-announcements">Deleted Announcements</TabsTrigger>
                   </TabsList>
                   <TabsContent value="branding" className="pt-6">
                       <Card>
@@ -910,7 +940,7 @@ const handleExportUsers = () => {
                                     <div className="flex items-center gap-2">
                                         <Button asChild variant="outline">
                                             <label htmlFor="logo-upload">
-                                                <UploadCloud className="mr-2" />
+                                                <UploadCloud className="mr-2 h-4 w-4" />
                                                 Change Logo
                                                 <input
                                                     type="file"
@@ -923,7 +953,7 @@ const handleExportUsers = () => {
                                         </Button>
                                         {logoSrc && (
                                         <Button variant="ghost" className="text-destructive" onClick={handleResetLogo}>
-                                            <X className="mr-2" />
+                                            <X className="mr-2 h-4 w-4" />
                                             Reset
                                         </Button>
                                         )}
@@ -1068,6 +1098,53 @@ const handleExportUsers = () => {
                                     )) : (
                                         <TableRow>
                                             <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted users found.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="deleted-announcements" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Deleted Announcements</CardTitle>
+                            <CardDescription>A list of all deleted announcements. You can restore or permanently delete them from here.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Title</TableHead>
+                                        <TableHead className="hidden md:table-cell">Message</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredDeletedAnnouncements.length > 0 ? filteredDeletedAnnouncements.map(announcement => (
+                                        <TableRow key={announcement.id}>
+                                            <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                            <TableCell>{announcement.title}</TableCell>
+                                            <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button variant="outline" size="sm" onClick={() => handleRestoreAnnouncement(announcement.id)}>
+                                                        <ArchiveRestore className="mr-2 h-4 w-4" />
+                                                        Restore
+                                                    </Button>
+                                                    <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handlePermanentDeleteAnnouncement(announcement.id)} isPermanent={true}>
+                                                        <Button variant="destructive" size="sm">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete Permanently
+                                                        </Button>
+                                                    </DeleteAnnouncementDialog>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted announcements found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
