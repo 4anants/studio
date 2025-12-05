@@ -600,13 +600,11 @@ const handleExportUsers = () => {
     if (explorerState.view !== 'usersInDocType') return [];
     
     const userIdsWithDocType = new Set(
-        docs
-            .filter(d => d.type === explorerState.docType && d.ownerId)
-            .map(d => d.ownerId)
+        Object.keys(docsByType[explorerState.docType] || {})
     );
 
     return filteredActiveUsersForGrid.filter(u => userIdsWithDocType.has(u.id));
-  }, [explorerState, docs, filteredActiveUsersForGrid]);
+  }, [explorerState, docsByType, filteredActiveUsersForGrid]);
 
 
   return (
@@ -1419,5 +1417,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
