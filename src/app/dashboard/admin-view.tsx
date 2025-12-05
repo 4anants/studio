@@ -416,11 +416,14 @@ const handleExportUsers = () => {
 
 
   const filteredByDept = useMemo(() => {
-    if (departmentFilter === 'all' || departmentFilter === 'unassigned') {
+    if (departmentFilter === 'all' || (departmentFilter === 'unassigned' && activeTab !== 'file-explorer')) {
         return activeUsers;
     }
+    if (departmentFilter === 'unassigned' && activeTab === 'file-explorer') {
+        return []; // Don't show any users if "Unassigned" is selected in file explorer
+    }
     return activeUsers.filter(user => user.department && departmentFilter === user.department);
-  }, [activeUsers, departmentFilter]);
+  }, [activeUsers, departmentFilter, activeTab]);
 
   const filteredByRole = useMemo(() => filteredByDept.filter(user => 
     roleFilter === 'all' || user.role === roleFilter
@@ -978,24 +981,22 @@ const handleExportUsers = () => {
                         <CardTitle>Manage Holidays</CardTitle>
                         <CardDescription>Add or remove holidays for the organization.</CardDescription>
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex w-full sm:w-auto items-center gap-4">
                         <div className="flex items-center gap-2">
                            <Label className="text-sm font-medium">Location</Label>
-                           <div className="flex flex-wrap items-center gap-2">
-                                <Select value={holidayLocationFilter} onValueChange={(value) => setHolidayLocationFilter(value as any)}>
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Select Location" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Locations</SelectItem>
-                                        {holidayLocations.map(loc => (
-                                            <SelectItem key={loc} value={loc}>
-                                                {loc}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                           <Select value={holidayLocationFilter} onValueChange={(value) => setHolidayLocationFilter(value as any)}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Select Location" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Locations</SelectItem>
+                                    {holidayLocations.map(loc => (
+                                        <SelectItem key={loc} value={loc}>
+                                            {loc}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                          <AddHolidayDialog onAdd={handleAddHoliday}>
                             <Button variant="outline">
