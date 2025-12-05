@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -65,6 +65,8 @@ import {
     SelectValue,
   } from '@/components/ui/select';
 import { BulkRoleChangeDialog } from '@/components/dashboard/bulk-role-change-dialog'
+import { BulkUserImportDialog } from '@/components/dashboard/bulk-user-import-dialog'
+import Papa from 'papaparse'
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
@@ -179,6 +181,59 @@ export function AdminView() {
       }
     });
   }, [toast]);
+
+  const handleBulkUserImport = useCallback((newUsers: User[]) => {
+    setUsers(prevUsers => {
+        const existingIds = new Set(prevUsers.map(u => u.id));
+        const nonDuplicateUsers = newUsers.filter(u => !existingIds.has(u.id));
+        const duplicateCount = newUsers.length - nonDuplicateUsers.length;
+
+        toast({
+            title: 'Import Complete',
+            description: `${nonDuplicateUsers.length} user(s) imported successfully. ${duplicateCount > 0 ? `${duplicateCount} duplicate(s) were skipped.` : ''}`,
+        });
+
+        return [...prevUsers, ...nonDuplicateUsers];
+    });
+}, [toast]);
+
+const handleExportUsers = () => {
+    // We only export a subset of fields for simplicity, can be expanded
+    const dataToExport = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        personalEmail: user.personalEmail,
+        mobile: user.mobile,
+        dateOfBirth: user.dateOfBirth,
+        joiningDate: user.joiningDate,
+        resignationDate: user.resignationDate,
+        designation: user.designation,
+        status: user.status,
+        department: user.department,
+        bloodGroup: user.bloodGroup,
+        company: user.company,
+        location: user.location,
+        role: user.role,
+        // We don't export password for security reasons
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+        title: 'Export Started',
+        description: 'Your user data is being downloaded.',
+    });
+};
+
 
   const handleEmployeeDelete = useCallback((employeeId: string) => {
     setUsers(prevUsers => prevUsers.map(u => 
@@ -456,12 +511,20 @@ export function AdminView() {
                 </Button>
             </>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
+                <Button onClick={handleExportUsers} variant="outline">
+                    <Download className="mr-2 h-4 w-4" /> Export Users
+                </Button>
+                <BulkUserImportDialog onImport={handleBulkUserImport}>
+                    <Button variant="outline">
+                        <Upload className="mr-2 h-4 w-4" /> Import Users
+                    </Button>
+                </BulkUserImportDialog>
                 <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments}>
                     <Button>Add Employee</Button>
                 </EmployeeManagementDialog>
                 <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
-            </>
+            </div>
           )}
         </div>
       </div>
