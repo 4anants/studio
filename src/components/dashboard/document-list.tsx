@@ -95,7 +95,8 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
   }
   
   const getOwnerName = (ownerId: string) => {
-    return users.find(u => u.id === ownerId)?.name || 'Unknown';
+    if (!ownerId) return <span className='text-muted-foreground italic'>Unassigned</span>
+    return users.find(u => u.id === ownerId)?.name || <span className='text-muted-foreground italic'>Unknown User</span>;
   }
 
   if (documents.length === 0) {
@@ -159,3 +160,5 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
   )
 });
 DocumentList.displayName = 'DocumentList';
+
+    

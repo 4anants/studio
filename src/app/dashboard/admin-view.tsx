@@ -1,4 +1,5 @@
 
+
 'use client'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -463,15 +464,24 @@ const handleExportUsers = () => {
     ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [deletedAnnouncements, searchTerm]);
 
-    const documentsByOwner = useMemo(() => {
-        return docs.reduce((acc, doc) => {
-          if (!acc[doc.ownerId]) {
-            acc[doc.ownerId] = [];
+    const { documentsByOwner, unassignedDocuments } = useMemo(() => {
+        const userIds = new Set(users.map(u => u.id));
+        const ownerMap: Record<string, Document[]> = {};
+        const unassigned: Document[] = [];
+    
+        docs.forEach(doc => {
+          if (doc.ownerId && userIds.has(doc.ownerId)) {
+            if (!ownerMap[doc.ownerId]) {
+              ownerMap[doc.ownerId] = [];
+            }
+            ownerMap[doc.ownerId].push(doc);
+          } else {
+            unassigned.push(doc);
           }
-          acc[doc.ownerId].push(doc);
-          return acc;
-        }, {} as Record<string, Document[]>);
-      }, [docs]);
+        });
+    
+        return { documentsByOwner: ownerMap, unassignedDocuments: unassigned };
+      }, [docs, users]);
 
   const filteredUsersForSelection = activeTab === 'by-employee' ? filteredActiveUsersForTable : [];
 
@@ -807,6 +817,26 @@ const handleExportUsers = () => {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
+                        {unassignedDocuments.length > 0 && (
+                            <Card className='mb-4 border-amber-500'>
+                                <CardHeader className='py-4'>
+                                    <div className="flex items-center gap-3">
+                                        <FileLock2 className="h-5 w-5 text-amber-500" />
+                                        <span className="font-medium">Unassigned Documents</span>
+                                        <span className="text-sm text-muted-foreground">({unassignedDocuments.length} documents)</span>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <DocumentList 
+                                        documents={unassignedDocuments}
+                                        users={initialUsers}
+                                        onSort={() => {}} 
+                                        sortConfig={null}
+                                        showOwner={true}
+                                    />
+                                </CardContent>
+                            </Card>
+                        )}
                         {filteredActiveUsersForGrid.map(user => (
                             <AccordionItem value={user.id} key={user.id}>
                                 <AccordionTrigger>
@@ -827,9 +857,9 @@ const handleExportUsers = () => {
                             </AccordionItem>
                         ))}
                     </Accordion>
-                     {filteredActiveUsersForGrid.length === 0 && (
+                     {filteredActiveUsersForGrid.length === 0 && unassignedDocuments.length === 0 && (
                         <div className="text-center text-muted-foreground py-8">
-                            <p>No employees found.</p>
+                            <p>No documents or employees found.</p>
                         </div>
                     )}
                 </CardContent>
@@ -1246,3 +1276,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
