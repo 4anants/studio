@@ -7,19 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Document } from '@/lib/mock-data';
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
 
-export default function EmployeeProfilePage({ params }: { params: { id: string }, searchParams: { [key: string]: string | string[] | undefined } }) {
+export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   
-  const { id } = use(Promise.resolve(params));
+  const { id } = params;
 
   const [user, setUser] = useState<UserType | undefined>(undefined);
   
@@ -197,3 +197,4 @@ export default function EmployeeProfilePage({ params }: { params: { id: string }
     
 
     
+
