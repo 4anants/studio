@@ -1,5 +1,3 @@
-
-
 'use client'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -816,26 +814,6 @@ const handleExportUsers = () => {
                     <CardDescription>Browse all documents by employee.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {unassignedDocuments.length > 0 && (
-                        <Card className='mb-4 border-amber-500'>
-                            <CardHeader className='py-4'>
-                                <div className="flex items-center gap-3">
-                                    <FileLock2 className="h-5 w-5 text-amber-500" />
-                                    <span className="font-medium">Unassigned Documents</span>
-                                    <span className="text-sm text-muted-foreground">({unassignedDocuments.length} documents)</span>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <DocumentList 
-                                    documents={unassignedDocuments}
-                                    users={users}
-                                    onSort={() => {}} 
-                                    sortConfig={null}
-                                    showOwner={true}
-                                />
-                            </CardContent>
-                        </Card>
-                    )}
                     <Accordion type="single" collapsible className="w-full">
                         {filteredActiveUsersForGrid.map(user => (
                             <AccordionItem value={user.id} key={user.id}>
@@ -857,9 +835,9 @@ const handleExportUsers = () => {
                             </AccordionItem>
                         ))}
                     </Accordion>
-                     {filteredActiveUsersForGrid.length === 0 && unassignedDocuments.length === 0 && (
+                     {filteredActiveUsersForGrid.length === 0 && (
                         <div className="text-center text-muted-foreground py-8">
-                            <p>No documents or employees found.</p>
+                            <p>No employees found based on filters.</p>
                         </div>
                     )}
                 </CardContent>
@@ -995,6 +973,7 @@ const handleExportUsers = () => {
                 <Tabs defaultValue="branding" className="w-full">
                   <TabsList>
                     <TabsTrigger value="branding">Branding</TabsTrigger>
+                    <TabsTrigger value="unassigned-docs">Unassigned Documents</TabsTrigger>
                     <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                     <TabsTrigger value="departments">Departments</TabsTrigger>
                     <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
@@ -1043,6 +1022,29 @@ const handleExportUsers = () => {
                             </div>
                         </CardContent>
                       </Card>
+                  </TabsContent>
+                  <TabsContent value="unassigned-docs" className="pt-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Unassigned Documents</CardTitle>
+                            <CardDescription>Review documents that could not be automatically assigned to an employee.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           {unassignedDocuments.length > 0 ? (
+                                <DocumentList 
+                                    documents={unassignedDocuments}
+                                    users={users}
+                                    onSort={() => {}} 
+                                    sortConfig={null}
+                                    showOwner={true}
+                                />
+                           ) : (
+                                <div className="text-center text-muted-foreground py-8">
+                                    <p>No unassigned documents found.</p>
+                                </div>
+                           )}
+                        </CardContent>
+                    </Card>
                   </TabsContent>
                   <TabsContent value="doc-types" className="pt-6">
                     <Card>
@@ -1276,7 +1278,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
-
-    
