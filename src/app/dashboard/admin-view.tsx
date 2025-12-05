@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle, ArrowLeft } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -70,6 +70,8 @@ import Papa from 'papaparse'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { DocumentList } from '@/components/dashboard/document-list'
 
+type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
+
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
   const [users, setUsers] = useState(initialUsers)
@@ -90,6 +92,7 @@ export function AdminView() {
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
   const [siteName, setSiteName] = useState(CompanyName);
   const [tempSiteName, setTempSiteName] = useState(CompanyName);
+  const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
   const { toast } = useToast();
   const router = useRouter();
 
@@ -571,6 +574,7 @@ const handleExportUsers = () => {
     setDepartmentFilter('all');
     setRoleFilter('all');
     setHolidayLocationFilter('all');
+    setExplorerState({ view: 'docTypes' });
     if (value === 'employee-management') {
       setActiveSubTab('overview');
     }
@@ -589,6 +593,18 @@ const handleExportUsers = () => {
   }
 
   const getUserFromId = (id: string) => users.find(u => u.id === id);
+
+  const usersByDocType = useMemo(() => {
+    if (explorerState.view !== 'usersInDocType') return [];
+    
+    const userIdsWithDocType = new Set(
+        docs
+            .filter(d => d.type === explorerState.docType)
+            .map(d => d.ownerId)
+    );
+
+    return filteredActiveUsersForGrid.filter(u => userIdsWithDocType.has(u.id));
+  }, [explorerState, docs, filteredActiveUsersForGrid]);
 
 
   return (
@@ -655,7 +671,7 @@ const handleExportUsers = () => {
             </div>
         </div>
 
-        {(activeTab === 'employee-management' || activeTab === 'file-explorer') && (
+        {(activeTab === 'employee-management' || (activeTab === 'file-explorer' && explorerState.view !== 'docTypes')) && (
             <div className="mb-4 flex flex-col sm:flex-row items-center gap-4">
                 <div className="flex items-center gap-2">
                     <Label className="text-sm font-medium">Department</Label>
@@ -692,15 +708,33 @@ const handleExportUsers = () => {
 
         <TabsContent value="file-explorer">
             <Card>
-                {departmentFilter === 'unassigned' && (
-                    <CardHeader>
+                {departmentFilter === 'unassigned' ? (
+                     <CardHeader>
                         <CardTitle>Unassigned Documents</CardTitle>
                         <CardDescription>
                             These documents could not be automatically assigned. Please assign them to an employee.
                         </CardDescription>
                     </CardHeader>
+                ) : explorerState.view === 'usersInDocType' ? (
+                     <CardHeader>
+                        <div className="flex items-center gap-4">
+                            <Button variant="outline" size="icon" onClick={() => setExplorerState({ view: 'docTypes'})}>
+                                <ArrowLeft />
+                            </Button>
+                            <div>
+                                <CardTitle>Employees with "{explorerState.docType}"</CardTitle>
+                                <CardDescription>Select an employee to view their documents of this type.</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                ) : (
+                    <CardHeader>
+                        <CardTitle>Browse Documents</CardTitle>
+                        <CardDescription>Select a document type to see all related employees.</CardDescription>
+                    </CardHeader>
                 )}
-                <CardContent className={cn(departmentFilter !== 'unassigned' && "pt-6")}>
+
+                <CardContent>
                     {departmentFilter === 'unassigned' ? (
                         unassignedDocuments.length > 0 ? (
                             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -725,55 +759,43 @@ const handleExportUsers = () => {
                                 <p>No unassigned documents found.</p>
                             </div>
                         )
+                    ) : explorerState.view === 'docTypes' ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {documentTypes.filter(dt => dt.toLowerCase().includes(searchTerm.toLowerCase())).map(docType => (
+                                <Card 
+                                    key={docType}
+                                    className="cursor-pointer hover:border-primary transition-all group"
+                                    onClick={() => setExplorerState({ view: 'usersInDocType', docType })}
+                                >
+                                    <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
+                                        <Folder className="h-16 w-16 text-primary group-hover:scale-105 transition-transform" />
+                                        <p className="text-sm font-medium text-center truncate w-full">{docType}</p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
                     ) : (
-                        <Accordion type="multiple" className="w-full">
-                            {Object.entries(docsByType)
-                                .filter(([docType, _]) => docType.toLowerCase().includes(searchTerm.toLowerCase()))
-                                .map(([docType, owners]) => (
-                                    <AccordionItem value={docType} key={docType}>
-                                        <AccordionTrigger>
-                                            <div className="flex items-center gap-3">
-                                                <Folder className="h-5 w-5 text-primary" />
-                                                <span className="font-medium">{docType}</span>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pl-8">
-                                            <Accordion type="multiple" className="w-full">
-                                                {Object.entries(owners)
-                                                     .map(([ownerId, userDocs]) => ({ user: getUserFromId(ownerId), docs: userDocs }))
-                                                     .filter(({ user }) => user && filteredActiveUsersForGrid.some(u => u.id === user.id))
-                                                     .filter(({user}) => user?.name.toLowerCase().includes(searchTerm.toLowerCase()) || docType.toLowerCase().includes(searchTerm.toLowerCase()))
-                                                     .map(({ user, docs }) => user && (
-                                                        <AccordionItem value={`${docType}-${user.id}`} key={`${docType}-${user.id}`}>
-                                                            <AccordionTrigger>
-                                                                <div className="flex items-center gap-3">
-                                                                    <Folder className="h-5 w-5 text-secondary-foreground" />
-                                                                    <span className="font-medium">{user.name}</span>
-                                                                    <span className="text-sm text-muted-foreground">({docs.length} documents)</span>
-                                                                </div>
-                                                            </AccordionTrigger>
-                                                            <AccordionContent className="pl-8">
-                                                                <DocumentList
-                                                                    documents={docs}
-                                                                    users={users}
-                                                                    onSort={() => { }}
-                                                                    sortConfig={null}
-                                                                    onReassign={handleReassignDocument}
-                                                                />
-                                                            </AccordionContent>
-                                                        </AccordionItem>
-                                                    ))
-                                                }
-                                            </Accordion>
-                                        </AccordionContent>
-                                    </AccordionItem>
+                        <div>
+                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                                {usersByDocType.map(user => (
+                                    <Card 
+                                        key={user.id} 
+                                        className="cursor-pointer hover:border-primary transition-all"
+                                        onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
+                                    >
+                                        <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
+                                            <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                            <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
+                                        </CardContent>
+                                    </Card>
                                 ))}
-                                {Object.keys(docsByType).length === 0 && (
-                                    <div className="text-center text-muted-foreground py-8">
-                                        <p>No documents found.</p>
-                                    </div>
-                                )}
-                        </Accordion>
+                            </div>
+                            {usersByDocType.length === 0 && (
+                                <div className="text-center text-muted-foreground py-8">
+                                    <p>No employees found with this document type.</p>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </CardContent>
             </Card>
@@ -957,8 +979,9 @@ const handleExportUsers = () => {
                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
-                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-500/10 animate-pulse ring-2 ring-destructive")}>
-                                    <TableCell className="font-medium hidden sm:table-cell">
+                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-500/10")}>
+                                     <TableCell className="font-medium hidden sm:table-cell">
+                                        {isUpcoming && <div className="absolute inset-0 -z-10 bg-blue-500/20 animate-pulse rounded-lg" />}
                                         {new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </TableCell>
                                     <TableCell>{announcement.title}</TableCell>
