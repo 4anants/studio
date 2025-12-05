@@ -505,9 +505,9 @@ export function AdminView() {
                     <CardTitle>Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4">
-                    <div>
+                    <div className="grid gap-2 flex-1">
                         <Label className="text-sm font-medium">Department</Label>
-                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Button
                                 variant={departmentFilters.includes('all') ? 'default' : 'outline'}
                                 size="sm"
@@ -527,9 +527,9 @@ export function AdminView() {
                             ))}
                         </div>
                     </div>
-                    <div className="sm:pl-4 sm:border-l sm:border-border">
+                    <div className="grid gap-2">
                         <Label className="text-sm font-medium">Role</Label>
-                         <div className="flex flex-wrap items-center gap-2 pt-2">
+                         <div className="flex flex-wrap items-center gap-2">
                              <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="Select Role" />
