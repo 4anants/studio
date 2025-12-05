@@ -159,6 +159,7 @@ export function AdminView() {
         size: `${(Math.random() * 1000).toFixed(0)} KB`,
         uploadDate: new Date().toISOString().split('T')[0],
         fileType: d.name.endsWith('.pdf') ? 'pdf' : d.name.endsWith('.doc') || d.name.endsWith('.docx') ? 'doc' : 'image',
+        ownerId: d.ownerId, // Ensure ownerId is carried over
     }))
     setDocs(prev => [...fullNewDocs, ...prev]);
   }, []);
@@ -727,14 +728,15 @@ const handleExportUsers = () => {
                             </div>
                         </div>
                     </CardHeader>
-                ) : (
-                    <CardHeader>
-                        <CardTitle>Browse Documents</CardTitle>
-                        <CardDescription>Select a document type to see all related employees.</CardDescription>
-                    </CardHeader>
-                )}
+                ) : null}
 
                 <CardContent>
+                    {explorerState.view === 'docTypes' && departmentFilter !== 'unassigned' && (
+                        <CardHeader>
+                            <CardTitle>Browse Documents</CardTitle>
+                            <CardDescription>Select a document type to see all related employees.</CardDescription>
+                        </CardHeader>
+                    )}
                     {departmentFilter === 'unassigned' ? (
                         unassignedDocuments.length > 0 ? (
                             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -748,7 +750,7 @@ const handleExportUsers = () => {
                                 <DocumentList
                                     documents={unassignedDocuments}
                                     users={users}
-                                    onSort={() => { }}
+                                    onSort={()={() => {}} }
                                     sortConfig={null}
                                     showOwner={true}
                                     onReassign={handleReassignDocument}
@@ -765,7 +767,7 @@ const handleExportUsers = () => {
                                 <Card 
                                     key={docType}
                                     className="cursor-pointer hover:border-primary transition-all group"
-                                    onClick={() => setExplorerState({ view: 'usersInDocType', docType })}
+                                    onClick={()={() => setExplorerState({ view: 'usersInDocType', docType })} }
                                 >
                                     <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                         <Folder className="h-16 w-16 text-primary group-hover:scale-105 transition-transform" />
@@ -781,7 +783,7 @@ const handleExportUsers = () => {
                                     <Card 
                                         key={user.id} 
                                         className="cursor-pointer hover:border-primary transition-all"
-                                        onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
+                                        onClick={()={() => router.push(`/dashboard/employee/${user.id}?role=admin`)} }
                                     >
                                         <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                             <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
@@ -819,7 +821,7 @@ const handleExportUsers = () => {
                               <Card 
                                   key={user.id} 
                                   className="cursor-pointer hover:border-primary transition-all"
-                                  onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
+                                  onClick={()={() => router.push(`/dashboard/employee/${user.id}?role=admin`)} }
                               >
                                   <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
                                       <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
@@ -979,9 +981,8 @@ const handleExportUsers = () => {
                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
-                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-500/10")}>
+                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-500/10 ring-2 ring-destructive animate-pulse")}>
                                      <TableCell className="font-medium hidden sm:table-cell">
-                                        {isUpcoming && <div className="absolute inset-0 -z-10 bg-blue-500/20 animate-pulse rounded-lg" />}
                                         {new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </TableCell>
                                     <TableCell>{announcement.title}</TableCell>
@@ -1268,7 +1269,7 @@ const handleExportUsers = () => {
                                                 <Button variant="ghost" size="sm" disabled>
                                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                                 </Button>
-                                                <DeleteDepartmentDialog departmentName={dept} onDelete={() => handleDeleteDepartment(dept)}>
+                                                <DeleteDepartmentDialog departmentName={dept} onDelete={()={() => handleDeleteDepartment(dept)}>
                                                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                     </Button>
