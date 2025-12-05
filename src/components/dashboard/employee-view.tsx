@@ -458,41 +458,44 @@ export function EmployeeView() {
                             {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
-                                <div key={announcement.id} className={cn(
-                                    "p-4 border rounded-lg relative overflow-hidden", 
-                                    isUpcoming && "bg-blue-50/50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700 animate-pulse",
-                                    !isUpcoming && !announcement.isRead && "bg-secondary"
-                                )}>
-                                    <div className="absolute top-2 right-2">
-                                        <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)} disabled={isUpcoming}>
-                                            {announcement.isRead ? (
-                                                <>
-                                                    <Mail className="mr-2 h-4 w-4" />
-                                                    Mark as Unread
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <MailOpen className="mr-2 h-4 w-4" />
-                                                    Mark as Read
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                    <h3 className="font-semibold flex items-center gap-2">
-                                        <Bell className="h-5 w-5 text-primary" />
-                                        {announcement.title}
-                                    </h3>
-                                    {announcement.eventDate && (
-                                        <div className={cn("mt-1 flex items-center gap-2 text-sm", isUpcoming ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground")}>
-                                            <Calendar className="h-4 w-4" />
-                                            <span>Event Date: {new Date(announcement.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</span>
-                                            {isUpcoming && <span className="text-xs font-bold">(UPCOMING)</span>}
+                                <div key={announcement.id} className="relative">
+                                    {isUpcoming && <span className="absolute inset-0 bg-blue-500/10 animate-ping rounded-lg"></span>}
+                                    <div className={cn(
+                                        "p-4 border rounded-lg relative overflow-hidden", 
+                                        isUpcoming && "border-blue-300 dark:border-blue-700",
+                                        !isUpcoming && !announcement.isRead && "bg-secondary"
+                                    )}>
+                                        <div className="absolute top-2 right-2">
+                                            <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)} disabled={isUpcoming}>
+                                                {announcement.isRead ? (
+                                                    <>
+                                                        <Mail className="mr-2 h-4 w-4" />
+                                                        Mark as Unread
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <MailOpen className="mr-2 h-4 w-4" />
+                                                        Mark as Read
+                                                    </>
+                                                )}
+                                            </Button>
                                         </div>
-                                    )}
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        Posted on {new Date(announcement.date).toLocaleString()} by {announcement.author}
-                                    </p>
-                                    <p className="mt-2 text-sm pr-32">{announcement.message}</p>
+                                        <h3 className="font-semibold flex items-center gap-2">
+                                            <Bell className="h-5 w-5 text-primary" />
+                                            {announcement.title}
+                                        </h3>
+                                        {announcement.eventDate && (
+                                            <div className={cn("mt-1 flex items-center gap-2 text-sm", isUpcoming ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground")}>
+                                                <Calendar className="h-4 w-4" />
+                                                <span>Event Date: {new Date(announcement.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</span>
+                                                {isUpcoming && <span className="text-xs font-bold">(UPCOMING)</span>}
+                                            </div>
+                                        )}
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            Posted on {new Date(announcement.date).toLocaleString()} by {announcement.author}
+                                        </p>
+                                        <p className="mt-2 text-sm pr-32">{announcement.message}</p>
+                                    </div>
                                 </div>
                             )}) : (
                                 <div className="text-center text-muted-foreground py-8">
@@ -507,3 +510,5 @@ export function EmployeeView() {
     </>
   )
 }
+
+    

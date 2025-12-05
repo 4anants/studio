@@ -935,11 +935,12 @@ const handleExportUsers = () => {
                            {filteredAnnouncements.length > 0 ? filteredAnnouncements.map(announcement => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
-                                <TableRow key={announcement.id} className={cn(isUpcoming && "bg-blue-50/50 dark:bg-blue-900/20 animate-pulse")}>
-                                    <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
-                                    <TableCell>{announcement.title}</TableCell>
-                                    <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
-                                     <TableCell>
+                                <TableRow key={announcement.id} className={cn(isUpcoming && "relative")}>
+                                     {isUpcoming && <td colSpan={5} className="p-0"><span className="absolute inset-0 bg-blue-500/10 animate-ping rounded-lg"></span></td>}
+                                    <TableCell className="font-medium hidden sm:table-cell relative">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                    <TableCell className="relative">{announcement.title}</TableCell>
+                                    <TableCell className="hidden md:table-cell max-w-sm truncate relative">{announcement.message}</TableCell>
+                                     <TableCell className="relative">
                                         {announcement.eventDate ? (
                                             <div className="flex items-center gap-2">
                                                  <span className={cn(
@@ -951,7 +952,7 @@ const handleExportUsers = () => {
                                             </div>
                                         ): <span className="text-muted-foreground">-</span>}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right relative">
                                         <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)} isPermanent={false}>
                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
                                                 <Trash2 className="h-4 w-4" />
@@ -1376,3 +1377,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
