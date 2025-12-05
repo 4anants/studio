@@ -84,7 +84,7 @@ export function AdminView() {
   const [isBulkRoleChangeDialogOpen, setIsBulkRoleChangeDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('file-explorer');
   const [activeSubTab, setActiveSubTab] = useState('overview');
-  const [departmentFilters, setDepartmentFilters] = useState<string[]>(['all']);
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'employee'>('all');
   const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -395,26 +395,10 @@ const handleExportUsers = () => {
   const publishedAnnouncements = useMemo(() => announcements.filter(a => a.status === 'published'), [announcements]);
   const deletedAnnouncements = useMemo(() => announcements.filter(a => a.status === 'deleted'), [announcements]);
 
-  const handleDepartmentFilterChange = useCallback((dept: string) => {
-    setDepartmentFilters(prev => {
-      if (dept === 'all') {
-        return ['all'];
-      }
-      
-      const newFilters = prev.filter(d => d !== 'all');
-
-      if (newFilters.includes(dept)) {
-        const filtered = newFilters.filter(d => d !== dept);
-        return filtered.length === 0 ? ['all'] : filtered;
-      } else {
-        return [...newFilters, dept];
-      }
-    });
-  }, []);
 
   const filteredByDept = useMemo(() => activeUsers.filter(user => 
-    departmentFilters.includes('all') || (user.department && departmentFilters.includes(user.department))
-  ), [activeUsers, departmentFilters]);
+    departmentFilter === 'all' || departmentFilter === 'unassigned' || (user.department && departmentFilter === user.department)
+  ), [activeUsers, departmentFilter]);
 
   const filteredByRole = useMemo(() => filteredByDept.filter(user => 
     roleFilter === 'all' || user.role === roleFilter
@@ -556,7 +540,7 @@ const handleExportUsers = () => {
     setActiveTab(value);
     setSelectedUserIds([]);
     setSearchTerm('');
-    setDepartmentFilters(['all']);
+    setDepartmentFilter('all');
     setRoleFilter('all');
     setHolidayLocationFilter('all');
     if (value === 'employee-management') {
@@ -638,27 +622,22 @@ const handleExportUsers = () => {
                     <CardTitle>Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4">
-                    <div className="grid gap-2 flex-1">
+                    <div className="grid gap-2">
                         <Label className="text-sm font-medium">Department</Label>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                                variant={departmentFilters.includes('all') ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => handleDepartmentFilterChange('all')}
-                            >
-                                All Departments
-                            </Button>
-                            {departments.map(dept => (
-                                <Button
-                                    key={dept}
-                                    variant={departmentFilters.includes(dept) ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => handleDepartmentFilterChange(dept)}
-                                >
-                                    {dept}
-                                </Button>
-                            ))}
-                        </div>
+                        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                            <SelectTrigger className="w-[220px]">
+                                <SelectValue placeholder="Select Department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Departments</SelectItem>
+                                {departments.map(dept => (
+                                    <SelectItem key={dept} value={dept}>
+                                        {dept}
+                                    </SelectItem>
+                                ))}
+                                <SelectItem value="unassigned">Unassigned Documents</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="grid gap-2">
                         <Label className="text-sm font-medium">Role</Label>
@@ -687,13 +666,20 @@ const handleExportUsers = () => {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="multiple" className="w-full" defaultValue={unassignedDocuments.length > 0 ? ['unassigned'] : []}>
-                        {unassignedDocuments.length > 0 && (
-                             <AccordionItem value="unassigned" className="border-b-0">
-                                <AccordionContent className="pt-0">
+                       {unassignedDocuments.length > 0 && (departmentFilter === 'all' || departmentFilter === 'unassigned') && (
+                            <AccordionItem value="unassigned" className="border-b-0">
+                                <AccordionTrigger>
+                                     <div className="flex items-center gap-3">
+                                        <FileLock2 className="h-5 w-5 text-destructive" />
+                                        <span className="font-medium text-destructive">Unassigned Documents</span>
+                                        <span className="text-sm text-muted-foreground">({unassignedDocuments.length} documents)</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pl-8 pt-0">
                                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
                                         <h3 className="flex items-center gap-2 font-semibold text-red-800 dark:text-red-300">
                                             <FileLock2 className="h-5 w-5" />
-                                            Unassigned Documents
+                                            Action Required
                                         </h3>
                                         <p className="text-sm text-red-700 dark:text-red-400 mt-1 mb-4">
                                             These documents could not be automatically assigned. Please select them and assign them to an employee.
@@ -710,12 +696,7 @@ const handleExportUsers = () => {
                                 </AccordionContent>
                             </AccordionItem>
                         )}
-                        {filteredActiveUsersForGrid.length > 0 && unassignedDocuments.length === 0 && (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>No employees found based on filters.</p>
-                            </div>
-                        )}
-                        {filteredActiveUsersForGrid.map(user => (
+                        {departmentFilter !== 'unassigned' && filteredActiveUsersForGrid.map(user => (
                             <AccordionItem value={user.id} key={user.id}>
                                 <AccordionTrigger>
                                     <div className="flex items-center gap-3">
@@ -735,6 +716,11 @@ const handleExportUsers = () => {
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
+                         {departmentFilter !== 'unassigned' && filteredActiveUsersForGrid.length === 0 && (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>No employees found based on the current filters.</p>
+                            </div>
+                        )}
                     </Accordion>
                 </CardContent>
             </Card>
