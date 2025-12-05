@@ -43,7 +43,7 @@ export function EmployeeView() {
     allDocuments.filter((doc) => doc.ownerId === currentUserId)
   )
   const [holidays] = useState(initialHolidays);
-  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: a.isRead ?? false })));
+  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: a.isRead ?? false, status: a.status || 'published' })));
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -200,6 +200,7 @@ export function EmployeeView() {
 
   const filteredAnnouncements = useMemo(() => {
       return [...announcements]
+      .filter(announcement => announcement.status === 'published')
       .filter(announcement => {
           const date = new Date(announcement.date);
           const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
@@ -462,7 +463,7 @@ export function EmployeeView() {
                                     isUpcoming && "bg-blue-50/50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700",
                                     !isUpcoming && !announcement.isRead && "bg-secondary"
                                 )}>
-                                     {isUpcoming && <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-500"></div>}
+                                     {isUpcoming && <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-500 animate-pulse"></div>}
                                     <div className="absolute top-2 right-2">
                                         <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)} disabled={isUpcoming}>
                                             {announcement.isRead ? (
