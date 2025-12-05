@@ -452,14 +452,11 @@ export function AdminView() {
             <TabsList>
                 <TabsTrigger value="all-docs">Employee Overview</TabsTrigger>
                 <TabsTrigger value="by-employee">Manage Employees</TabsTrigger>
-                <TabsTrigger value="doc-types">Document Types</TabsTrigger>
-                <TabsTrigger value="departments">Departments</TabsTrigger>
                 <TabsTrigger value="holidays">Holidays</TabsTrigger>
                 <TabsTrigger value="announcements">
                     Announcements
                 </TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
-                <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
                 <div className="relative">
@@ -472,6 +469,7 @@ export function AdminView() {
                             : activeTab === 'departments' ? 'Search departments...'
                             : activeTab === 'holidays' ? 'Search holidays...'
                             : activeTab === 'announcements' ? 'Search announcements...'
+                            : activeTab === 'settings' ? 'Search settings...'
                             : 'Search users...'
                         }
                         className="w-full sm:w-[300px] pl-8"
@@ -655,106 +653,6 @@ export function AdminView() {
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="doc-types">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Manage Document Types</CardTitle>
-                        <CardDescription>Add or edit document categories for the whole organization.</CardDescription>
-                    </div>
-                     <AddDocumentTypeDialog onAdd={handleAddDocumentType}>
-                        <Button variant="outline">
-                            <FolderPlus className="mr-2 h-4 w-4" /> Add Doc Type
-                        </Button>
-                    </AddDocumentTypeDialog>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Type Name</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {filteredDocTypes.length > 0 ? filteredDocTypes.map(type => (
-                                <TableRow key={type}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <Tag className="h-4 w-4 text-muted-foreground" />
-                                            {type}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm" disabled>
-                                            <Edit className="mr-2 h-4 w-4" /> Edit
-                                        </Button>
-                                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled>
-                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                           )) : (
-                                <TableRow>
-                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No document types found.</TableCell>
-                                </TableRow>
-                           )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
-         <TabsContent value="departments">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Manage Departments</CardTitle>
-                        <CardDescription>Add, edit, or delete departments for the organization.</CardDescription>
-                    </div>
-                     <AddDepartmentDialog onAdd={handleAddDepartment}>
-                        <Button variant="outline">
-                            <Building className="mr-2 h-4 w-4" /> Add Department
-                        </Button>
-                    </AddDepartmentDialog>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Department Name</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {filteredDepartments.length > 0 ? filteredDepartments.map(dept => (
-                                <TableRow key={dept}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-muted-foreground" />
-                                            {dept}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm" disabled>
-                                            <Edit className="mr-2 h-4 w-4" /> Edit
-                                        </Button>
-                                        <DeleteDepartmentDialog departmentName={dept} onDelete={() => handleDeleteDepartment(dept)}>
-                                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                            </Button>
-                                        </DeleteDepartmentDialog>
-                                    </TableCell>
-                                </TableRow>
-                           )) : (
-                                <TableRow>
-                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No departments found.</TableCell>
-                                </TableRow>
-                           )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
         <TabsContent value="holidays">
             <Card>
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -876,88 +774,206 @@ export function AdminView() {
             </Card>
         </TabsContent>
         <TabsContent value="settings">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Application Settings</CardTitle>
-                    <CardDescription>Manage global settings for the application.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label>Company Logo</Label>
-                        <div className="flex items-center gap-4">
-                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
-                                {logoSrc ? (
-                                    <Image src={logoSrc} alt="Current Logo" width={80} height={80} className="rounded-full object-cover"/>
-                                ) : (
-                                    <FileLock2 className="w-8 h-8 text-muted-foreground"/>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button asChild variant="outline">
-                                    <label htmlFor="logo-upload">
-                                        <UploadCloud className="mr-2" />
-                                        Change Logo
-                                        <input
-                                            type="file"
-                                            id="logo-upload"
-                                            className="sr-only"
-                                            accept="image/*"
-                                            onChange={handleLogoChange}
-                                        />
-                                    </label>
-                                </Button>
-                                {logoSrc && (
-                                <Button variant="ghost" className="text-destructive" onClick={handleResetLogo}>
-                                    <X className="mr-2" />
-                                    Reset
-                                </Button>
-                                )}
-                            </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Upload a new logo for the login screen.</p>
-                    </div>
-                </CardContent>
-            </Card>
-        </TabsContent>
-         <TabsContent value="deleted-users">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Deleted Users</CardTitle>
-                    <CardDescription>A list of all deleted employees. You can restore them from here.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredDeletedUsers.length > 0 ? filteredDeletedUsers.map(user => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="hidden sm:table-cell">
-                                        <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
-                                    </TableCell>
-                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="outline" size="sm" onClick={() => handleRestoreUser(user.id)}>
-                                            <Undo className="mr-2 h-4 w-4" />
-                                            Restore
+          <Card>
+              <CardHeader>
+                  <CardTitle>Settings</CardTitle>
+                  <CardDescription>Manage global application settings and configurations.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="branding" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="branding">Branding</TabsTrigger>
+                    <TabsTrigger value="doc-types">Document Types</TabsTrigger>
+                    <TabsTrigger value="departments">Departments</TabsTrigger>
+                    <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="branding" className="pt-6">
+                      <Card>
+                        <CardHeader>
+                            <CardTitle>Application Branding</CardTitle>
+                            <CardDescription>Manage the look and feel of the application.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-2">
+                                <Label>Company Logo</Label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                                        {logoSrc ? (
+                                            <Image src={logoSrc} alt="Current Logo" width={80} height={80} className="rounded-full object-cover"/>
+                                        ) : (
+                                            <FileLock2 className="w-8 h-8 text-muted-foreground"/>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button asChild variant="outline">
+                                            <label htmlFor="logo-upload">
+                                                <UploadCloud className="mr-2" />
+                                                Change Logo
+                                                <input
+                                                    type="file"
+                                                    id="logo-upload"
+                                                    className="sr-only"
+                                                    accept="image/*"
+                                                    onChange={handleLogoChange}
+                                                />
+                                            </label>
                                         </Button>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted users found.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
+                                        {logoSrc && (
+                                        <Button variant="ghost" className="text-destructive" onClick={handleResetLogo}>
+                                            <X className="mr-2" />
+                                            Reset
+                                        </Button>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground">Upload a new logo for the login screen.</p>
+                            </div>
+                        </CardContent>
+                      </Card>
+                  </TabsContent>
+                  <TabsContent value="doc-types" className="pt-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Manage Document Types</CardTitle>
+                                <CardDescription>Add or edit document categories for the whole organization.</CardDescription>
+                            </div>
+                             <AddDocumentTypeDialog onAdd={handleAddDocumentType}>
+                                <Button variant="outline">
+                                    <FolderPlus className="mr-2 h-4 w-4" /> Add Doc Type
+                                </Button>
+                            </AddDocumentTypeDialog>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Type Name</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {filteredDocTypes.length > 0 ? filteredDocTypes.map(type => (
+                                        <TableRow key={type}>
+                                            <TableCell className="font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    <Tag className="h-4 w-4 text-muted-foreground" />
+                                                    {type}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="sm" disabled>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                </Button>
+                                                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                   )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center text-muted-foreground">No document types found.</TableCell>
+                                        </TableRow>
+                                   )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="departments" className="pt-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Manage Departments</CardTitle>
+                                <CardDescription>Add, edit, or delete departments for the organization.</CardDescription>
+                            </div>
+                             <AddDepartmentDialog onAdd={handleAddDepartment}>
+                                <Button variant="outline">
+                                    <Building className="mr-2 h-4 w-4" /> Add Department
+                                </Button>
+                            </AddDepartmentDialog>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Department Name</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {filteredDepartments.length > 0 ? filteredDepartments.map(dept => (
+                                        <TableRow key={dept}>
+                                            <TableCell className="font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    <Building className="h-4 w-4 text-muted-foreground" />
+                                                    {dept}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="sm" disabled>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                </Button>
+                                                <DeleteDepartmentDialog departmentName={dept} onDelete={() => handleDeleteDepartment(dept)}>
+                                                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </Button>
+                                                </DeleteDepartmentDialog>
+                                            </TableCell>
+                                        </TableRow>
+                                   )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center text-muted-foreground">No departments found.</TableCell>
+                                        </TableRow>
+                                   )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
+                   <TabsContent value="deleted-users" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Deleted Users</CardTitle>
+                            <CardDescription>A list of all deleted employees. You can restore them from here.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredDeletedUsers.length > 0 ? filteredDeletedUsers.map(user => (
+                                        <TableRow key={user.id}>
+                                            <TableCell className="hidden sm:table-cell">
+                                                <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                            </TableCell>
+                                            <TableCell className="font-medium">{user.name}</TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="outline" size="sm" onClick={() => handleRestoreUser(user.id)}>
+                                                    <Undo className="mr-2 h-4 w-4" />
+                                                    Restore
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted users found.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
             </Card>
         </TabsContent>
       </Tabs>
