@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, Users, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { UploadCloud, Users, AlertCircle, CheckCircle, Loader2, Download } from 'lucide-react';
 import { type User } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -148,6 +148,39 @@ export function BulkUserImportDialog({ onImport, children }: BulkUserImportDialo
     }
     setOpen(isOpen);
   }
+
+  const handleDownloadSample = () => {
+    const sampleData = [
+        {
+            id: 'user-sample-1',
+            name: 'John Doe',
+            email: 'john.doe@example.com',
+            personalEmail: 'john.d@personal.com',
+            mobile: '123-456-7890',
+            password: 'password123',
+            dateOfBirth: '1990-01-01',
+            joiningDate: '2023-01-01',
+            resignationDate: '',
+            designation: 'Software Engineer',
+            status: 'active',
+            department: 'Engineering',
+            bloodGroup: 'O+',
+            company: 'ASE ENGINEERS PRIVATE LIMITED',
+            location: 'AMD',
+            role: 'employee',
+            avatar: '',
+        }
+    ];
+    const csv = Papa.unparse(sampleData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'user_import_sample.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
   const hasErrors = parsedUsers.some(u => u._errors.length > 0);
 
@@ -157,9 +190,15 @@ export function BulkUserImportDialog({ onImport, children }: BulkUserImportDialo
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Users /> Bulk User Import</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file to import multiple users at once.
-            Required columns: {requiredHeaders.join(', ')}.
+          <DialogDescription className="flex justify-between items-center">
+            <span>
+                Upload a CSV file to import multiple users at once.
+                Required columns: {requiredHeaders.join(', ')}.
+            </span>
+            <Button variant="link" onClick={handleDownloadSample}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Sample CSV
+            </Button>
           </DialogDescription>
         </DialogHeader>
 

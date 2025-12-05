@@ -198,8 +198,19 @@ export function AdminView() {
 }, [toast]);
 
 const handleExportUsers = () => {
+    const usersToExport = numSelected > 0 ? users.filter(u => selectedUserIds.includes(u.id)) : users;
+
+    if (usersToExport.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No Users to Export',
+            description: 'There are no users to export.',
+        });
+        return;
+    }
+    
     // We only export a subset of fields for simplicity, can be expanded
-    const dataToExport = users.map(user => ({
+    const dataToExport = usersToExport.map(user => ({
         id: user.id,
         name: user.name,
         email: user.email,
@@ -230,7 +241,7 @@ const handleExportUsers = () => {
     
     toast({
         title: 'Export Started',
-        description: 'Your user data is being downloaded.',
+        description: `Exporting ${usersToExport.length} user(s).`,
     });
 };
 
@@ -509,17 +520,12 @@ const handleExportUsers = () => {
                 <Button variant="destructive" onClick={() => setIsBulkDeleteDialogOpen(true)}>
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
                 </Button>
+                <Button onClick={handleExportUsers} variant="outline">
+                    <Download className="mr-2 h-4 w-4" /> Export Selected ({numSelected})
+                </Button>
             </>
           ) : (
             <div className="flex items-center gap-2">
-                <Button onClick={handleExportUsers} variant="outline">
-                    <Download className="mr-2 h-4 w-4" /> Export Users
-                </Button>
-                <BulkUserImportDialog onImport={handleBulkUserImport}>
-                    <Button variant="outline">
-                        <Upload className="mr-2 h-4 w-4" /> Import Users
-                    </Button>
-                </BulkUserImportDialog>
                 <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments}>
                     <Button>Add Employee</Button>
                 </EmployeeManagementDialog>
@@ -641,8 +647,23 @@ const handleExportUsers = () => {
         <TabsContent value="by-employee">
             <Card>
                 <CardHeader>
-                    <CardTitle>Manage Employees</CardTitle>
-                    <CardDescription>A list of all active employees in the system.</CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Manage Employees</CardTitle>
+                            <CardDescription>A list of all active employees in the system.</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <Button onClick={handleExportUsers} variant="outline">
+                                <Download className="mr-2 h-4 w-4" /> 
+                                {numSelected > 0 ? `Export Selected (${numSelected})` : 'Export All Users'}
+                            </Button>
+                            <BulkUserImportDialog onImport={handleBulkUserImport}>
+                                <Button variant="outline">
+                                    <Upload className="mr-2 h-4 w-4" /> Import Users
+                                </Button>
+                            </BulkUserImportDialog>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
