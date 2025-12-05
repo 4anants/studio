@@ -936,8 +936,10 @@ const handleExportUsers = () => {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
                                 <TableRow key={announcement.id} className={cn(isUpcoming && "relative")}>
-                                     {isUpcoming && <td colSpan={5} className="p-0"><span className="absolute inset-0 bg-blue-500/10 animate-ping rounded-lg"></span></td>}
-                                    <TableCell className="font-medium hidden sm:table-cell relative">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                    <TableCell className="font-medium hidden sm:table-cell relative">
+                                        {isUpcoming && <span className="absolute inset-0 bg-blue-500/10 animate-ping rounded-lg -z-10"></span>}
+                                        {new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </TableCell>
                                     <TableCell className="relative">{announcement.title}</TableCell>
                                     <TableCell className="hidden md:table-cell max-w-sm truncate relative">{announcement.message}</TableCell>
                                      <TableCell className="relative">
@@ -1377,5 +1379,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    

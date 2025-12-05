@@ -459,7 +459,7 @@ export function EmployeeView() {
                                 const isUpcoming = isEventUpcoming(announcement.eventDate);
                                 return (
                                 <div key={announcement.id} className="relative">
-                                    {isUpcoming && <span className="absolute inset-0 bg-blue-500/10 animate-ping rounded-lg"></span>}
+                                    {isUpcoming && <span className="absolute -inset-1 bg-blue-500/10 animate-ping rounded-lg -z-10"></span>}
                                     <div className={cn(
                                         "p-4 border rounded-lg relative overflow-hidden", 
                                         isUpcoming && "border-blue-300 dark:border-blue-700",
@@ -510,5 +510,3 @@ export function EmployeeView() {
     </>
   )
 }
-
-    
