@@ -12,14 +12,18 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Zap } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { classifyDocuments } from '@/ai/flows/classify-documents-flow';
 import type { User, Document } from '@/lib/mock-data'
+import { documentTypesList } from '@/lib/mock-data';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
 import type { ClassifyDocumentsOutput } from '@/ai/flows/classify-documents-types';
+import { Switch } from '../ui/switch';
+import { useToast } from '@/hooks/use-toast';
+
 
 type UploadedFile = {
   file: File;
@@ -45,6 +49,8 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   const [isComplete, setIsComplete] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [useFastMode, setUseFastMode] = useState(true);
+  const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles: Promise<UploadedFile>[] = acceptedFiles.map(file => {
@@ -71,6 +77,74 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     noKeyboard: true 
   });
 
+  const processWithAI = async () => {
+    const employeeList = users.map((u) => ({ id: u.id, name: u.name }));
+    const documentsToClassify = uploadedFiles.map((f) => ({
+      filename: f.file.name,
+      dataUri: f.dataUri,
+    }));
+  
+    const CHUNK_SIZE = 10;
+    const chunks: { filename: string; dataUri: string }[][] = [];
+    for (let i = 0; i < documentsToClassify.length; i += CHUNK_SIZE) {
+      chunks.push(documentsToClassify.slice(i, i + CHUNK_SIZE));
+    }
+  
+    const allResults: ClassifyDocumentsOutput = [];
+    const promises = chunks.map(chunk =>
+      classifyDocuments({
+        documents: chunk,
+        employees: employeeList
+      })
+    );
+  
+    const chunkResults = await Promise.all(promises);
+    chunkResults.forEach(result => allResults.push(...result));
+  
+    return allResults;
+  };
+  
+  const processWithFastMode = () => {
+    const userMap = new Map(users.map(u => [u.id.toLowerCase(), u]));
+    users.forEach(u => userMap.set(u.name.toLowerCase(), u));
+
+    const docTypeMap = new Map(documentTypesList.map(t => [t.toLowerCase(), t]));
+
+    const results: ClassifyDocumentsOutput = uploadedFiles.map(f => {
+        const filename = f.file.name.toLowerCase();
+        let foundUser: User | undefined;
+        let foundDocType: string | undefined;
+
+        for (const [key, user] of userMap.entries()) {
+            if (filename.includes(key)) {
+                foundUser = user;
+                break;
+            }
+        }
+
+        for (const [key, docType] of docTypeMap.entries()) {
+            if (filename.includes(key)) {
+                foundDocType = docType;
+                break;
+            }
+        }
+        
+        if (foundUser && foundDocType) {
+            return {
+                originalFilename: f.file.name,
+                employeeId: foundUser.id,
+                documentType: foundDocType,
+            };
+        }
+        
+        return {
+            originalFilename: f.file.name,
+            error: `Could not determine employee or document type from filename.`,
+        };
+    });
+    return results;
+};
+
   const handleProcessFiles = async () => {
     setIsProcessing(true);
     setIsComplete(false);
@@ -78,31 +152,14 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     setUploadedFiles((prev) =>
       prev.map((f) => ({ ...f, status: 'processing' }))
     );
-
-    const employeeList = users.map((u) => ({ id: u.id, name: u.name }));
-    const documentsToClassify = uploadedFiles.map((f) => ({
-      filename: f.file.name,
-      dataUri: f.dataUri,
-    }));
-
-    // Chunk size for parallel processing
-    const CHUNK_SIZE = 10;
-    const chunks: { filename: string; dataUri: string }[][] = [];
-    for (let i = 0; i < documentsToClassify.length; i += CHUNK_SIZE) {
-      chunks.push(documentsToClassify.slice(i, i + CHUNK_SIZE));
-    }
-
+    
     try {
-      const allResults: ClassifyDocumentsOutput = [];
-      const promises = chunks.map(chunk => 
-        classifyDocuments({
-            documents: chunk,
-            employees: employeeList
-        })
-      );
-      
-      const chunkResults = await Promise.all(promises);
-      chunkResults.forEach(result => allResults.push(...result));
+        let allResults: ClassifyDocumentsOutput;
+        if (useFastMode) {
+          allResults = processWithFastMode();
+        } else {
+          allResults = await processWithAI();
+        }
 
       setUploadedFiles((prev) => {
         return prev.map((file) => {
@@ -130,16 +187,21 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
           };
         });
       });
-    } catch (e) {
-      console.error(e);
-      setUploadedFiles((prev) =>
-        prev.map((f) => ({
-          ...f,
-          status: 'error',
-          error: 'An unexpected error occurred during batch processing.',
-          selected: false,
-        }))
-      );
+    } catch (e: any) {
+        console.error(e);
+        toast({
+            variant: 'destructive',
+            title: 'Processing Failed',
+            description: e.message || 'An unexpected error occurred during processing.'
+        });
+        setUploadedFiles((prev) =>
+            prev.map((f) => ({
+            ...f,
+            status: 'error',
+            error: 'An unexpected error occurred during batch processing.',
+            selected: false,
+            }))
+        );
     }
 
     setIsProcessing(false);
@@ -215,11 +277,19 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
         <DialogHeader>
           <DialogTitle>Centralized Bulk Upload</DialogTitle>
           <DialogDescription>
-            Drop document files below. The system will analyze their content to automatically classify and assign them to the correct employee.
+            Drop document files below. The system will analyze their content to automatically classify and assign them.
           </DialogDescription>
         </DialogHeader>
         
         {!isProcessing && !isComplete && (
+          <>
+            <div className="flex items-center space-x-2 my-4">
+              <Switch id="fast-mode-switch" checked={useFastMode} onCheckedChange={setUseFastMode} />
+              <Label htmlFor="fast-mode-switch" className='flex items-center gap-2'>
+                <Zap className="h-4 w-4 text-yellow-500" />
+                <span>Fast Mode (from filename)</span>
+              </Label>
+            </div>
             <div {...getRootProps()} className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}>
                 <input {...getInputProps()} />
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -228,6 +298,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                     <Button type="button" variant="outline" size="sm" onClick={openFileDialog}>Browse Files</Button>
                 </div>
             </div>
+          </>
         )}
 
         {uploadedFiles.length > 0 && (
