@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,11 +16,14 @@ import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle } 
 import { useDropzone } from 'react-dropzone';
 import { classifyDocuments } from '@/ai/flows/classify-documents-flow';
 import type { User, Document } from '@/lib/mock-data'
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
 
 type UploadedFile = {
   file: File;
   dataUri: string;
   status: 'pending' | 'processing' | 'success' | 'error';
+  selected: boolean;
   result?: {
     employeeId: string;
     employeeName: string;
@@ -49,7 +52,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
         reader.onerror = () => reject('file reading has failed');
         reader.onload = () => {
           const dataUri = reader.result as string;
-          resolve({ file, dataUri, status: 'pending' });
+          resolve({ file, dataUri, status: 'pending', selected: true });
         };
         reader.readAsDataURL(file);
       });
@@ -89,6 +92,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                     return {
                         ...file,
                         status: 'success',
+                        selected: true, // Auto-select successful uploads
                         result: {
                             employeeId: result.employeeId,
                             employeeName: employee?.name || 'Unknown',
@@ -99,6 +103,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                 return {
                     ...file,
                     status: 'error',
+                    selected: false, // Don't select errored uploads
                     error: result?.error || 'Could not classify document.',
                 }
             })
@@ -106,7 +111,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
 
     } catch (e) {
         console.error(e);
-        setUploadedFiles(prev => prev.map(f => ({ ...f, status: 'error', error: 'An unexpected error occurred.'})))
+        setUploadedFiles(prev => prev.map(f => ({ ...f, status: 'error', error: 'An unexpected error occurred.', selected: false })))
     }
 
     setIsProcessing(false);
@@ -115,7 +120,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
 
   const handleFinish = () => {
     const newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[] = uploadedFiles
-        .filter(f => f.status === 'success' && f.result)
+        .filter(f => f.status === 'success' && f.result && f.selected)
         .map(f => ({
             name: f.file.name,
             ownerId: f.result!.employeeId,
@@ -148,6 +153,28 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     setOpen(isOpen);
   };
 
+  const handleToggleSelect = (index: number) => {
+    setUploadedFiles(prev => {
+      const newFiles = [...prev];
+      if (newFiles[index].status === 'success') {
+        newFiles[index].selected = !newFiles[index].selected;
+      }
+      return newFiles;
+    });
+  };
+
+  const successfullyProcessedFiles = uploadedFiles.filter(f => f.status === 'success');
+  const numSelected = successfullyProcessedFiles.filter(f => f.selected).length;
+  const numSuccessful = successfullyProcessedFiles.length;
+
+  const handleToggleSelectAll = (checked: boolean | 'indeterminate') => {
+    setUploadedFiles(prev =>
+      prev.map(file =>
+        file.status === 'success' ? { ...file, selected: !!checked } : file
+      )
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
@@ -177,29 +204,47 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
 
         {uploadedFiles.length > 0 && (
             <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-4">
-                <h4 className="font-semibold">Files to Upload</h4>
-                {uploadedFiles.map(({ file, status, result, error }, index) => (
-                    <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                 {isComplete && numSuccessful > 0 && (
+                  <div className="flex items-center space-x-2 p-2 rounded-md bg-muted">
+                    <Checkbox
+                      id="select-all-processed"
+                      checked={numSelected === numSuccessful ? true : numSelected > 0 ? 'indeterminate' : false}
+                      onCheckedChange={handleToggleSelectAll}
+                    />
+                    <Label htmlFor="select-all-processed" className="text-sm font-medium">
+                        {numSelected} of {numSuccessful} document(s) selected
+                    </Label>
+                  </div>
+                )}
+                {uploadedFiles.map((uploadedFile, index) => (
+                    <div key={`${uploadedFile.file.name}-${index}`} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
                        <div className="flex items-center gap-3 overflow-hidden">
-                         {status === 'pending' && <Loader2 className="h-5 w-5 flex-shrink-0 text-muted-foreground" />}
-                         {status === 'processing' && <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />}
-                         {status === 'success' && <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-500" />}
-                         {status === 'error' && <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />}
+                        {isComplete && uploadedFile.status === 'success' ? (
+                           <Checkbox
+                              checked={uploadedFile.selected}
+                              onCheckedChange={() => handleToggleSelect(index)}
+                              id={`select-file-${index}`}
+                            />
+                        ) : uploadedFile.status === 'pending' ? <Loader2 className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                          : uploadedFile.status === 'processing' ? <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                          : uploadedFile.status === 'success' ? <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-500" />
+                          : <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
+                        }
 
                          <div className="flex-grow overflow-hidden">
-                            <p className="truncate font-medium text-sm">{file.name}</p>
-                            {status === 'success' && result && (
+                            <p className="truncate font-medium text-sm">{uploadedFile.file.name}</p>
+                            {uploadedFile.status === 'success' && uploadedFile.result && (
                                 <p className="text-xs text-muted-foreground">
-                                    Assigned to: <span className="font-semibold text-foreground">{result.employeeName}</span>, Type: <span className="font-semibold text-foreground">{result.documentType}</span>
+                                    Assigned to: <span className="font-semibold text-foreground">{uploadedFile.result.employeeName} (Code: {uploadedFile.result.employeeId})</span>, Type: <span className="font-semibold text-foreground">{uploadedFile.result.documentType}</span>
                                 </p>
                             )}
-                             {status === 'error' && (
-                                <p className="text-xs text-destructive">{error}</p>
+                             {uploadedFile.status === 'error' && (
+                                <p className="text-xs text-destructive">{uploadedFile.error}</p>
                             )}
                          </div>
                        </div>
                        {!isProcessing && !isComplete && (
-                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFile(file)}>
+                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFile(uploadedFile.file)}>
                              <X className="h-4 w-4" />
                          </Button>
                        )}
@@ -210,9 +255,9 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
 
         <DialogFooter>
           {isComplete ? (
-            <Button type="button" onClick={handleFinish} disabled={isPending}>
+            <Button type="button" onClick={handleFinish} disabled={isPending || numSelected === 0}>
               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck2 className="mr-2" />}
-              Finish & Add Documents
+              Finish & Add {numSelected} Document(s)
             </Button>
           ) : (
              <Button type="button" onClick={handleProcessFiles} disabled={isProcessing || uploadedFiles.length === 0}>

@@ -34,10 +34,10 @@ const prompt = ai.definePrompt({
   input: { schema: ClassifyDocumentsInputSchema },
   output: { schema: ClassifyDocumentsOutputSchema },
   prompt: `You are an intelligent HR assistant responsible for organizing employee documents.
-You will be given a list of documents (including their content) and a list of employees.
+You will be given a list of documents (including their content) and a list of employees with their names and unique employee codes (IDs).
 Your task is to analyze each document's content and filename to determine which employee it belongs to and what type of document it is.
 
-- Match the name found in the document content or filename to the closest employee name from the provided list.
+- Match the name or employee code (ID) found in the document content or filename to the closest employee from the provided list. Prioritize matching by employee code if it is present in the document.
 - Infer the document type from the document's content and title. Common types are: Salary Slip, Medical Report, Appraisal Letter, Personal.
 - For each document, you MUST return an object with the originalFilename, the matched employeeId, and the determined documentType.
 - If you cannot confidently determine the employee or the document type for a file, you should still return an entry for it, but set employeeId or documentType to null and provide a reason in the 'error' field.
@@ -45,7 +45,7 @@ Your task is to analyze each document's content and filename to determine which 
 
 Available Employees:
 {{#each employees}}
-- {{name}} (ID: {{id}})
+- Name: {{name}}, Code: {{id}}
 {{/each}}
 
 Documents to classify:
