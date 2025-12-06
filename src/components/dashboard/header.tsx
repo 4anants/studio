@@ -1,3 +1,4 @@
+
 'use client'
 import Link from 'next/link'
 import {
@@ -89,12 +90,12 @@ export function DashboardHeader() {
   const user = role === 'admin' ? { name: 'Admin User', email: 'admin@company.com' } : { name: 'Employee User', email: 'employee@company.com' }
 
   const handleProfileClick = () => {
-    if (role === 'admin') {
-      // Admins go to their dashboard, employees to their profile page.
-      router.push('/dashboard?role=admin');
-    } else {
-      router.push(`/dashboard/employee/${employeeUserId}`);
-    }
+    // Both admins and employees should be able to see their own profile.
+    // Assuming user-1 is the admin for this purpose.
+    const targetUserId = employeeUserId;
+    const targetRole = role === 'admin' ? 'admin' : undefined;
+    const url = `/dashboard/employee/${targetUserId}${targetRole ? `?role=${targetRole}` : ''}`;
+    router.push(url);
   }
 
   return (
@@ -137,5 +138,3 @@ export function DashboardHeader() {
     </header>
   )
 }
-
-    
