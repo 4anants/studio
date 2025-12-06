@@ -56,10 +56,18 @@ const getAvatarUrl = (avatarSeed: string) => {
     return `https://picsum.photos/seed/${avatarSeed}/320/270`;
 }
 
+const promptInputSchema = z.object({
+    employee: IdCardInputSchema.shape.employee,
+    finalAvatarUrl: z.string(),
+    companyName: z.string(),
+    companyAddress: z.string(),
+    qrCodeValue: z.string().optional(),
+});
+
 
 const prompt = ai.definePrompt({
   name: 'generateIdCardPrompt',
-  input: { schema: IdCardInputSchema },
+  input: { schema: promptInputSchema },
   output: { schema: IdCardOutputSchema },
   model: 'googleai/imagen-2.0-fast-image-generate-001',
   prompt: `Generate a photorealistic, professional employee ID card with a final image resolution of 640x1080 pixels (portrait orientation).
@@ -69,7 +77,7 @@ The ID card must be vertically oriented and have a clean, modern design. It must
 **CARD STRUCTURE AND CONTENT:**
 
 1.  **Top Section (Photo Area):**
-    *   The top half of the card must be a high-quality, professional headshot of the employee. Use the following image as the primary photo: {{media url=(getAvatarUrl employee.avatar)}}
+    *   The top half of the card must be a high-quality, professional headshot of the employee. Use the following image as the primary photo: {{media url=finalAvatarUrl}}
     *   In the top-left corner, overlay a small, circular company logo. Use the ASE Engineers logo (a blue hexagon with white and yellow lines inside). The logo should be inside a white circle for visibility.
 
 2.  **Middle Section (Employee Details):**
@@ -78,7 +86,7 @@ The ID card must be vertically oriented and have a clean, modern design. It must
     *   **Designation:** Centered, directly below the name, in a smaller, medium-weight gray font. Text: "{{employee.designation}}"
     *   **Details Grid:** A three-column grid for other details:
         *   **Left Column (Labels):** Right-aligned text in a medium gray font. The labels are "Emp. Code", "Status", "Blood Group".
-        *   **Center Column (QR Code):** A standard QR code graphic. If an emergency contact is provided ({{employee.emergencyContact}}), the QR code should visually represent a link to 'tel:{{employee.emergencyContact}}'. If not provided, it should be a generic but valid QR code graphic.
+        *   **Center Column (QR Code):** A standard QR code graphic. The QR code should visually represent the data "{{qrCodeValue}}".
         *   **Right Column (Values):** Left-aligned text in a bold, dark gray font.
             *   Emp. Code value: "{{employee.id}}"
             *   Status value: "{{employee.status}}". This text must be colored based on the status: green for "active", red for "inactive", and orange for "pending".
@@ -87,8 +95,8 @@ The ID card must be vertically oriented and have a clean, modern design. It must
 3.  **Footer Section (Company Info):**
     *   This is the bottom-most section of the card.
     *   It must have a solid, dark charcoal gray background (#2d3748).
-    *   **Company Name:** Centered, in a white, bold font. Text: "{{(getCompanyDetails employee).name}}"
-    *   **Company Address:** Centered, directly below the company name, in a smaller, light gray font. Text: "{{(getCompanyDetails employee).address}}"
+    *   **Company Name:** Centered, in a white, bold font. Text: "{{companyName}}"
+    *   **Company Address:** Centered, directly below the company name, in a smaller, light gray font. Text: "{{companyAddress}}"
 
 **Design requirements:**
 *   Use a modern, sans-serif font like Inter or Helvetica throughout.
@@ -105,14 +113,18 @@ const generateIdCardFlow = ai.defineFlow(
     outputSchema: IdCardOutputSchema,
   },
   async (input) => {
-    // Add helper functions to the prompt context
-    const enrichedInput = { 
-        ...input,
-        getCompanyDetails: getCompanyDetails,
-        getAvatarUrl: getAvatarUrl
+    const companyDetails = getCompanyDetails(input);
+    const finalAvatarUrl = getAvatarUrl(input.employee.avatar);
+
+    const promptInput = {
+      employee: input.employee,
+      finalAvatarUrl: finalAvatarUrl,
+      companyName: companyDetails.name,
+      companyAddress: companyDetails.address,
+      qrCodeValue: input.employee.emergencyContact ? `tel:${input.employee.emergencyContact}`: `Employee: ${input.employee.name}`,
     };
 
-    const { output } = await prompt(enrichedInput);
+    const { output } = await prompt(promptInput);
 
     if (!output?.mediaUrl) {
       throw new Error("Failed to generate I-Card image. The model did not return any media.");
