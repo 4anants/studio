@@ -1,0 +1,30 @@
+'use client';
+import { cn } from "@/lib/utils";
+
+export const AseLogo = ({ className }: { className?: string }) => (
+    <svg
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn("h-full w-full", className)}
+    >
+      <path
+        d="M50 0L95.5 25.5V74.5L50 100L4.5 74.5V25.5L50 0Z"
+        fill="#004a99"
+      />
+      <path
+        d="M26 63.5L50 50L74 63.5M50 75V50"
+        stroke="#fecb00"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M26 36.5L50 25L74 36.5"
+        stroke="#ffffff"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
