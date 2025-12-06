@@ -3,18 +3,39 @@
 import type { User } from "@/lib/mock-data";
 import { companies, locations } from "@/lib/mock-data";
 import Image from "next/image";
-import { Droplet } from 'lucide-react';
+import { Droplet, Barcode } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { AseLogo } from "./ase-logo";
+import { useState, useEffect } from "react";
 
 export function IdCard({ employee }: { employee: User }) {
   const company = companies.find(c => c.name === employee.company);
   const companyAddress = employee.location ? locations[employee.location] : 'N/A';
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedLogo = localStorage.getItem('companyLogo');
+    if (storedLogo) {
+      setLogoSrc(storedLogo);
+    }
+  }, []);
+
 
   const getAvatarSrc = (user: User) => {
     if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
     return `https://picsum.photos/seed/${user.avatar}/400/400`;
   }
   
+  const BarcodeIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-white">
+        <path d="M3 5v14"/>
+        <path d="M8 5v14"/>
+        <path d="M12 5v14"/>
+        <path d="M17 5v14"/>
+        <path d="M21 5v14"/>
+    </svg>
+  );
+
   return (
     <div className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
         {/* Top half: Photo */}
@@ -26,6 +47,17 @@ export function IdCard({ employee }: { employee: User }) {
                 className="object-cover object-center"
                 data-ai-hint="person portrait"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+            <div className="absolute top-4 left-4 h-12 w-12 bg-white/80 backdrop-blur-sm rounded-full p-2">
+                 {logoSrc ? (
+                    <Image src={logoSrc} alt="Company Logo" width={40} height={40} className="rounded-full object-contain" />
+                ) : (
+                    <AseLogo />
+                )}
+            </div>
+             <div className="absolute top-4 right-4">
+                <BarcodeIcon />
+            </div>
         </div>
 
         {/* Bottom half: Information */}
