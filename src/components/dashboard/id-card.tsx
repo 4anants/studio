@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react';
 import type { User } from "@/lib/mock-data";
@@ -51,7 +50,7 @@ export function IdCard({ employee }: { employee: User }) {
   const address = employee.location ? locations[employee.location] : '';
 
   return (
-    <div className="bg-white rounded-lg shadow-md max-w-sm mx-auto font-sans text-gray-800">
+    <div className="bg-white rounded-lg shadow-md w-[320px] h-[512px] mx-auto font-sans text-gray-800 flex flex-col">
         <div className="bg-primary text-primary-foreground rounded-t-lg p-4 flex justify-between items-center">
             {logoSrc ? (
                  <Image src={logoSrc} alt="Company Logo" width={50} height={50} className="rounded-md object-contain" />
@@ -60,7 +59,7 @@ export function IdCard({ employee }: { employee: User }) {
             )}
             <h2 className="text-xl font-bold text-right leading-tight">{company?.shortName || company?.name}</h2>
         </div>
-        <div className="p-4 flex flex-col items-center">
+        <div className="p-4 flex flex-col items-center flex-grow">
             <Image
                 src={`https://picsum.photos/seed/${employee.avatar}/160/160`}
                 width={160}
@@ -69,7 +68,7 @@ export function IdCard({ employee }: { employee: User }) {
                 className="rounded-full border-4 border-primary shadow-lg -mt-20"
                 data-ai-hint="person portrait" 
             />
-            <h1 className="text-3xl font-bold mt-4 text-center">{employee.name}</h1>
+            <h1 className="text-2xl font-bold mt-4 text-center">{employee.name}</h1>
             <p className="text-md text-muted-foreground">{employee.designation || 'Employee'}</p>
 
             <div className="w-full mt-6 space-y-3 text-sm">
@@ -91,7 +90,7 @@ export function IdCard({ employee }: { employee: User }) {
                 </div>
             </div>
         </div>
-        <div className="bg-gray-100 rounded-b-lg p-3 mt-4 text-xs text-center text-gray-500">
+        <div className="bg-gray-100 rounded-b-lg p-3 mt-auto text-xs text-center text-gray-500">
             <p className="font-bold">{employee.company || "Your Company"}</p>
             {address && <p>{address}</p>}
         </div>

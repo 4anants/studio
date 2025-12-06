@@ -1,5 +1,5 @@
 'use client'
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { IdCard } from "./id-card";
 import type { User } from "@/lib/mock-data";
-import { Printer } from "lucide-react";
+import { Download, Printer } from "lucide-react";
+import html2canvas from "html2canvas";
 
 interface IdCardDialogProps {
   employee: User;
@@ -21,9 +22,21 @@ interface IdCardDialogProps {
 
 export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   const [open, setOpen] = useState(false);
+  const idCardRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownload = () => {
+    if (idCardRef.current) {
+        html2canvas(idCardRef.current, { scale: 2 }).then((canvas) => {
+            const link = document.createElement('a');
+            link.download = `id-card-${employee.id}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    }
   };
 
   return (
@@ -33,14 +46,18 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
         <DialogHeader className="print:hidden">
           <DialogTitle>Employee ID Card</DialogTitle>
           <DialogDescription>
-            Review the employee ID card. You can print it directly from here.
+            Review the employee ID card. You can print or download it from here.
           </DialogDescription>
         </DialogHeader>
-        <div id="id-card-container">
+        <div ref={idCardRef}>
             <IdCard employee={employee} />
         </div>
         <DialogFooter className="print:hidden">
             <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+            <Button variant="outline" onClick={handleDownload}>
+                <Download className="mr-2 h-4 w-4" />
+                Download
+            </Button>
             <Button onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print
