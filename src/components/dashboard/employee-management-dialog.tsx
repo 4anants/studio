@@ -46,8 +46,7 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid official email.' }),
   personalEmail: z.string().email({ message: 'Please enter a valid personal email.' }).optional().or(z.literal('')),
   mobile: z.string().optional(),
-  emergencyContact1: z.string().optional(),
-  emergencyContact2: z.string().optional(),
+  emergencyContact: z.string().optional(),
   password: z.string().optional(),
   dateOfBirth: z.string().optional(),
   joiningDate: z.string().optional(),
@@ -82,8 +81,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       email: employee?.email || '',
       personalEmail: employee?.personalEmail || '',
       mobile: employee?.mobile || '',
-      emergencyContact1: employee?.emergencyContact1 || '',
-      emergencyContact2: employee?.emergencyContact2 || '',
+      emergencyContact: employee?.emergencyContact || '',
       password: '',
       dateOfBirth: employee?.dateOfBirth || '',
       joiningDate: employee?.joiningDate || '',
@@ -154,8 +152,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             email: employee?.email || '',
             personalEmail: employee?.personalEmail || '',
             mobile: employee?.mobile || '',
-            emergencyContact1: employee?.emergencyContact1 || '',
-            emergencyContact2: employee?.emergencyContact2 || '',
+            emergencyContact: employee?.emergencyContact || '',
             password: '',
             dateOfBirth: employee?.dateOfBirth || '',
             joiningDate: employee?.joiningDate || '',
@@ -256,28 +253,10 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             />
             <FormField
               control={form.control}
-              name="emergencyContact1"
+              name="emergencyContact"
               render={({ field }) => (
                 <FormItem className="col-span-2 sm:col-span-1">
-                  <FormLabel>Emergency Contact 1</FormLabel>
-                   <FormControl>
-                    <div className="relative">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">+91</span>
-                        </div>
-                        <Input placeholder="987-654-3210" {...field} className="pl-12" />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="emergencyContact2"
-              render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
-                  <FormLabel>Emergency Contact 2</FormLabel>
+                  <FormLabel>Emergency Contact</FormLabel>
                    <FormControl>
                     <div className="relative">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

@@ -31,8 +31,7 @@ export type User = {
   personalEmail?: string;
   avatar: string;
   mobile?: string;
-  emergencyContact1?: string;
-  emergencyContact2?: string;
+  emergencyContact?: string;
   password?: string;
   dateOfBirth?: string;
   joiningDate?: string;
@@ -73,10 +72,10 @@ export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Ap
 export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales', 'Information & Technology'];
 
 export const users: User[] = [
-  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', personalEmail: 'alice.personal@email.com', avatar: '1', mobile: '1234567890', emergencyContact1: '1112223333', emergencyContact2: '4445556666', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer', bloodGroup: 'O+', company: 'ASE ENGINEERS PRIVATE LIMITED', location: 'AMD', role: 'admin' },
-  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', personalEmail: 'bob.personal@email.com', avatar: '2', mobile: '1234567891', emergencyContact1: '4445556666', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager', bloodGroup: 'A-', company: 'ALLIANCE MEP PRIVATE LIMITED', location: 'HYD', role: 'employee' },
-  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', personalEmail: 'charlie.personal@email.com', avatar: '3', mobile: '1234567892', emergencyContact1: '7778889999', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer', bloodGroup: 'B+', company: 'POTOMAC CONSULTING SERVICES PRIVATE LIMITED', location: 'AMD', role: 'employee' },
-  { id: 'A-134', name: 'Anant Upenkumar Shah', email: 'anant.shah@company.com', personalEmail: 'anant.personal@email.com', avatar: '134', mobile: '1234567893', emergencyContact1: '1231231234', password: 'password123', dateOfBirth: '1995-02-20', joiningDate: '2022-08-01', status: 'active', department: 'Information & Technology', designation: 'IT Specialist', bloodGroup: 'A+', company: 'ASE ENGINEERS PRIVATE LIMITED', location: 'HYD', role: 'employee' },
+  { id: 'user-1', name: 'Alice Johnson', email: 'alice.j@company.com', personalEmail: 'alice.personal@email.com', avatar: '1', mobile: '1234567890', emergencyContact: '1112223333', password: 'password123', dateOfBirth: '1990-05-15', joiningDate: '2020-01-10', status: 'active', department: 'Engineering', designation: 'Senior Software Engineer', bloodGroup: 'O+', company: 'ASE ENGINEERS PRIVATE LIMITED', location: 'AMD', role: 'admin' },
+  { id: 'user-2', name: 'Bob Williams', email: 'bob.w@company.com', personalEmail: 'bob.personal@email.com', avatar: '2', mobile: '1234567891', emergencyContact: '4445556666', password: 'password123', dateOfBirth: '1985-11-22', joiningDate: '2018-03-12', status: 'active', department: 'Marketing', designation: 'Marketing Manager', bloodGroup: 'A-', company: 'ALLIANCE MEP PRIVATE LIMITED', location: 'HYD', role: 'employee' },
+  { id: 'user-3', name: 'Charlie Brown', email: 'charlie.b@company.com', personalEmail: 'charlie.personal@email.com', avatar: '3', mobile: '1234567892', emergencyContact: '7778889999', password: 'password123', dateOfBirth: '1992-08-30', joiningDate: '2021-07-01', status: 'active', department: 'Engineering', designation: 'Software Engineer', bloodGroup: 'B+', company: 'POTOMAC CONSULTING SERVICES PRIVATE LIMITED', location: 'AMD', role: 'employee' },
+  { id: 'A-134', name: 'Anant Upenkumar Shah', email: 'anant.shah@company.com', personalEmail: 'anant.personal@email.com', avatar: '134', mobile: '1234567893', emergencyContact: '1231231234', password: 'password123', dateOfBirth: '1995-02-20', joiningDate: '2022-08-01', status: 'active', department: 'Information & Technology', designation: 'IT Specialist', bloodGroup: 'A+', company: 'ASE ENGINEERS PRIVATE LIMITED', location: 'HYD', role: 'employee' },
 ];
 
 export const documents: Document[] = [
