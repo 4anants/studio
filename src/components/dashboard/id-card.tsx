@@ -2,11 +2,11 @@
 'use client';
 import type { User } from "@/lib/mock-data";
 import { companies, locations } from "@/lib/mock-data";
-import Image from "next/image";
 import { Droplet } from 'lucide-react';
-import { cn, getAvatarSrc } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { AseLogo } from "./ase-logo";
 import { useState, useEffect, forwardRef } from "react";
+import Image from "next/image";
 
 export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee }, ref) => {
   const company = companies.find(c => c.name === employee.company);
@@ -20,19 +20,30 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
     }
   }, []);
 
-  const qrCodeUrl = employee.emergencyContact 
-    ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact}`)}&size=80x80&bgcolor=ffffff&color=000000&qzone=1`
-    : '';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact || employee.mobile || ''}`)}&size=80x80&bgcolor=ffffff&color=000000&qzone=1`;
+
+  const getAvatarSrc = (user: User) => {
+    if (user.avatar && user.avatar.startsWith('data:image')) {
+      return user.avatar;
+    }
+    return `https://picsum.photos/seed/${user.avatar}/320/270`;
+  };
   
   const avatarSrc = getAvatarSrc(employee);
 
   return (
     <div ref={ref} className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
         {/* Top half: Photo */}
-        <div 
-          className="flex-shrink-0 h-[270px] relative bg-cover bg-center"
-          style={{ backgroundImage: `url(${avatarSrc})` }}
-        >
+        <div className="flex-shrink-0 h-[270px] relative">
+            <Image
+                src={avatarSrc}
+                alt={employee.name}
+                width={320}
+                height={270}
+                className="absolute inset-0 w-full h-full object-cover"
+                crossOrigin="anonymous"
+                unoptimized
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
             <div className="absolute top-4 left-4 h-12 w-12 bg-white/80 backdrop-blur-sm rounded-full p-2 flex items-center justify-center">
                  {logoSrc ? (
@@ -60,15 +71,14 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
 
                  {/* Center Column: QR Code */}
                  <div className="col-span-1 flex justify-center items-center h-full">
-                    {qrCodeUrl && (
-                        <img
-                            src={qrCodeUrl}
-                            alt="Emergency Contact QR Code"
-                            width={80}
-                            height={80}
-                            crossOrigin="anonymous"
-                        />
-                    )}
+                    <Image
+                        src={qrCodeUrl}
+                        alt="Emergency Contact QR Code"
+                        width={80}
+                        height={80}
+                        crossOrigin="anonymous"
+                        unoptimized
+                    />
                 </div>
 
                 {/* Right Column: Values */}
