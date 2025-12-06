@@ -60,33 +60,14 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
             
             <div className="grid grid-cols-3 items-center w-full text-sm flex-grow">
                 {/* Details Column */}
-                <div className="col-span-2 space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-500">Employee Code</span>
-                        <span className="font-semibold text-gray-800">{employee.id}</span>
-                    </div>
-                     <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-500">Status</span>
-                         <span className={cn(
-                            "font-semibold",
-                            employee.status === 'active' && 'text-green-600',
-                            employee.status === 'inactive' && 'text-red-600',
-                            employee.status === 'pending' && 'text-yellow-600',
-                            employee.status === 'deleted' && 'text-red-600',
-                        )}>
-                            {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
-                        </span>
-                    </div>
-                     <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-500">Blood Group</span>
-                         <span className="font-semibold text-gray-800 flex items-center gap-1">
-                            <Droplet className="h-4 w-4 text-red-500"/> {employee.bloodGroup || 'N/A'}
-                        </span>
-                    </div>
+                <div className="col-span-1 space-y-3 text-left">
+                    <div className="font-medium text-gray-500">Emp. Code</div>
+                    <div className="font-medium text-gray-500">Status</div>
+                    <div className="font-medium text-gray-500">Blood Group</div>
                 </div>
 
                 {/* QR Code Column */}
-                <div className="col-span-1 flex justify-end items-center h-full">
+                <div className="col-span-1 flex justify-center items-center h-full">
                     {qrCodeUrl && (
                         <Image
                             src={qrCodeUrl}
@@ -95,6 +76,23 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
                             height={80}
                         />
                     )}
+                </div>
+
+                {/* Values Column */}
+                <div className="col-span-1 space-y-3 text-right">
+                     <div className="font-semibold text-gray-800">{employee.id}</div>
+                     <div className={cn(
+                        "font-semibold",
+                        employee.status === 'active' && 'text-green-600',
+                        employee.status === 'inactive' && 'text-red-600',
+                        employee.status === 'pending' && 'text-yellow-600',
+                        employee.status === 'deleted' && 'text-red-600',
+                    )}>
+                        {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
+                    </div>
+                     <div className="font-semibold text-gray-800 flex items-center gap-1 justify-end">
+                        <Droplet className="h-4 w-4 text-red-500"/> {employee.bloodGroup || 'N/A'}
+                    </div>
                 </div>
             </div>
         </div>
