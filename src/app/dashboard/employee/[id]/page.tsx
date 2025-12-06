@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Document } from '@/lib/mock-data';
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
-import { cn } from '@/lib/utils';
+import { cn, getAvatarSrc } from '@/lib/utils';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { IdCardDialog } from '@/components/dashboard/id-card-dialog';
 
@@ -126,11 +126,6 @@ export default function EmployeeProfilePage() {
 
   const col1Details = userDetails.slice(0, Math.ceil(userDetails.length / 2));
   const col2Details = userDetails.slice(Math.ceil(userDetails.length / 2));
-
-  const getAvatarSrc = (user: UserType) => {
-    if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
-    return `https://picsum.photos/seed/${user.avatar}/128/128`;
-  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">

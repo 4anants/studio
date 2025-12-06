@@ -4,7 +4,7 @@ import type { User } from "@/lib/mock-data";
 import { companies, locations } from "@/lib/mock-data";
 import Image from "next/image";
 import { Droplet } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import { cn, getAvatarSrc } from "@/lib/utils";
 import { AseLogo } from "./ase-logo";
 import { useState, useEffect, forwardRef } from "react";
 
@@ -19,11 +19,6 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
       setLogoSrc(storedLogo);
     }
   }, []);
-
-  const getAvatarSrc = (user: User) => {
-    if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
-    return `https://picsum.photos/seed/${user.avatar}/400/400`;
-  }
 
   const qrCodeUrl = employee.emergencyContact 
     ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact}`)}&size=80x80&bgcolor=ffffff&color=000000&qzone=1`

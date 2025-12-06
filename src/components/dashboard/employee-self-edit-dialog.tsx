@@ -30,6 +30,7 @@ import type { User } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
+import { getAvatarSrc } from '@/lib/utils';
 
 const formSchema = z.object({
   personalEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
@@ -123,13 +124,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
     setOpen(isOpen);
   }
 
-  const getAvatarSrc = () => {
-    if (avatarPreview) return avatarPreview;
-    if (employee.avatar && employee.avatar.startsWith('data:image')) return employee.avatar;
-    return `https://picsum.photos/seed/${employee.avatar}/128/128`
-  }
-
-  const currentAvatarSrc = getAvatarSrc();
+  const currentAvatarSrc = avatarPreview || getAvatarSrc(employee);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

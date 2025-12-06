@@ -21,6 +21,7 @@ import { AnnouncementBell } from './announcement-bell'
 import { ThemeToggle } from '../theme-toggle'
 import { useState, useEffect } from 'react'
 import { CompanyName, users as allUsers } from '@/lib/mock-data'
+import { getAvatarSrc } from '@/lib/utils'
 
 const AseLogo = () => (
     <svg
@@ -96,11 +97,6 @@ export function DashboardHeader() {
     const targetRole = role === 'admin' ? 'admin' : undefined;
     const url = `/dashboard/employee/${targetUserId}${targetRole ? `?role=${targetRole}` : ''}`;
     router.push(url);
-  }
-
-  const getAvatarSrc = (user: {avatar: string}) => {
-    if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
-    return `https://picsum.photos/seed/${user.avatar}/40/40`;
   }
 
   return (

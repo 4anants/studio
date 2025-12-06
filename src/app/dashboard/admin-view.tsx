@@ -50,7 +50,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
   } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils'
+import { cn, getAvatarSrc } from '@/lib/utils'
 import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-dialog'
 import { AddDepartmentDialog } from '@/components/dashboard/add-department-dialog'
 import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department-dialog'
@@ -612,7 +612,6 @@ const handleExportUsers = () => {
     return filteredActiveUsersForGrid.filter(u => userIdsWithDocType.has(u.id));
   }, [explorerState, docsByType, filteredActiveUsersForGrid]);
 
-
   return (
     <>
       <div className="flex items-center justify-between">
@@ -791,7 +790,7 @@ const handleExportUsers = () => {
                                         onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
                                     >
                                         <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                            <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                            <Image src={getAvatarSrc(user)} width={64} height={64} className="rounded-full object-cover" alt={user.name} data-ai-hint="person portrait" />
                                             <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
                                         </CardContent>
                                     </Card>
@@ -829,7 +828,7 @@ const handleExportUsers = () => {
                                   onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
                               >
                                   <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                      <Image src={`https://picsum.photos/seed/${user.avatar}/64/64`} width={64} height={64} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                      <Image src={getAvatarSrc(user)} width={64} height={64} className="rounded-full object-cover" alt={user.name} data-ai-hint="person portrait" />
                                       <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
                                   </CardContent>
                               </Card>
@@ -895,7 +894,7 @@ const handleExportUsers = () => {
                                           />
                                       </TableCell>
                                       <TableCell className="hidden sm:table-cell">
-                                          <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                          <Image src={getAvatarSrc(user)} width={40} height={40} className="rounded-full object-cover" alt={user.name} data-ai-hint="person portrait" />
                                       </TableCell>
                                       <TableCell className="font-medium">{user.name}</TableCell>
                                       <TableCell>{user.email}</TableCell>
@@ -1311,7 +1310,7 @@ const handleExportUsers = () => {
                                     {filteredDeletedUsers.length > 0 ? filteredDeletedUsers.map(user => (
                                         <TableRow key={user.id}>
                                             <TableCell className="hidden sm:table-cell">
-                                                <Image src={`https://picsum.photos/seed/${user.avatar}/40/40`} width={40} height={40} className="rounded-full" alt={user.name} data-ai-hint="person portrait" />
+                                                <Image src={getAvatarSrc(user)} width={40} height={40} className="rounded-full object-cover" alt={user.name} data-ai-hint="person portrait" />
                                             </TableCell>
                                             <TableCell className="font-medium">{user.name}</TableCell>
                                             <TableCell>{user.email}</TableCell>
@@ -1427,5 +1426,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
