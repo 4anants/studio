@@ -69,7 +69,8 @@ export function LoginForm() {
             return;
         }
 
-        if (user.role !== role) {
+        // Admins can log in as Employee, but Employees cannot log in as Admin.
+        if (role === 'admin' && user.role !== 'admin') {
             toast({
                 variant: 'destructive',
                 title: 'Access Denied',
@@ -89,7 +90,9 @@ export function LoginForm() {
             return;
         }
         
-        router.push(`/dashboard?role=${role}`);
+        // If an admin logs in as an employee, send the employee role param.
+        const dashboardRole = user.role === 'admin' && role === 'employee' ? 'employee' : user.role;
+        router.push(`/dashboard?role=${dashboardRole}`);
 
     }, 1000);
   }
