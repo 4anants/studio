@@ -27,54 +27,106 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const idCardRef = useRef<HTMLDivElement>(null);
 
-  const captureCard = async (): Promise<string | null> => {
-    const element = idCardRef.current;
-    if (!element) return null;
-
-    try {
-        // Temporarily apply a class to ensure all elements are visible for capture
-        element.classList.add('capturing');
-        await new Promise(resolve => setTimeout(resolve, 100)); // allow styles to apply
-
-        const canvas = await html2canvas(element, {
-            useCORS: true, 
-            scale: 3, 
-            logging: false,
-            onclone: (doc) => {
-              // This is crucial for external images like QR codes
-              const images = doc.getElementsByTagName('img');
-              for (let i = 0; i < images.length; i++) {
-                images[i].crossOrigin = 'anonymous';
-              }
-            }
-        });
-        
-        element.classList.remove('capturing');
-        return canvas.toDataURL("image/png", 1.0);
-    } catch (error) {
-        console.error("Error capturing card:", error);
-        element.classList.remove('capturing');
-        return null;
-    }
-  };
-
   const handlePrint = () => {
-    window.print();
+    const cardElement = idCardRef.current;
+    if (!cardElement) return;
+
+    const printWindow = window.open('', '', 'height=600,width=800');
+    if (!printWindow) {
+      alert("Could not open print window. Please disable your pop-up blocker.");
+      return;
+    }
+
+    const cardHtml = cardElement.innerHTML;
+    const stylesheets = Array.from(document.styleSheets)
+      .map(s => s.href ? `<link rel="stylesheet" href="${s.href}">` : '')
+      .join('');
+    
+    const tailwindStyles = Array.from(document.querySelectorAll('style'))
+      .map(style => style.innerHTML)
+      .join('</style><style>');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print ID Card</title>
+          ${stylesheets}
+          <style>${tailwindStyles}</style>
+          <style>
+            body { 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              margin: 0;
+              height: 100vh;
+              overflow: hidden;
+            }
+            @page {
+              size: auto;
+              margin: 0mm;
+            }
+          </style>
+        </head>
+        <body>
+          ${cardHtml}
+          <script>
+            // Ensure images (like QR code) are loaded before printing
+            const images = document.querySelectorAll('img');
+            const promises = [];
+            images.forEach(img => {
+              if (!img.complete) {
+                promises.push(new Promise(resolve => {
+                  img.onload = resolve;
+                  img.onerror = resolve; // Continue even if an image fails
+                }));
+              }
+            });
+
+            Promise.all(promises).then(() => {
+              window.focus(); // Required for some browsers
+              window.print();
+              window.close();
+            });
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleDownload = async () => {
+    const element = idCardRef.current;
+    if (!element) return;
+    
     setIsProcessing(true);
-    const dataUrl = await captureCard();
-    if (dataUrl) {
+
+    try {
+        const canvas = await html2canvas(element, {
+            useCORS: true, 
+            scale: 3, // Higher scale for better quality
+            logging: false,
+             onclone: (doc) => {
+                const images = doc.getElementsByTagName('img');
+                for (let i = 0; i < images.length; i++) {
+                    images[i].crossOrigin = 'anonymous';
+                }
+            }
+        });
+        
+        const dataUrl = canvas.toDataURL("image/png", 1.0);
         const link = document.createElement('a');
         link.href = dataUrl;
         link.download = `id-card-${employee.id}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    } catch (error) {
+        console.error("Error capturing card:", error);
+    } finally {
+        setIsProcessing(false);
     }
-    setIsProcessing(false);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -88,10 +140,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
         </DialogHeader>
 
         <div className="flex justify-center py-4">
-            {/* This div is what will be printed */}
-            <div className="printing">
-                <IdCard employee={employee} ref={idCardRef} />
-            </div>
+             <IdCard employee={employee} ref={idCardRef} />
         </div>
 
         <DialogFooter className="dialog-footer">
