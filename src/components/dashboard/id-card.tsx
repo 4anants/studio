@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { AseLogo } from "./ase-logo";
 import { useState, useEffect, forwardRef } from "react";
 import Image from "next/image";
+import { getAvatarSrc } from "@/lib/utils";
 
 export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee }, ref) => {
   const company = companies.find(c => c.name === employee.company);
@@ -22,21 +23,12 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact || employee.mobile || ''}`)}&size=80x80&bgcolor=ffffff&color=000000&qzone=1`;
 
-  const getAvatarSrc = (user: User) => {
-    if (user.avatar && user.avatar.startsWith('data:image')) {
-      return user.avatar;
-    }
-    return `https://picsum.photos/seed/${user.avatar}/320/270`;
-  };
-  
-  const avatarSrc = getAvatarSrc(employee);
-
   return (
     <div ref={ref} className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
         {/* Top half: Photo */}
         <div className="flex-shrink-0 h-[270px] relative">
             <Image
-                src={avatarSrc}
+                src={getAvatarSrc(employee, 320)}
                 alt={employee.name}
                 width={320}
                 height={270}

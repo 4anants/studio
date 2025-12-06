@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getAvatarSrc(user: { avatar?: string } | User) {
+export function getAvatarSrc(user: { avatar?: string } | User, size: number = 128) {
   if (user.avatar && user.avatar.startsWith('data:image')) {
     return user.avatar;
   }
-  return `https://picsum.photos/seed/${user.avatar}/128/128`;
+  return `https://picsum.photos/seed/${user.avatar}/${size}/${size}`;
 }
