@@ -1,7 +1,7 @@
 
 'use client'
 import { useState, useEffect } from 'react';
-import type { User, CompanyName } from "@/lib/mock-data";
+import type { User } from "@/lib/mock-data";
 import { companies, locations } from "@/lib/mock-data";
 import Image from "next/image";
 import { Droplet, User as UserIcon } from "lucide-react";
@@ -94,7 +94,6 @@ export function IdCard({ employee }: { employee: User }) {
         <div className="bg-gray-100 rounded-b-lg p-3 mt-4 text-xs text-center text-gray-500">
             <p className="font-bold">{employee.company || "Your Company"}</p>
             {address && <p>{address}</p>}
-            <p className="mt-2">This card is the property of the company and must be surrendered upon termination of employment.</p>
         </div>
     </div>
   );
