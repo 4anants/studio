@@ -62,26 +62,20 @@ export function IdCard({ employee }: { employee: User }) {
         </div>
         <div className="p-4 flex flex-col items-center">
             <Image
-                src={`https://picsum.photos/seed/${employee.avatar}/150/150`}
-                width={150}
-                height={150}
+                src={`https://picsum.photos/seed/${employee.avatar}/160/160`}
+                width={160}
+                height={160}
                 alt={employee.name}
-                className="rounded-full border-4 border-primary shadow-lg -mt-16"
+                className="rounded-full border-4 border-primary shadow-lg -mt-20"
                 data-ai-hint="person portrait" 
             />
-            <h1 className="text-2xl font-bold mt-4 text-center">{employee.name}</h1>
+            <h1 className="text-3xl font-bold mt-4 text-center">{employee.name}</h1>
             <p className="text-md text-muted-foreground">{employee.designation || 'Employee'}</p>
 
             <div className="w-full mt-6 space-y-3 text-sm">
                 <div className="flex justify-between">
-                    <span className="font-semibold text-gray-500">Employee ID</span>
+                    <span className="font-semibold text-gray-500">Employee Code</span>
                     <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{employee.id}</span>
-                </div>
-                 <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-500 flex items-center gap-2"><UserIcon size={14}/> Status</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        employee.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>{employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}</span>
                 </div>
                 {employee.bloodGroup && (
                     <div className="flex justify-between items-center">
@@ -89,6 +83,12 @@ export function IdCard({ employee }: { employee: User }) {
                         <span className="font-semibold text-lg text-red-600">{employee.bloodGroup}</span>
                     </div>
                 )}
+                 <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-500 flex items-center gap-2"><UserIcon size={14}/> Status</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        employee.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>{employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}</span>
+                </div>
             </div>
         </div>
         <div className="bg-gray-100 rounded-b-lg p-3 mt-4 text-xs text-center text-gray-500">
