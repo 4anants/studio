@@ -340,7 +340,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                                 <p className="truncate font-medium text-sm">{uploadedFile.file.name}</p>
                                 {uploadedFile.status === 'success' && uploadedFile.result && (
                                     <p className="text-xs text-muted-foreground">
-                                        Assigned to: <span className="font-semibold text-foreground">{uploadedFile.result.employeeName}</span>, Type: <span className="font-semibold text-foreground">{uploadedFile.result.documentType}</span>
+                                        Assigned to: <span className="font-semibold text-foreground">{uploadedFile.result.employeeName} ({uploadedFile.result.employeeId})</span>, Type: <span className="font-semibold text-foreground">{uploadedFile.result.documentType}</span>
                                     </p>
                                 )}
                                 {(uploadedFile.status === 'error' || uploadedFile.status === 'partial-success') && (
