@@ -89,8 +89,6 @@ export function LoginForm() {
             return;
         }
         
-        const targetUserId = role === 'admin' ? 'user-1' : user.id;
-
         router.push(`/dashboard?role=${role}`);
 
     }, 1000);

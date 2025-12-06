@@ -175,6 +175,7 @@ export function AdminView() {
         const updatedUser = {
             ...existingUser,
             ...employee,
+            role: employee.role || existingUser.role, // Ensure role is preserved
         };
         updatedUsers[userIndex] = updatedUser as User;
         
