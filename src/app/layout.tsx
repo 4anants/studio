@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { CompanyName } from '@/lib/mock-data';
+import './print.css';
 
 export const metadata: Metadata = {
   title: CompanyName,

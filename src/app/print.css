@@ -1,0 +1,25 @@
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .printing, .printing * {
+        visibility: visible;
+    }
+
+    .printing {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .printing .dialog-footer {
+        display: none;
+    }
+}

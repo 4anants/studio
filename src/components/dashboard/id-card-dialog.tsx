@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { IdCard } from "./id-card";
 import type { User } from "@/lib/mock-data";
 import { Download, Printer, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface IdCardDialogProps {
   employee: User;
@@ -25,6 +26,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   const [open, setOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const idCardRef = useRef<HTMLDivElement>(null);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
 
   const captureCard = async (): Promise<string | null> => {
     const element = idCardRef.current;
@@ -33,8 +35,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
     try {
         const canvas = await html2canvas(element, {
             useCORS: true,
-            scale: 3, 
-            backgroundColor: '#ffffff',
+            scale: 3,
         });
         return canvas.toDataURL("image/png");
     } catch (error) {
@@ -44,24 +45,13 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   };
 
 
-  const handlePrint = async () => {
-    setIsProcessing(true);
-    const dataUrl = await captureCard();
-    if (dataUrl) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head><title>Print ID Card</title></head>
-            <body style="margin: 0; text-align: center;">
-              <img src="${dataUrl}" style="max-width: 100%;" onload="window.print(); window.close();" />
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-      }
+  const handlePrint = () => {
+    const content = dialogContentRef.current;
+    if (content) {
+        content.classList.add('printing');
+        window.print();
+        content.classList.remove('printing');
     }
-    setIsProcessing(false);
   };
 
   const handleDownload = async () => {
@@ -81,7 +71,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent ref={dialogContentRef} className={cn("sm:max-w-lg")}>
         <DialogHeader>
           <DialogTitle>Employee ID Card</DialogTitle>
           <DialogDescription>
@@ -93,7 +83,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
             <IdCard employee={employee} ref={idCardRef} />
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="dialog-footer">
             <Button variant="outline" onClick={() => setOpen(false)} disabled={isProcessing}>Close</Button>
             <Button variant="outline" onClick={handleDownload} disabled={isProcessing}>
                 {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
