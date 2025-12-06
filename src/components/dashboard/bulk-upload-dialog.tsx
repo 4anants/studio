@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useCallback, useEffect } from 'react';
+import { useState, useTransition, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,16 +12,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Zap, Tag } from 'lucide-react';
+import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Tag } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { classifyDocuments } from '@/ai/flows/classify-documents-flow';
 import type { User, Document } from '@/lib/mock-data'
 import { documentTypesList } from '@/lib/mock-data';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
-import type { ClassifyDocumentsOutput, ClassifyDocumentsInput } from '@/ai/flows/classify-documents-types';
-import { Switch } from '../ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
@@ -29,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 type UploadedFile = {
   file: File;
   dataUri: string;
-  status: 'pending' | 'processing' | 'success' | 'error' | 'partial-success';
+  status: 'pending' | 'processing' | 'success' | 'error';
   selected: boolean;
   result?: {
     employeeId?: string;
@@ -50,8 +47,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   const [isComplete, setIsComplete] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [useFastMode, setUseFastMode] = useState(true);
-  const [selectedDocType, setSelectedDocType] = useState<string>('auto');
+  const [selectedDocType, setSelectedDocType] = useState<string>('');
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -78,76 +74,45 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     noClick: true,
     noKeyboard: true 
   });
-
-  const processWithAI = async (filesToProcess: { filename: string; dataUri: string }[]) => {
-    if (filesToProcess.length === 0) return [];
-
-    const employeeList = users.map((u) => ({ id: u.id, name: u.name }));
   
-    const CHUNK_SIZE = 10;
-    const chunks: ClassifyDocumentsInput[] = [];
-    for (let i = 0; i < filesToProcess.length; i += CHUNK_SIZE) {
-      chunks.push({
-          documents: filesToProcess.slice(i, i + CHUNK_SIZE),
-          employees: employeeList,
-      });
-    }
-  
-    const allResults: ClassifyDocumentsOutput = [];
-    const promises = chunks.map(chunk => classifyDocuments(chunk));
-  
-    const chunkResults = await Promise.all(promises);
-    chunkResults.forEach(result => allResults.push(...result));
-  
-    return allResults.map(result => ({
-      ...result,
-      documentType: selectedDocType !== 'auto' ? selectedDocType : result.documentType
-    }));
-  };
-  
-  const processWithFastMode = () => {
+  const processWithFilename = () => {
     const userMap = new Map<string, User>();
     users.forEach(u => {
-        userMap.set(u.id.toLowerCase(), u);
-        userMap.set(u.name.toLowerCase(), u);
+        userMap.set(u.name.toLowerCase(), u); // Key by name
     });
 
-    const findBestMatch = (filename: string, dictionary: string[]): string | undefined => {
-        return dictionary
-            .filter(item => filename.includes(item))
-            .sort((a, b) => b.length - a.length)[0]; // Get the longest match
-    };
-
-    const results: ClassifyDocumentsOutput = uploadedFiles.map(f => {
+    const results = uploadedFiles.map(f => {
         const filename = f.file.name.toLowerCase();
         let foundUser: User | undefined;
-        let foundDocType: string | undefined;
 
-        const bestUserMatchKey = findBestMatch(filename, Array.from(userMap.keys()));
-        if (bestUserMatchKey) {
-            foundUser = userMap.get(bestUserMatchKey);
-        }
-
-        if (selectedDocType !== 'auto') {
-            foundDocType = selectedDocType;
-        } else {
-            const bestDocTypeMatch = findBestMatch(filename, documentTypesList.map(t => t.toLowerCase()));
-            if (bestDocTypeMatch) {
-                foundDocType = documentTypesList.find(t => t.toLowerCase() === bestDocTypeMatch);
+        // Find the user whose name is included in the filename
+        for (const [userName, user] of userMap.entries()) {
+            if (filename.includes(userName)) {
+                foundUser = user;
+                break;
             }
         }
         
         return {
             originalFilename: f.file.name,
             employeeId: foundUser?.id,
-            documentType: foundDocType,
-            error: !foundUser && !foundDocType ? `Could not determine employee or document type.` : undefined,
+            employeeName: foundUser?.name,
+            documentType: selectedDocType,
+            error: !foundUser ? `Could not determine employee from filename.` : undefined,
         };
     });
     return results;
-};
+  };
 
   const handleProcessFiles = async () => {
+    if (!selectedDocType) {
+        toast({
+            variant: 'destructive',
+            title: 'Document Type Required',
+            description: 'Please select a document type before processing.'
+        });
+        return;
+    }
     setIsProcessing(true);
     setIsComplete(false);
 
@@ -155,77 +120,37 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
       prev.map((f) => ({ ...f, status: 'processing' }))
     );
     
+    // Simulate a short delay for user feedback, as local processing is very fast
+    await new Promise(resolve => setTimeout(resolve, 300));
+        
     try {
-        let allResults: ClassifyDocumentsOutput;
-        let filesForAi: {filename: string, dataUri: string}[] = [];
+        const results = processWithFilename();
 
-        if (useFastMode) {
-          allResults = processWithFastMode();
-          const filesMap = new Map(uploadedFiles.map(f => [f.file.name, f]));
-          
-          allResults.forEach(result => {
-              if (!result.employeeId || !result.documentType) {
-                  const file = filesMap.get(result.originalFilename);
-                   if (file) {
-                      filesForAi.push({ filename: file.file.name, dataUri: file.dataUri });
-                  }
-              }
-          });
-          
-          if (filesForAi.length > 0) {
-            const aiResults = await processWithAI(filesForAi);
-            aiResults.forEach(aiResult => {
-                const index = allResults.findIndex(r => r.originalFilename === aiResult.originalFilename);
-                if (index > -1) {
-                    allResults[index] = { ...allResults[index], ...aiResult };
-                }
-            });
-          }
-
-        } else {
-          filesForAi = uploadedFiles.map(f => ({filename: f.file.name, dataUri: f.dataUri}));
-          allResults = await processWithAI(filesForAi);
-        }
-
-      setUploadedFiles((prev) => {
-        return prev.map((file) => {
-          const result = allResults.find(
-            (r) => r.originalFilename === file.file.name
-          );
-          if (result && result.employeeId && result.documentType) {
-            const employee = users.find((u) => u.id === result.employeeId);
-            return {
-              ...file,
-              status: 'success',
-              selected: true,
-              result: {
-                employeeId: result.employeeId,
-                employeeName: employee?.name || 'Unknown',
-                documentType: result.documentType,
-              },
-            };
-          } else if (result && (result.employeeId || result.documentType)) {
-             const employee = users.find((u) => u.id === result.employeeId);
-             return {
+        setUploadedFiles((prev) => {
+            return prev.map((file) => {
+            const result = results.find(
+                (r) => r.originalFilename === file.file.name
+            );
+            if (result && result.employeeId) {
+                return {
                 ...file,
-                status: 'partial-success',
-                selected: false,
+                status: 'success',
+                selected: true,
                 result: {
                     employeeId: result.employeeId,
-                    employeeName: employee?.name,
+                    employeeName: result.employeeName,
                     documentType: result.documentType,
                 },
-                error: `Needs confirmation. Employee: ${employee?.name || '??'}, Type: ${result.documentType || '??'}`
-             }
-          }
-          return {
-            ...file,
-            status: 'error',
-            selected: false, // Don't select errored uploads
-            error: result?.error || 'AI could not classify this document.',
-          };
+                };
+            }
+            return {
+                ...file,
+                status: 'error',
+                selected: false, // Don't select errored uploads
+                error: result?.error || 'Could not classify this document.',
+            };
+            });
         });
-      });
     } catch (e: any) {
         console.error(e);
         toast({
@@ -278,7 +203,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
       setUploadedFiles([]);
       setIsProcessing(false);
       setIsComplete(false);
-      setSelectedDocType('auto');
+      setSelectedDocType('');
     }
     setOpen(isOpen);
   };
@@ -317,20 +242,13 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
         <DialogHeader>
           <DialogTitle>Centralized Bulk Upload</DialogTitle>
           <DialogDescription>
-            Drop document files below. The system will analyze their content to automatically classify and assign them.
+            Select a document type, then drop files below. The system will read the employee's name from the filename.
           </DialogDescription>
         </DialogHeader>
         
         {!isProcessing && !isComplete && (
           <>
             <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 my-4">
-              <div className="flex items-center space-x-2">
-                <Switch id="fast-mode-switch" checked={useFastMode} onCheckedChange={setUseFastMode} />
-                <Label htmlFor="fast-mode-switch" className='flex items-center gap-2'>
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <span>Fast Mode (from filename)</span>
-                </Label>
-              </div>
               <div className="flex items-center space-x-2">
                 <Label htmlFor="doc-type-select" className="flex items-center gap-2">
                     <Tag className="h-4 w-4 text-blue-500"/>
@@ -341,7 +259,6 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                         <SelectValue placeholder="Select a document type" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="auto">Auto-Detect</SelectItem>
                         {documentTypesList.map(type => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
                         ))}
@@ -402,7 +319,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                                 <p className="truncate font-medium text-sm">{uploadedFile.file.name}</p>
                                 {uploadedFile.status === 'success' && uploadedFile.result && (
                                     <p className="text-xs text-muted-foreground">
-                                        Assigned to: <span className="font-semibold text-foreground">{uploadedFile.result.employeeName} (Code: {uploadedFile.result.employeeId})</span>, Type: <span className="font-semibold text-foreground">{uploadedFile.result.documentType}</span>
+                                        Assigned to: <span className="font-semibold text-foreground">{uploadedFile.result.employeeName}</span>, Type: <span className="font-semibold text-foreground">{uploadedFile.result.documentType}</span>
                                     </p>
                                 )}
                                 {(uploadedFile.status === 'error' || uploadedFile.status === 'partial-success') && (
@@ -428,7 +345,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
               Finish & Add {numSelected} Document(s)
             </Button>
           ) : (
-             <Button type="button" onClick={handleProcessFiles} disabled={isProcessing || uploadedFiles.length === 0}>
+             <Button type="button" onClick={handleProcessFiles} disabled={isProcessing || uploadedFiles.length === 0 || !selectedDocType}>
                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Process {uploadedFiles.length} File(s)
             </Button>
@@ -438,5 +355,3 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     </Dialog>
   );
 }
-
-    
