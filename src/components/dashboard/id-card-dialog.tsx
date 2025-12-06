@@ -26,7 +26,6 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   const [open, setOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const idCardRef = useRef<HTMLDivElement>(null);
-  const dialogContentRef = useRef<HTMLDivElement>(null);
 
   const captureCard = async (): Promise<string | null> => {
     const element = idCardRef.current;
@@ -34,24 +33,60 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
 
     try {
         const canvas = await html2canvas(element, {
-            useCORS: true,
-            scale: 3,
+            useCORS: true, // Needed for external images
+            scale: 3, // Increase scale for higher resolution
+            logging: false,
         });
-        return canvas.toDataURL("image/png");
+        return canvas.toDataURL("image/png", 1.0);
     } catch (error) {
         console.error("Error capturing card:", error);
         return null;
     }
   };
 
-
   const handlePrint = () => {
-    const content = dialogContentRef.current;
-    if (content) {
-        content.classList.add('printing');
-        window.print();
-        content.classList.remove('printing');
+    const cardElement = idCardRef.current;
+    if (!cardElement) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert('Please allow popups to print the ID card.');
+        return;
     }
+
+    const cardHtml = cardElement.innerHTML;
+    const originalTitle = document.title;
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print ID Card - ${employee.name}</title>
+                <style>
+                    body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                    .card-container { width: 320px; height: 540px; }
+                </style>
+            </head>
+            <body>
+                <div class="card-container">
+                    ${cardHtml}
+                </div>
+                <script>
+                    // Ensure all images are loaded before printing
+                    const images = document.querySelectorAll('img');
+                    const promises = Array.from(images).map(img => {
+                        if (img.complete) return Promise.resolve();
+                        return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+                    });
+                    Promise.all(promises).then(() => {
+                        window.print();
+                        window.close();
+                    });
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.title = originalTitle;
+    printWindow.document.close();
   };
 
   const handleDownload = async () => {
@@ -71,7 +106,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent ref={dialogContentRef} className={cn("sm:max-w-lg")}>
+      <DialogContent className={cn("sm:max-w-lg")}>
         <DialogHeader>
           <DialogTitle>Employee ID Card</DialogTitle>
           <DialogDescription>
@@ -90,7 +125,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
                 Download
             </Button>
             <Button onClick={handlePrint} disabled={isProcessing}>
-                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+                <Printer className="mr-2 h-4 w-4" />
                 Print
             </Button>
         </DialogFooter>
