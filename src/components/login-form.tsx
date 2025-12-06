@@ -70,21 +70,21 @@ export function LoginForm() {
             return;
         }
 
-        if (role === 'admin' && user.role !== 'admin') {
-            toast({
-                variant: 'destructive',
-                title: 'Access Denied',
-                description: `You do not have permission to log in as an ${role}.`,
-            });
-            setIsLoading(false);
-            return;
-        }
-
         if (user.status === 'deleted' || user.status === 'inactive') {
             toast({
                 variant: 'destructive',
                 title: 'Account Disabled',
                 description: 'Your account is not active. Please contact an administrator.',
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        if (role === 'admin' && user.role !== 'admin') {
+            toast({
+                variant: 'destructive',
+                title: 'Access Denied',
+                description: `You do not have permission to log in as an ${role}.`,
             });
             setIsLoading(false);
             return;
