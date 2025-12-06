@@ -58,14 +58,27 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
                 <p className="text-md text-gray-500 font-medium">{employee.designation || 'N/A'}</p>
             </div>
             
-            <div className="grid grid-cols-2 items-center w-full text-sm flex-grow">
-                {/* Details Column */}
+            <div className="grid grid-cols-3 gap-x-2 items-center w-full text-sm flex-grow">
+                {/* Left Column: Labels */}
                 <div className="col-span-1 space-y-3 text-left">
                     <div className="font-medium text-gray-500">Emp. Code</div>
                     <div className="font-medium text-gray-500">Status</div>
                     <div className="font-medium text-gray-500">Blood Group</div>
                 </div>
 
+                 {/* Center Column: QR Code */}
+                 <div className="col-span-1 flex justify-center items-center h-full">
+                    {qrCodeUrl && (
+                        <Image
+                            src={qrCodeUrl}
+                            alt="Emergency Contact QR Code"
+                            width={80}
+                            height={80}
+                        />
+                    )}
+                </div>
+
+                {/* Right Column: Values */}
                 <div className="col-span-1 space-y-3 text-right">
                      <div className="font-semibold text-gray-800">{employee.id}</div>
                      <div className={cn(
@@ -81,24 +94,12 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
                         <Droplet className="h-4 w-4 text-red-500"/> {employee.bloodGroup || 'N/A'}
                     </div>
                 </div>
-
-                 {/* QR Code */}
-                 <div className="col-span-2 flex justify-center items-center h-full pt-4">
-                    {qrCodeUrl && (
-                        <Image
-                            src={qrCodeUrl}
-                            alt="Emergency Contact QR Code"
-                            width={80}
-                            height={80}
-                        />
-                    )}
-                </div>
             </div>
         </div>
 
         {/* Footer */}
         <div className="bg-gray-800 text-white text-center p-2 flex flex-col justify-center items-center flex-shrink-0 h-[70px]">
-            <p className="font-bold text-base">{company?.name || "Company Name"}</p>
+            <p className="font-semibold text-sm">{company?.name || "Company Name"}</p>
             <p className="text-xs font-medium">{companyAddress}</p>
         </div>
     </div>
