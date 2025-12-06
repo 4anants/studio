@@ -6,9 +6,9 @@ import Image from "next/image";
 import { Droplet } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { AseLogo } from "./ase-logo";
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 
-export function IdCard({ employee }: { employee: User }) {
+export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee }, ref) => {
   const company = companies.find(c => c.name === employee.company);
   const companyAddress = employee.location ? locations[employee.location] : 'N/A';
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -26,19 +26,20 @@ export function IdCard({ employee }: { employee: User }) {
   }
 
   const qrCodeUrl = employee.emergencyContact 
-    ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:+91${employee.emergencyContact}`)}&size=60x60&bgcolor=ffffff&color=000000&qzone=0`
+    ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact}`)}&size=60x60&bgcolor=ffffff&color=000000&qzone=0`
     : '';
   
   return (
-    <div className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
+    <div ref={ref} className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
         {/* Top half: Photo */}
-        <div className="flex-shrink-0 h-1/2 relative">
+        <div className="flex-shrink-0 h-[270px] relative">
             <Image
                 src={getAvatarSrc(employee)}
                 layout="fill"
                 alt={employee.name}
                 className="object-cover object-center"
                 data-ai-hint="person portrait"
+                crossOrigin="anonymous"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
             <div className="absolute top-4 left-4 h-12 w-12 bg-white/80 backdrop-blur-sm rounded-full p-2">
@@ -92,10 +93,12 @@ export function IdCard({ employee }: { employee: User }) {
         </div>
 
         {/* Footer */}
-        <div className="bg-muted text-muted-foreground text-center p-3 flex-shrink-0">
-             <p className="font-bold text-sm">{company?.name || "Company Name"}</p>
+        <div className="bg-gray-50 text-gray-600 text-center p-3 flex-shrink-0 border-t">
+             <p className="font-bold text-sm text-gray-800">{company?.name || "Company Name"}</p>
              <p className="text-xs">{companyAddress}</p>
         </div>
     </div>
   );
-}
+});
+
+IdCard.displayName = 'IdCard';
