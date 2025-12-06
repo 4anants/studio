@@ -1,6 +1,7 @@
 
 'use client'
 import { useRef, useState } from "react";
+import html2canvas from "html2canvas";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { IdCard } from "./id-card";
 import type { User } from "@/lib/mock-data";
 import { Download, Printer } from "lucide-react";
-import { companies, locations } from "@/lib/mock-data";
 
 interface IdCardDialogProps {
   employee: User;
@@ -25,91 +25,54 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   const [open, setOpen] = useState(false);
   const idCardRef = useRef<HTMLDivElement>(null);
 
-  const getAvatarSrc = (user: User) => {
-    if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
-    return `https://picsum.photos/seed/${user.avatar}/400/400`;
-  }
+  const captureCard = async (): Promise<string | null> => {
+    const element = idCardRef.current;
+    if (!element) return null;
 
-  const getCompanyLogo = () => {
-    if (typeof window !== 'undefined') {
-        const storedLogo = localStorage.getItem('companyLogo');
-        if (storedLogo) return storedLogo;
-    }
-    // This is a placeholder for the default logo SVG, as we can't easily pass SVG content in a URL.
-    // In a real scenario, the default logo might have a public URL.
-    return 'https://picsum.photos/seed/logo/40/40';
-  }
-  
-  const generateImageUrl = () => {
-      const company = companies.find(c => c.name === employee.company);
-      const companyAddress = employee.location ? locations[employee.location] : 'N/A';
-      
-      // We will encode all the necessary data into a URL for an image generation service.
-      // For this example, we'll use a placeholder service that can construct a simple card.
-      // This is a simplified representation. A real service would take more parameters.
-      const vCard = `BEGIN:VCARD
-VERSION:3.0
-FN:${employee.name}
-TEL;TYPE=CELL:${employee.emergencyContact || ''}
-END:VCARD`;
-
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(vCard)}&size=60x60&bgcolor=ffffff&color=000000&qzone=0`
-
-      // This is a simulation of what a real image generation service URL might look like.
-      // We're using qrserver's API in a creative way to embed data, but it won't render a full I-Card.
-      // This demonstrates the principle of server-side generation.
-      const params = new URLSearchParams({
-          name: employee.name,
-          department: employee.department || 'N/A',
-          employeeId: employee.id,
-          status: employee.status,
-          bloodGroup: employee.bloodGroup || 'N/A',
-          companyName: company?.name || "Company Name",
-          companyAddress: companyAddress,
-          avatarUrl: getAvatarSrc(employee),
-          logoUrl: getCompanyLogo(),
-          qrUrl: qrUrl,
-      });
-
-      // In a real app, this would be a dedicated service endpoint.
-      // For now, we'll just use a placeholder that shows the QR code.
-      const telQrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact}`)}&size=200x200&qzone=1`;
-
-      return telQrUrl;
-  }
-  
-  const handlePrint = () => {
-    const imageUrl = generateImageUrl();
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head><title>Print ID Card</title></head>
-          <body style="margin: 0; text-align: center;">
-            <img src="${imageUrl}" style="max-width: 100%;" onload="window.print(); window.close();" />
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+    try {
+        const canvas = await html2canvas(element, {
+            useCORS: true,
+            scale: 3, // Higher scale for better quality
+            backgroundColor: '#ffffff', // Ensure background is not transparent
+            windowHeight: element.scrollHeight,
+            windowWidth: element.scrollWidth,
+        });
+        return canvas.toDataURL("image/png");
+    } catch (error) {
+        console.error("Error capturing card:", error);
+        return null;
     }
   };
 
-  const handleDownload = () => {
-    const imageUrl = generateImageUrl();
-    const link = document.createElement('a');
-    // Note: The downloaded image will be from the service, not a direct screenshot.
-    // To download from a cross-origin URL, we can fetch it as a blob.
-    fetch(imageUrl)
-      .then(response => response.blob())
-      .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        link.href = url;
+
+  const handlePrint = async () => {
+    const dataUrl = await captureCard();
+    if (dataUrl) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head><title>Print ID Card</title></head>
+            <body style="margin: 0; text-align: center;">
+              <img src="${dataUrl}" style="max-width: 100%;" onload="window.print(); window.close();" />
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    }
+  };
+
+  const handleDownload = async () => {
+    const dataUrl = await captureCard();
+    if (dataUrl) {
+        const link = document.createElement('a');
+        link.href = dataUrl;
         link.download = `id-card-${employee.id}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      });
+    }
   };
 
   return (
@@ -124,8 +87,7 @@ END:VCARD`;
         </DialogHeader>
 
         <div className="flex justify-center py-4">
-            {/* The ref is no longer needed for capture */}
-            <IdCard employee={employee} />
+            <IdCard employee={employee} ref={idCardRef} />
         </div>
 
         <DialogFooter>
