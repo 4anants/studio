@@ -19,6 +19,7 @@ import type { User, Document } from '@/lib/mock-data'
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
+import type { ClassifyDocumentsOutput } from '@/ai/flows/classify-documents-types';
 
 type UploadedFile = {
   file: File;
@@ -73,46 +74,72 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   const handleProcessFiles = async () => {
     setIsProcessing(true);
     setIsComplete(false);
-    
-    setUploadedFiles(prev => prev.map(f => ({ ...f, status: 'processing' })));
 
-    const employeeList = users.map(u => ({ id: u.id, name: u.name }));
-    const documentsToClassify = uploadedFiles.map(f => ({ filename: f.file.name, dataUri: f.dataUri }));
+    setUploadedFiles((prev) =>
+      prev.map((f) => ({ ...f, status: 'processing' }))
+    );
+
+    const employeeList = users.map((u) => ({ id: u.id, name: u.name }));
+    const documentsToClassify = uploadedFiles.map((f) => ({
+      filename: f.file.name,
+      dataUri: f.dataUri,
+    }));
+
+    // Chunk size for parallel processing
+    const CHUNK_SIZE = 10;
+    const chunks: { filename: string; dataUri: string }[][] = [];
+    for (let i = 0; i < documentsToClassify.length; i += CHUNK_SIZE) {
+      chunks.push(documentsToClassify.slice(i, i + CHUNK_SIZE));
+    }
 
     try {
-        const results = await classifyDocuments({
-            documents: documentsToClassify,
+      const allResults: ClassifyDocumentsOutput = [];
+      const promises = chunks.map(chunk => 
+        classifyDocuments({
+            documents: chunk,
             employees: employeeList
-        });
+        })
+      );
+      
+      const chunkResults = await Promise.all(promises);
+      chunkResults.forEach(result => allResults.push(...result));
 
-        setUploadedFiles(prev => {
-            return prev.map((file) => {
-                const result = results.find(r => r.originalFilename === file.file.name);
-                if (result && result.employeeId && result.documentType) {
-                    const employee = users.find(u => u.id === result.employeeId);
-                    return {
-                        ...file,
-                        status: 'success',
-                        selected: true, // Auto-select successful uploads
-                        result: {
-                            employeeId: result.employeeId,
-                            employeeName: employee?.name || 'Unknown',
-                            documentType: result.documentType,
-                        }
-                    }
-                }
-                return {
-                    ...file,
-                    status: 'error',
-                    selected: false, // Don't select errored uploads
-                    error: result?.error || 'Could not classify document.',
-                }
-            })
+      setUploadedFiles((prev) => {
+        return prev.map((file) => {
+          const result = allResults.find(
+            (r) => r.originalFilename === file.file.name
+          );
+          if (result && result.employeeId && result.documentType) {
+            const employee = users.find((u) => u.id === result.employeeId);
+            return {
+              ...file,
+              status: 'success',
+              selected: true, // Auto-select successful uploads
+              result: {
+                employeeId: result.employeeId,
+                employeeName: employee?.name || 'Unknown',
+                documentType: result.documentType,
+              },
+            };
+          }
+          return {
+            ...file,
+            status: 'error',
+            selected: false, // Don't select errored uploads
+            error: result?.error || 'Could not classify document.',
+          };
         });
-
+      });
     } catch (e) {
-        console.error(e);
-        setUploadedFiles(prev => prev.map(f => ({ ...f, status: 'error', error: 'An unexpected error occurred.', selected: false })))
+      console.error(e);
+      setUploadedFiles((prev) =>
+        prev.map((f) => ({
+          ...f,
+          status: 'error',
+          error: 'An unexpected error occurred during batch processing.',
+          selected: false,
+        }))
+      );
     }
 
     setIsProcessing(false);
