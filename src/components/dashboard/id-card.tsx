@@ -98,9 +98,9 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-100 text-gray-600 text-center p-3 flex-shrink-0 border-t">
-            <p className="font-bold text-sm text-gray-800">{company?.name || "Company Name"}</p>
-            <p className="text-xs">{companyAddress}</p>
+        <div className="bg-gray-800 text-white text-center p-3 flex flex-col justify-center items-center flex-shrink-0 h-[70px] border-t">
+            <p className="font-bold text-lg">{company?.name || "Company Name"}</p>
+            <p className="text-sm font-semibold">{companyAddress}</p>
         </div>
     </div>
   );
