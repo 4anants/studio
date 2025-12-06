@@ -3,7 +3,7 @@
 import type { User } from "@/lib/mock-data";
 import { companies, locations } from "@/lib/mock-data";
 import Image from "next/image";
-import { Droplet, QrCode } from 'lucide-react';
+import { Droplet } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { AseLogo } from "./ase-logo";
 import { useState, useEffect } from "react";
@@ -20,11 +20,24 @@ export function IdCard({ employee }: { employee: User }) {
     }
   }, []);
 
-
   const getAvatarSrc = (user: User) => {
     if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
     return `https://picsum.photos/seed/${user.avatar}/400/400`;
   }
+
+  const generateVCard = (employee: User) => {
+    let vCard = `BEGIN:VCARD\nVERSION:3.0\nFN:${employee.name}`;
+    if (employee.emergencyContact1) {
+        vCard += `\nTEL;TYPE=HOME,VOICE:+91${employee.emergencyContact1}`;
+    }
+    if (employee.emergencyContact2) {
+        vCard += `\nTEL;TYPE=WORK,VOICE:+91${employee.emergencyContact2}`;
+    }
+    vCard += `\nEND:VCARD`;
+    return encodeURIComponent(vCard);
+  };
+
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${generateVCard(employee)}&size=80x80&bgcolor=ffffff&color=000000&qzone=0`;
   
   return (
     <div className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
@@ -45,8 +58,13 @@ export function IdCard({ employee }: { employee: User }) {
                     <AseLogo />
                 )}
             </div>
-             <div className="absolute top-4 right-4">
-                <QrCode className="h-10 w-10 text-black" />
+             <div className="absolute top-4 right-4 p-1 bg-white rounded-md">
+                <Image
+                    src={qrCodeUrl}
+                    alt="Emergency Contact QR Code"
+                    width={80}
+                    height={80}
+                />
             </div>
         </div>
 
