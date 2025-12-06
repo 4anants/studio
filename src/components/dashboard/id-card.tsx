@@ -69,7 +69,7 @@ export function IdCard({ employee }: { employee: User }) {
                 data-ai-hint="person portrait" 
             />
             <h1 className="text-2xl font-bold mt-4 text-center">{employee.name}</h1>
-            <p className="text-md text-muted-foreground">{employee.designation || 'Employee'}</p>
+            <p className="text-md text-muted-foreground">{employee.department || 'N/A'}</p>
 
             <div className="w-full mt-6 space-y-3 text-sm">
                 <div className="flex justify-between">
