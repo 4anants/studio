@@ -24,53 +24,53 @@ interface IdCardDialogProps {
 export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   const [open, setOpen] = useState(false);
   const idCardRef = useRef<HTMLDivElement>(null);
-  const printableAreaRef = useRef<HTMLDivElement>(null);
-
+  
   const handlePrint = () => {
-    const node = printableAreaRef.current;
+    const node = idCardRef.current;
     if (node) {
-        const domClone = node.cloneNode(true) as HTMLElement;
-        const style = document.createElement('style');
-        style.textContent = `
-            @media print {
-                @page { size: auto; margin: 0; }
-                body { margin: 0; }
-                .printable-area {
-                    margin: 0;
-                    padding: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-                .printable-area > div {
-                  transform: scale(1.2); /* Optional: scale up for better print quality */
-                }
-            }
-        `;
-        document.head.appendChild(style);
+      const style = document.createElement('style');
+      style.innerHTML = `
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .printable-card-area, .printable-card-area * {
+            visibility: visible;
+          }
+          .printable-card-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      node.classList.add('printable-card-area');
 
-        const printSection = document.createElement('div');
-        printSection.id = 'print-section';
-        printSection.className = 'printable-area';
-        printSection.appendChild(domClone);
-        document.body.insertBefore(printSection, document.body.firstChild);
-        
-        window.print();
-        
-        document.body.removeChild(printSection);
-        document.head.removeChild(style);
+      window.print();
+
+      node.classList.remove('printable-card-area');
+      document.head.removeChild(style);
     }
   };
 
   const handleDownload = () => {
-    if (idCardRef.current) {
-        html2canvas(idCardRef.current, { 
+    const node = idCardRef.current;
+    if (node) {
+        html2canvas(node, { 
             scale: 3, // Increase scale for higher resolution
             useCORS: true,
             allowTaint: true,
             backgroundColor: null,
+            scrollX: 0,
+            scrollY: -window.scrollY,
+            windowWidth: document.documentElement.offsetWidth,
+            windowHeight: document.documentElement.offsetHeight
         }).then((canvas) => {
             const link = document.createElement('a');
             link.download = `id-card-${employee.id}.png`;
@@ -91,14 +91,8 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Visible card for display */}
-        <div ref={idCardRef} className="flex justify-center">
+        <div ref={idCardRef} className="flex justify-center py-4">
             <IdCard employee={employee} />
-        </div>
-
-        {/* Hidden, isolated card for printing */}
-        <div className="absolute -left-[9999px] top-0" ref={printableAreaRef}>
-             <IdCard employee={employee} />
         </div>
 
         <DialogFooter>
