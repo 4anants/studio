@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Zap, Tag } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { classifyDocuments } from '@/ai/flows/classify-documents-flow';
 import type { User, Document } from '@/lib/mock-data'
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import type { ClassifyDocumentsOutput, ClassifyDocumentsInput } from '@/ai/flows/classify-documents-types';
 import { Switch } from '../ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 
 type UploadedFile = {
@@ -50,6 +51,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   const [isPending, startTransition] = useTransition();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [useFastMode, setUseFastMode] = useState(true);
+  const [selectedDocType, setSelectedDocType] = useState<string>('auto');
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -97,7 +99,10 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     const chunkResults = await Promise.all(promises);
     chunkResults.forEach(result => allResults.push(...result));
   
-    return allResults;
+    return allResults.map(result => ({
+      ...result,
+      documentType: selectedDocType !== 'auto' ? selectedDocType : result.documentType
+    }));
   };
   
   const processWithFastMode = () => {
@@ -123,9 +128,13 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
             foundUser = userMap.get(bestUserMatchKey);
         }
 
-        const bestDocTypeMatch = findBestMatch(filename, documentTypesList.map(t => t.toLowerCase()));
-        if (bestDocTypeMatch) {
-            foundDocType = documentTypesList.find(t => t.toLowerCase() === bestDocTypeMatch);
+        if (selectedDocType !== 'auto') {
+            foundDocType = selectedDocType;
+        } else {
+            const bestDocTypeMatch = findBestMatch(filename, documentTypesList.map(t => t.toLowerCase()));
+            if (bestDocTypeMatch) {
+                foundDocType = documentTypesList.find(t => t.toLowerCase() === bestDocTypeMatch);
+            }
         }
         
         return {
@@ -269,6 +278,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
       setUploadedFiles([]);
       setIsProcessing(false);
       setIsComplete(false);
+      setSelectedDocType('auto');
     }
     setOpen(isOpen);
   };
@@ -313,12 +323,31 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
         
         {!isProcessing && !isComplete && (
           <>
-            <div className="flex items-center space-x-2 my-4">
-              <Switch id="fast-mode-switch" checked={useFastMode} onCheckedChange={setUseFastMode} />
-              <Label htmlFor="fast-mode-switch" className='flex items-center gap-2'>
-                <Zap className="h-4 w-4 text-yellow-500" />
-                <span>Fast Mode (from filename)</span>
-              </Label>
+            <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 my-4">
+              <div className="flex items-center space-x-2">
+                <Switch id="fast-mode-switch" checked={useFastMode} onCheckedChange={setUseFastMode} />
+                <Label htmlFor="fast-mode-switch" className='flex items-center gap-2'>
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <span>Fast Mode (from filename)</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="doc-type-select" className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-blue-500"/>
+                    <span>Classify as</span>
+                </Label>
+                <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+                    <SelectTrigger id="doc-type-select" className="w-[200px]">
+                        <SelectValue placeholder="Select a document type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="auto">Auto-Detect</SelectItem>
+                        {documentTypesList.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+              </div>
             </div>
             <div {...getRootProps()} className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}>
                 <input {...getInputProps()} />
@@ -359,9 +388,9 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                             {isSuccess ? (
                             <Checkbox
                                 checked={uploadedFile.selected}
-                                onCheckedChange={(checked) => handleToggleSelect(index)}
+                                onCheckedChange={() => { /* Handled by row click */ }}
+                                onClick={(e) => e.stopPropagation()}
                                 id={`select-file-${index}`}
-                                className="pointer-events-none"
                                 />
                             ) : uploadedFile.status === 'pending' ? <Loader2 className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                             : uploadedFile.status === 'processing' ? <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
@@ -409,3 +438,5 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     </Dialog>
   );
 }
+
+    
