@@ -28,34 +28,25 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
   const handlePrint = () => {
     const node = idCardRef.current;
     if (node) {
-      const style = document.createElement('style');
-      style.innerHTML = `
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .printable-card-area, .printable-card-area * {
-            visibility: visible;
-          }
-          .printable-card-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
+      html2canvas(node, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+      }).then((canvas) => {
+        const dataUrl = canvas.toDataURL("image/png");
+        const printWindow = window.open('', '', 'height=600,width=800');
+        if (printWindow) {
+          printWindow.document.write('<html><head><title>Print ID Card</title>');
+          printWindow.document.write('<style>body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; } img { max-width: 100%; max-height: 100%; object-fit: contain; }</style>');
+          printWindow.document.write('</head><body>');
+          printWindow.document.write(`<img src="${dataUrl}" />`);
+          printWindow.document.write('</body></html>');
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
         }
-      `;
-      document.head.appendChild(style);
-      node.classList.add('printable-card-area');
-
-      window.print();
-
-      node.classList.remove('printable-card-area');
-      document.head.removeChild(style);
+      });
     }
   };
 
@@ -63,14 +54,10 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
     const node = idCardRef.current;
     if (node) {
         html2canvas(node, { 
-            scale: 3, // Increase scale for higher resolution
+            scale: 3,
             useCORS: true,
             allowTaint: true,
             backgroundColor: null,
-            scrollX: 0,
-            scrollY: -window.scrollY,
-            windowWidth: document.documentElement.offsetWidth,
-            windowHeight: document.documentElement.offsetHeight
         }).then((canvas) => {
             const link = document.createElement('a');
             link.download = `id-card-${employee.id}.png`;
@@ -91,8 +78,10 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div ref={idCardRef} className="flex justify-center py-4">
-            <IdCard employee={employee} />
+        <div className="flex justify-center py-4">
+            <div ref={idCardRef}>
+                <IdCard employee={employee} />
+            </div>
         </div>
 
         <DialogFooter>
