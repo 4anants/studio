@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
@@ -465,7 +466,7 @@ export function EmployeeView() {
                                     isUpcoming && "bg-blue-500/10 animate-pulse ring-2 ring-destructive"
                                 )}>
                                     <div className="absolute top-2 right-2">
-                                        <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)} disabled={isUpcoming}>
+                                        <Button variant="ghost" size="sm" onClick={() => toggleAnnouncementRead(announcement.id)}>
                                             {announcement.isRead ? (
                                                 <>
                                                     <Mail className="mr-2 h-4 w-4" />

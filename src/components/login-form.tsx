@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useRouter } from 'next/navigation'
@@ -69,7 +70,6 @@ export function LoginForm() {
             return;
         }
 
-        // Admins can log in as Employee, but Employees cannot log in as Admin.
         if (role === 'admin' && user.role !== 'admin') {
             toast({
                 variant: 'destructive',
@@ -90,9 +90,7 @@ export function LoginForm() {
             return;
         }
         
-        // If an admin logs in as an employee, send the employee role param.
-        const dashboardRole = user.role === 'admin' && role === 'employee' ? 'employee' : user.role;
-        router.push(`/dashboard?role=${dashboardRole}`);
+        router.push(`/dashboard?role=${role}`);
 
     }, 1000);
   }

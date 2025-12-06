@@ -422,14 +422,12 @@ const handleExportUsers = () => {
 
 
   const filteredByDept = useMemo(() => {
-    if (departmentFilter === 'all' || (departmentFilter === 'unassigned' && activeTab !== 'file-explorer')) {
-        return activeUsers;
+    if (departmentFilter === 'all') {
+      return activeUsers;
     }
-    if (departmentFilter === 'unassigned' && activeTab === 'file-explorer') {
-        return []; // Don't show any users if "Unassigned" is selected in file explorer
-    }
+    // "Unassigned" for file explorer is handled separately where it's used
     return activeUsers.filter(user => user.department && departmentFilter === user.department);
-  }, [activeUsers, departmentFilter, activeTab]);
+  }, [activeUsers, departmentFilter]);
 
   const filteredByRole = useMemo(() => filteredByDept.filter(user => 
     roleFilter === 'all' || user.role === roleFilter

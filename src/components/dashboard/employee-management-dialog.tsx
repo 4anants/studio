@@ -128,7 +128,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       if (isEditing) {
         toast({
             title: "Profile Updated",
-            description: `An email notification has been sent to the admins regarding the update of ${employee.name}'s profile.`,
+            description: `The profile for ${employee.name} has been successfully updated.`,
         });
       }
       
