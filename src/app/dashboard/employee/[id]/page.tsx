@@ -110,8 +110,9 @@ export default function EmployeeProfilePage() {
   const userDetails = [
     { icon: Mail, label: 'Official Email', value: user.email },
     { icon: Mail, label: 'Personal Email', value: user.personalEmail || 'N/A' },
-    { icon: Phone, label: 'Mobile', value: user.mobile || 'N/A' },
-    { icon: ShieldAlert, label: 'Emergency Contact', value: user.emergencyContact || 'N/A' },
+    { icon: Phone, label: 'Mobile', value: user.mobile ? `+91 ${user.mobile}`: 'N/A' },
+    { icon: ShieldAlert, label: 'Emergency Contact 1', value: user.emergencyContact1 ? `+91 ${user.emergencyContact1}`: 'N/A' },
+    { icon: ShieldAlert, label: 'Emergency Contact 2', value: user.emergencyContact2 ? `+91 ${user.emergencyContact2}` : 'N/A' },
     { icon: Calendar, label: 'Date of Birth', value: user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A' },
     { icon: Droplet, label: 'Blood Group', value: user.bloodGroup || 'N/A' },
     { icon: Shield, label: 'Role', value: user.role.charAt(0).toUpperCase() + user.role.slice(1) },
@@ -122,7 +123,7 @@ export default function EmployeeProfilePage() {
     { icon: Briefcase, label: 'Joining Date', value: user.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : 'N/A' },
     { icon: LogOut, label: 'Resignation Date', value: user.resignationDate ? new Date(user.resignationDate).toLocaleDateString() : 'N/A' },
     { icon: User, label: 'Status', value: user.status.charAt(0).toUpperCase() + user.status.slice(1) },
-  ];
+  ].filter(detail => !(detail.label.includes('Emergency Contact') && detail.value === 'N/A'));
 
   const col1Details = userDetails.slice(0, Math.ceil(userDetails.length / 2));
   const col2Details = userDetails.slice(Math.ceil(userDetails.length / 2));

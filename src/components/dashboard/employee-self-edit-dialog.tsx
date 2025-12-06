@@ -33,7 +33,8 @@ import { useDropzone } from 'react-dropzone';
 const formSchema = z.object({
   personalEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
   mobile: z.string().optional(),
-  emergencyContact: z.string().optional(),
+  emergencyContact1: z.string().optional(),
+  emergencyContact2: z.string().optional(),
   password: z.string().optional(),
   avatar: z.string().optional(),
   bloodGroup: z.string().optional(),
@@ -56,7 +57,8 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
     defaultValues: {
       personalEmail: employee?.personalEmail || '',
       mobile: employee?.mobile || '',
-      emergencyContact: employee?.emergencyContact || '',
+      emergencyContact1: employee?.emergencyContact1 || '',
+      emergencyContact2: employee?.emergencyContact2 || '',
       password: '',
       avatar: employee?.avatar,
       bloodGroup: employee?.bloodGroup || '',
@@ -112,7 +114,8 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
         form.reset({
             personalEmail: employee?.personalEmail || '',
             mobile: employee?.mobile || '',
-            emergencyContact: employee?.emergencyContact || '',
+            emergencyContact1: employee?.emergencyContact1 || '',
+            emergencyContact2: employee?.emergencyContact2 || '',
             password: '',
             avatar: employee?.avatar,
             bloodGroup: employee?.bloodGroup || '',
@@ -184,7 +187,12 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                 <FormItem>
                   <FormLabel>Mobile No.</FormLabel>
                   <FormControl>
-                    <Input placeholder="123-456-7890" {...field} />
+                    <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="text-gray-500 sm:text-sm">+91</span>
+                        </div>
+                        <Input placeholder="123-456-7890" {...field} className="pl-12" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -192,12 +200,35 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
             />
             <FormField
               control={form.control}
-              name="emergencyContact"
+              name="emergencyContact1"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Emergency Contact No.</FormLabel>
+                  <FormLabel>Emergency Contact 1</FormLabel>
                   <FormControl>
-                    <Input placeholder="987-654-3210" {...field} />
+                    <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="text-gray-500 sm:text-sm">+91</span>
+                        </div>
+                        <Input placeholder="987-654-3210" {...field} className="pl-12" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="emergencyContact2"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Emergency Contact 2</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="text-gray-500 sm:text-sm">+91</span>
+                        </div>
+                        <Input placeholder="987-654-3210" {...field} className="pl-12" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
