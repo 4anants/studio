@@ -46,7 +46,7 @@ export function IdCard({ employee }: { employee: User }) {
                 )}
             </div>
              <div className="absolute top-4 right-4">
-                <QrCode className="h-10 w-10 text-white" />
+                <QrCode className="h-10 w-10 text-black" />
             </div>
         </div>
 
