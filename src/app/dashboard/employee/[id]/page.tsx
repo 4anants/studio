@@ -5,7 +5,7 @@ import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation
 import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Document } from '@/lib/mock-data';
@@ -13,6 +13,7 @@ import { EmployeeManagementDialog } from '@/components/dashboard/employee-manage
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { cn } from '@/lib/utils';
 import { DocumentList } from '@/components/dashboard/document-list';
+import { IdCardDialog } from '@/components/dashboard/id-card-dialog';
 
 type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
@@ -154,7 +155,12 @@ export default function EmployeeProfilePage() {
                                 </div>
                             
                             </CardHeader>
-                            <CardContent className="flex flex-col gap-4">
+                            <CardContent className="flex flex-col gap-2">
+                                <IdCardDialog employee={user}>
+                                    <Button variant="default" className="w-full">
+                                        <BadgeCheck className="mr-2 h-4 w-4"/> ID Card
+                                    </Button>
+                                </IdCardDialog>
                                 {isSelfView ? (
                                     <EmployeeSelfEditDialog employee={user} onSave={handleEmployeeSave}>
                                         <Button variant="outline" className="w-full">
@@ -250,4 +256,3 @@ export default function EmployeeProfilePage() {
     
 
     
-
