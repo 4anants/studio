@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle, ArrowLeft, Eye } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -179,7 +179,12 @@ export function AdminView() {
         };
         updatedUsers[userIndex] = updatedUser as User;
         
-        if ('id' in employee && employee.id !== employee.originalId) {
+        if (updatedUser.id === 'user-1' && employee.originalId === 'user-1') {
+            toast({
+                title: "Profile Updated",
+                description: `Your profile has been successfully updated.`,
+            });
+        } else if ('id' in employee && employee.id !== employee.originalId) {
             toast({
                 title: "Profile Updated",
                 description: `An email notification has been sent to the admins regarding the update of ${updatedUser.name}'s profile.`,
@@ -425,7 +430,9 @@ const handleExportUsers = () => {
     if (departmentFilter === 'all') {
       return activeUsers;
     }
-    // "Unassigned" for file explorer is handled separately where it's used
+     if (departmentFilter === 'unassigned') {
+      return []; // Return empty for user grid if unassigned is selected
+    }
     return activeUsers.filter(user => user.department && departmentFilter === user.department);
   }, [activeUsers, departmentFilter]);
 
@@ -1308,7 +1315,11 @@ const handleExportUsers = () => {
                                             </TableCell>
                                             <TableCell className="font-medium">{user.name}</TableCell>
                                             <TableCell>{user.email}</TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right space-x-2">
+                                                <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}>
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    View
+                                                </Button>
                                                 <Button variant="outline" size="sm" onClick={() => handleRestoreUser(user.id)}>
                                                     <Undo className="mr-2 h-4 w-4" />
                                                     Restore
@@ -1416,3 +1427,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
