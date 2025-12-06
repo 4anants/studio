@@ -18,6 +18,7 @@ import { classifyDocuments } from '@/ai/flows/classify-documents-flow';
 import type { User, Document } from '@/lib/mock-data'
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 type UploadedFile = {
   file: File;
@@ -216,40 +217,50 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                     </Label>
                   </div>
                 )}
-                {uploadedFiles.map((uploadedFile, index) => (
-                    <div key={`${uploadedFile.file.name}-${index}`} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-                       <div className="flex items-center gap-3 overflow-hidden">
-                        {isComplete && uploadedFile.status === 'success' ? (
-                           <Checkbox
-                              checked={uploadedFile.selected}
-                              onCheckedChange={() => handleToggleSelect(index)}
-                              id={`select-file-${index}`}
-                            />
-                        ) : uploadedFile.status === 'pending' ? <Loader2 className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-                          : uploadedFile.status === 'processing' ? <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
-                          : uploadedFile.status === 'success' ? <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-500" />
-                          : <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
-                        }
+                {uploadedFiles.map((uploadedFile, index) => {
+                    const isSuccess = isComplete && uploadedFile.status === 'success';
+                    return (
+                        <div 
+                            key={`${uploadedFile.file.name}-${index}`} 
+                            className={cn("flex items-center justify-between rounded-lg bg-muted/50 p-3",
+                                isSuccess && "cursor-pointer hover:bg-muted"
+                            )}
+                            onClick={isSuccess ? () => handleToggleSelect(index) : undefined}
+                        >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            {isSuccess ? (
+                            <Checkbox
+                                checked={uploadedFile.selected}
+                                onCheckedChange={(checked) => handleToggleSelect(index)}
+                                id={`select-file-${index}`}
+                                className="pointer-events-none"
+                                />
+                            ) : uploadedFile.status === 'pending' ? <Loader2 className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                            : uploadedFile.status === 'processing' ? <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-primary" />
+                            : uploadedFile.status === 'success' ? <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-500" />
+                            : <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
+                            }
 
-                         <div className="flex-grow overflow-hidden">
-                            <p className="truncate font-medium text-sm">{uploadedFile.file.name}</p>
-                            {uploadedFile.status === 'success' && uploadedFile.result && (
-                                <p className="text-xs text-muted-foreground">
-                                    Assigned to: <span className="font-semibold text-foreground">{uploadedFile.result.employeeName} (Code: {uploadedFile.result.employeeId})</span>, Type: <span className="font-semibold text-foreground">{uploadedFile.result.documentType}</span>
-                                </p>
-                            )}
-                             {uploadedFile.status === 'error' && (
-                                <p className="text-xs text-destructive">{uploadedFile.error}</p>
-                            )}
-                         </div>
-                       </div>
-                       {!isProcessing && !isComplete && (
-                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFile(uploadedFile.file)}>
-                             <X className="h-4 w-4" />
-                         </Button>
-                       )}
-                    </div>
-                ))}
+                            <div className="flex-grow overflow-hidden">
+                                <p className="truncate font-medium text-sm">{uploadedFile.file.name}</p>
+                                {uploadedFile.status === 'success' && uploadedFile.result && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Assigned to: <span className="font-semibold text-foreground">{uploadedFile.result.employeeName} (Code: {uploadedFile.result.employeeId})</span>, Type: <span className="font-semibold text-foreground">{uploadedFile.result.documentType}</span>
+                                    </p>
+                                )}
+                                {uploadedFile.status === 'error' && (
+                                    <p className="text-xs text-destructive">{uploadedFile.error}</p>
+                                )}
+                            </div>
+                        </div>
+                        {!isProcessing && !isComplete && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); removeFile(uploadedFile.file); }}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
+                        </div>
+                    );
+                })}
             </div>
         )}
 
