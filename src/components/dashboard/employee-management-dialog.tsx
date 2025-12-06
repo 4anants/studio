@@ -46,6 +46,7 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid official email.' }),
   personalEmail: z.string().email({ message: 'Please enter a valid personal email.' }).optional().or(z.literal('')),
   mobile: z.string().optional(),
+  emergencyContact: z.string().optional(),
   password: z.string().optional(),
   dateOfBirth: z.string().optional(),
   joiningDate: z.string().optional(),
@@ -80,6 +81,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       email: employee?.email || '',
       personalEmail: employee?.personalEmail || '',
       mobile: employee?.mobile || '',
+      emergencyContact: employee?.emergencyContact || '',
       password: '',
       dateOfBirth: employee?.dateOfBirth || '',
       joiningDate: employee?.joiningDate || '',
@@ -150,6 +152,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
             email: employee?.email || '',
             personalEmail: employee?.personalEmail || '',
             mobile: employee?.mobile || '',
+            emergencyContact: employee?.emergencyContact || '',
             password: '',
             dateOfBirth: employee?.dateOfBirth || '',
             joiningDate: employee?.joiningDate || '',
@@ -238,6 +241,19 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                   <FormLabel>Mobile No.</FormLabel>
                   <FormControl>
                     <Input placeholder="123-456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="emergencyContact"
+              render={({ field }) => (
+                <FormItem className="col-span-2 sm:col-span-1">
+                  <FormLabel>Emergency Contact No.</FormLabel>
+                  <FormControl>
+                    <Input placeholder="987-654-3210" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

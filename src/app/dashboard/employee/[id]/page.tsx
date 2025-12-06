@@ -5,7 +5,7 @@ import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation
 import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Document } from '@/lib/mock-data';
@@ -111,6 +111,7 @@ export default function EmployeeProfilePage() {
     { icon: Mail, label: 'Official Email', value: user.email },
     { icon: Mail, label: 'Personal Email', value: user.personalEmail || 'N/A' },
     { icon: Phone, label: 'Mobile', value: user.mobile || 'N/A' },
+    { icon: ShieldAlert, label: 'Emergency Contact', value: user.emergencyContact || 'N/A' },
     { icon: Calendar, label: 'Date of Birth', value: user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A' },
     { icon: Droplet, label: 'Blood Group', value: user.bloodGroup || 'N/A' },
     { icon: Shield, label: 'Role', value: user.role.charAt(0).toUpperCase() + user.role.slice(1) },
