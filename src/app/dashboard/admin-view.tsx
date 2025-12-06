@@ -750,7 +750,7 @@ const handleExportUsers = () => {
                                 <DocumentList
                                     documents={unassignedDocuments}
                                     users={users}
-                                    onSort={()={() => {}} }
+                                    onSort={() => {}}
                                     sortConfig={null}
                                     showOwner={true}
                                     onReassign={handleReassignDocument}
