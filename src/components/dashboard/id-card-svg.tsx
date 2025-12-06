@@ -44,8 +44,6 @@ export async function IdCardSvg({ employee }: { employee: User }): Promise<strin
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact || employee.mobile || ''}`)}&size=80x80&bgcolor=ffffff&color=000000&qzone=1`;
 
     // --- Fetch images and convert to Data URIs ---
-    // Note: We use a placeholder for the company logo as it's from localStorage.
-    // In a real app, this would ideally be a public URL or fetched differently.
     const [avatarData, qrCodeData] = await Promise.all([
         imageToDataURI(avatarUrl),
         imageToDataURI(qrCodeUrl),
@@ -99,25 +97,33 @@ export async function IdCardSvg({ employee }: { employee: User }): Promise<strin
     <text x="160" y="68" text-anchor="middle" class="font medium text-gray-500 text-sm">${employee.designation || 'N/A'}</text>
 
     <!-- Details Grid -->
-    <g transform="translate(20, 100)">
-        <!-- Labels -->
-        <text x="0" y="15" class="font medium text-gray-500 text-sm">Emp. Code</text>
-        <text x="0" y="50" class="font medium text-gray-500 text-sm">Status</text>
-        <text x="0" y="85" class="font medium text-gray-500 text-sm">Blood Group</text>
-        
-        <!-- Values -->
-        <text x="280" y="15" text-anchor="end" class="font heavy text-gray-800 text-sm">${employee.id}</text>
-        <text x="280" y="50" text-anchor="end" class="font heavy text-sm" fill="${statusColor}">${employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}</text>
-        <g transform="translate(250, 75)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5-2 1.6-3 3.5-3 5.5a7 7 0 0 0 7 7z"/>
-            </svg>
-            <text x="20" y="12" text-anchor="end" class="font heavy text-gray-800 text-sm">${employee.bloodGroup || 'N/A'}</text>
+    <g transform="translate(30, 90)">
+        <!-- Row 1: Emp Code -->
+        <g transform="translate(0, 15)">
+            <text x="0" y="0" dominant-baseline="middle" class="font medium text-gray-500 text-sm">Emp. Code</text>
+            <text x="260" y="0" dominant-baseline="middle" text-anchor="end" class="font heavy text-gray-800 text-sm">${employee.id}</text>
         </g>
+        
+        <!-- Row 2: Status -->
+        <g transform="translate(0, 50)">
+            <text x="0" y="0" dominant-baseline="middle" class="font medium text-gray-500 text-sm">Status</text>
+            <text x="260" y="0" dominant-baseline="middle" text-anchor="end" class="font heavy text-sm" fill="${statusColor}">${employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}</text>
+        </g>
+
+        <!-- Row 3: Blood Group -->
+        <g transform="translate(0, 85)">
+            <text x="0" y="0" dominant-baseline="middle" class="font medium text-gray-500 text-sm">Blood Group</text>
+            <g transform="translate(260, 0)">
+                 <text x="0" y="0" dominant-baseline="middle" text-anchor="end" class="font heavy text-gray-800 text-sm">${employee.bloodGroup || 'N/A'}</text>
+                 <svg x="-30" y="-8" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5-2 1.6-3 3.5-3 5.5a7 7 0 0 0 7 7z"/>
+                </svg>
+            </g>
+        </g>
+
+        <!-- QR Code in the middle of all rows -->
+        <image href="${qrCodeData}" x="90" y="0" width="80" height="80"/>
     </g>
-    
-    <!-- QR Code -->
-    <image href="${qrCodeData}" x="120" y="95" width="80" height="80"/>
   </g>
 
   <!-- Footer -->
