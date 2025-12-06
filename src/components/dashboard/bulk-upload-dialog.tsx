@@ -76,29 +76,50 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   });
   
   const processWithFilename = () => {
-    const userMap = new Map<string, User>();
-    users.forEach(u => {
-        userMap.set(u.name.toLowerCase(), u); // Key by name
-    });
-
     const results = uploadedFiles.map(f => {
-        const filename = f.file.name.toLowerCase();
-        let foundUser: User | undefined;
+        const filename = f.file.name.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ');
 
-        // Find the user whose name is included in the filename
-        for (const [userName, user] of userMap.entries()) {
+        let bestMatch: { user: User; score: number } | null = null;
+
+        users.forEach(user => {
+            const userName = user.name.toLowerCase();
+            // Exact match
             if (filename.includes(userName)) {
-                foundUser = user;
-                break;
+                if (!bestMatch || userName.length > bestMatch.user.name.length) {
+                    bestMatch = { user, score: 100 };
+                }
+                return;
             }
-        }
+
+            // Partial match logic
+            const nameParts = userName.split(' ');
+            if (nameParts.length > 1) {
+                const firstName = nameParts[0];
+                const lastName = nameParts[nameParts.length - 1];
+                
+                // Check for "firstname lastname"
+                if (filename.includes(`${firstName} ${lastName}`)) {
+                    const score = (`${firstName} ${lastName}`).length;
+                    if (!bestMatch || score > bestMatch.score) {
+                        bestMatch = { user, score };
+                    }
+                }
+                // Check for "firstname" only
+                 if (filename.includes(firstName)) {
+                    const score = firstName.length;
+                    if (!bestMatch || score > bestMatch.score) {
+                        bestMatch = { user, score: score / 2 }; // Lower score for partial
+                    }
+                }
+            }
+        });
         
         return {
             originalFilename: f.file.name,
-            employeeId: foundUser?.id,
-            employeeName: foundUser?.name,
+            employeeId: bestMatch?.user.id,
+            employeeName: bestMatch?.user.name,
             documentType: selectedDocType,
-            error: !foundUser ? `Could not determine employee from filename.` : undefined,
+            error: !bestMatch ? `Could not determine employee from filename.` : undefined,
         };
     });
     return results;
