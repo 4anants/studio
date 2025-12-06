@@ -26,7 +26,7 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
   }
 
   const qrCodeUrl = employee.emergencyContact 
-    ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact}`)}&size=60x60&bgcolor=ffffff&color=000000&qzone=0`
+    ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact}`)}&size=80x80&bgcolor=ffffff&color=000000&qzone=1`
     : '';
   
   return (
@@ -49,53 +49,57 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
                     <AseLogo />
                 )}
             </div>
-             {qrCodeUrl && <div className="absolute top-4 right-4 p-1 bg-white rounded-md">
-                <Image
-                    src={qrCodeUrl}
-                    alt="Emergency Contact QR Code"
-                    width={60}
-                    height={60}
-                />
-            </div>}
         </div>
 
         {/* Bottom half: Information */}
-        <div className="p-5 flex flex-col flex-grow bg-white">
+        <div className="p-5 flex flex-col flex-grow bg-white h-[226px]">
             <div className="text-center mb-4">
                 <h1 className="text-2xl font-bold text-gray-800">{employee.name}</h1>
                 <p className="text-md text-gray-500 font-medium">{employee.department || 'N/A'}</p>
             </div>
             
-            <div className="w-full text-sm space-y-3 text-left flex-grow">
-                 <div className="flex justify-between">
-                    <span className="font-medium text-gray-500">Employee Code</span>
-                    <span className="font-semibold text-gray-800">{employee.id}</span>
+            <div className="grid grid-cols-3 items-center w-full text-sm space-y-3 text-left flex-grow">
+                {/* Column 1: Labels */}
+                <div className="col-span-1 space-y-3">
+                    <div className="font-medium text-gray-500 h-6 flex items-center">Employee Code</div>
+                    <div className="font-medium text-gray-500 h-6 flex items-center">Status</div>
+                    <div className="font-medium text-gray-500 h-6 flex items-center">Blood Group</div>
                 </div>
-                 <div className="flex justify-between">
-                    <span className="font-medium text-gray-500">Status</span>
-                    <span className={cn(
-                        "font-semibold",
+
+                {/* Column 2: QR Code */}
+                <div className="col-span-1 flex justify-center items-center h-full">
+                    {qrCodeUrl && (
+                        <Image
+                            src={qrCodeUrl}
+                            alt="Emergency Contact QR Code"
+                            width={80}
+                            height={80}
+                        />
+                    )}
+                </div>
+
+                {/* Column 3: Values */}
+                <div className="col-span-1 space-y-3 text-right">
+                    <div className="font-semibold text-gray-800 h-6 flex items-center justify-end">{employee.id}</div>
+                    <div className={cn(
+                        "font-semibold h-6 flex items-center justify-end",
                         employee.status === 'active' && 'text-green-600',
                         employee.status === 'inactive' && 'text-red-600',
                         employee.status === 'pending' && 'text-yellow-600',
                         employee.status === 'deleted' && 'text-red-600',
                     )}>
                         {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
-                    </span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-500">Blood Group</span>
-                    <span className="font-semibold text-gray-800 flex items-center gap-1">
+                    </div>
+                    <div className="font-semibold text-gray-800 flex items-center gap-1 justify-end h-6">
                         <Droplet className="h-4 w-4 text-red-500"/> {employee.bloodGroup || 'N/A'}
-                    </span>
+                    </div>
                 </div>
             </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 text-gray-600 text-center p-3 flex-shrink-0 border-t">
+        <div className="bg-gray-100 text-gray-600 text-center p-3 flex-shrink-0 border-t h-[44px]">
              <p className="font-bold text-sm text-gray-800">{company?.name || "Company Name"}</p>
-             <p className="text-xs">{companyAddress}</p>
         </div>
     </div>
   );
