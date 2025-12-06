@@ -157,7 +157,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     setUploadedFiles(prev => {
       const newFiles = [...prev];
       if (newFiles[index].status === 'success') {
-        newFiles[index].selected = !newFiles[index].selected;
+        newFiles[index] = { ...newFiles[index], selected: !newFiles[index].selected };
       }
       return newFiles;
     });
@@ -208,7 +208,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                   <div className="flex items-center space-x-2 p-2 rounded-md bg-muted">
                     <Checkbox
                       id="select-all-processed"
-                      checked={numSelected === numSuccessful ? true : numSelected > 0 ? 'indeterminate' : false}
+                      checked={numSelected === numSuccessful && numSuccessful > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
                       onCheckedChange={handleToggleSelectAll}
                     />
                     <Label htmlFor="select-all-processed" className="text-sm font-medium">
