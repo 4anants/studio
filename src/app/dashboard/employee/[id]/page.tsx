@@ -126,6 +126,10 @@ export default function EmployeeProfilePage() {
   const col1Details = userDetails.slice(0, Math.ceil(userDetails.length / 2));
   const col2Details = userDetails.slice(Math.ceil(userDetails.length / 2));
 
+  const getAvatarSrc = (user: UserType) => {
+    if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
+    return `https://picsum.photos/seed/${user.avatar}/128/128`;
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -143,10 +147,10 @@ export default function EmployeeProfilePage() {
                             <CardHeader className="flex flex-row items-start justify-between">
                                 <div className="flex flex-col items-center text-center w-full">
                                     <Image 
-                                        src={`https://picsum.photos/seed/${user.avatar}/128/128`} 
+                                        src={getAvatarSrc(user)}
                                         width={128} 
                                         height={128} 
-                                        className="rounded-full mb-4" 
+                                        className="rounded-full mb-4 object-cover" 
                                         alt={user.name}
                                         data-ai-hint="person portrait" 
                                     />

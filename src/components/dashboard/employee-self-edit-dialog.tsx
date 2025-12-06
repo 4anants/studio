@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -92,11 +92,6 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
       if (password) {
         userData.password = password;
       }
-      
-      if (values.avatar?.startsWith('data:image')) {
-        userData.avatar = String(Date.now());
-      }
-
 
       onSave(userData);
 
@@ -124,7 +119,13 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
     setOpen(isOpen);
   }
 
-  const currentAvatarSrc = avatarPreview || `https://picsum.photos/seed/${employee.avatar}/128/128`;
+  const getAvatarSrc = () => {
+    if (avatarPreview) return avatarPreview;
+    if (employee.avatar && employee.avatar.startsWith('data:image')) return employee.avatar;
+    return `https://picsum.photos/seed/${employee.avatar}/128/128`
+  }
+
+  const currentAvatarSrc = getAvatarSrc();
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -145,7 +146,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                         src={currentAvatarSrc} 
                         width={128} 
                         height={128} 
-                        className="rounded-full" 
+                        className="rounded-full object-cover" 
                         alt={employee.name}
                         data-ai-hint="person portrait" 
                     />

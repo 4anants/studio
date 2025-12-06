@@ -20,7 +20,7 @@ import Image from 'next/image'
 import { AnnouncementBell } from './announcement-bell'
 import { ThemeToggle } from '../theme-toggle'
 import { useState, useEffect } from 'react'
-import { CompanyName } from '@/lib/mock-data'
+import { CompanyName, users as allUsers } from '@/lib/mock-data'
 
 const AseLogo = () => (
     <svg
@@ -87,15 +87,20 @@ export function DashboardHeader() {
   // In a real app, this would come from an auth context
   const employeeUserId = 'user-1';
 
-  const user = role === 'admin' ? { name: 'Admin User', email: 'admin@company.com' } : { name: 'Employee User', email: 'employee@company.com' }
+  const user = role === 'admin' ? 
+    allUsers.find(u => u.role === 'admin') || { name: 'Admin User', email: 'admin@company.com', avatar: 'admin' } :
+    allUsers.find(u => u.id === employeeUserId) || { name: 'Employee User', email: 'employee@company.com', avatar: 'employee' };
 
   const handleProfileClick = () => {
-    // Both admins and employees should be able to see their own profile.
-    // Assuming user-1 is the admin for this purpose.
     const targetUserId = employeeUserId;
     const targetRole = role === 'admin' ? 'admin' : undefined;
     const url = `/dashboard/employee/${targetUserId}${targetRole ? `?role=${targetRole}` : ''}`;
     router.push(url);
+  }
+
+  const getAvatarSrc = (user: {avatar: string}) => {
+    if (user.avatar && user.avatar.startsWith('data:image')) return user.avatar;
+    return `https://picsum.photos/seed/${user.avatar}/40/40`;
   }
 
   return (
@@ -116,7 +121,7 @@ export function DashboardHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
-              <Image src={`https://picsum.photos/seed/${role === 'admin' ? 'admin' : employeeUserId}/40/40`} width={40} height={40} className="rounded-full" alt="User avatar" data-ai-hint="person portrait"/>
+              <Image src={getAvatarSrc(user)} width={40} height={40} className="rounded-full object-cover" alt="User avatar" data-ai-hint="person portrait"/>
               <span className="sr-only">Toggle user menu</span>
             </Button>
           </DropdownMenuTrigger>
