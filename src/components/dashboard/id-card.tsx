@@ -26,7 +26,7 @@ export function IdCard({ employee }: { employee: User }) {
   }
 
   const generateVCard = (employee: User) => {
-    let vCard = `BEGIN:VCARD\nVERSION:3.0\nFN:${employee.name}`;
+    let vCard = `BEGIN:VCARD\nVERSION:3.0`;
     if (employee.emergencyContact1) {
         vCard += `\nTEL;TYPE=HOME,VOICE:+91${employee.emergencyContact1}`;
     }
@@ -37,7 +37,7 @@ export function IdCard({ employee }: { employee: User }) {
     return encodeURIComponent(vCard);
   };
 
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${generateVCard(employee)}&size=80x80&bgcolor=ffffff&color=000000&qzone=0`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${generateVCard(employee)}&size=60x60&bgcolor=ffffff&color=000000&qzone=0`;
   
   return (
     <div className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
@@ -62,8 +62,8 @@ export function IdCard({ employee }: { employee: User }) {
                 <Image
                     src={qrCodeUrl}
                     alt="Emergency Contact QR Code"
-                    width={80}
-                    height={80}
+                    width={60}
+                    height={60}
                 />
             </div>
         </div>
