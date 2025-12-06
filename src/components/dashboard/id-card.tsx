@@ -24,22 +24,19 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
     ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`tel:${employee.emergencyContact}`)}&size=80x80&bgcolor=ffffff&color=000000&qzone=1`
     : '';
   
+  const avatarSrc = getAvatarSrc(employee);
+
   return (
     <div ref={ref} className="bg-white rounded-lg shadow-lg w-[320px] h-[540px] mx-auto font-sans flex flex-col overflow-hidden relative border">
         {/* Top half: Photo */}
-        <div className="flex-shrink-0 h-[270px] relative">
-            <Image
-                src={getAvatarSrc(employee)}
-                layout="fill"
-                alt={employee.name}
-                className="object-cover object-center"
-                data-ai-hint="person portrait"
-                crossOrigin="anonymous"
-            />
+        <div 
+          className="flex-shrink-0 h-[270px] relative bg-cover bg-center"
+          style={{ backgroundImage: `url(${avatarSrc})` }}
+        >
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
-            <div className="absolute top-4 left-4 h-12 w-12 bg-white/80 backdrop-blur-sm rounded-full p-2">
+            <div className="absolute top-4 left-4 h-12 w-12 bg-white/80 backdrop-blur-sm rounded-full p-2 flex items-center justify-center">
                  {logoSrc ? (
-                    <Image src={logoSrc} alt="Company Logo" width={40} height={40} className="rounded-full object-contain" />
+                    <img src={logoSrc} alt="Company Logo" className="rounded-full object-contain h-full w-full" crossOrigin="anonymous" />
                 ) : (
                     <AseLogo />
                 )}
@@ -64,11 +61,12 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
                  {/* Center Column: QR Code */}
                  <div className="col-span-1 flex justify-center items-center h-full">
                     {qrCodeUrl && (
-                        <Image
+                        <img
                             src={qrCodeUrl}
                             alt="Emergency Contact QR Code"
                             width={80}
                             height={80}
+                            crossOrigin="anonymous"
                         />
                     )}
                 </div>

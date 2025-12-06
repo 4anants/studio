@@ -32,61 +32,34 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
     if (!element) return null;
 
     try {
+        // Temporarily apply a class to ensure all elements are visible for capture
+        element.classList.add('capturing');
+        await new Promise(resolve => setTimeout(resolve, 100)); // allow styles to apply
+
         const canvas = await html2canvas(element, {
-            useCORS: true, // Needed for external images
-            scale: 3, // Increase scale for higher resolution
+            useCORS: true, 
+            scale: 3, 
             logging: false,
+            onclone: (doc) => {
+              // This is crucial for external images like QR codes
+              const images = doc.getElementsByTagName('img');
+              for (let i = 0; i < images.length; i++) {
+                images[i].crossOrigin = 'anonymous';
+              }
+            }
         });
+        
+        element.classList.remove('capturing');
         return canvas.toDataURL("image/png", 1.0);
     } catch (error) {
         console.error("Error capturing card:", error);
+        element.classList.remove('capturing');
         return null;
     }
   };
 
   const handlePrint = () => {
-    const cardElement = idCardRef.current;
-    if (!cardElement) return;
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        alert('Please allow popups to print the ID card.');
-        return;
-    }
-
-    const cardHtml = cardElement.innerHTML;
-    const originalTitle = document.title;
-
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Print ID Card - ${employee.name}</title>
-                <style>
-                    body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-                    .card-container { width: 320px; height: 540px; }
-                </style>
-            </head>
-            <body>
-                <div class="card-container">
-                    ${cardHtml}
-                </div>
-                <script>
-                    // Ensure all images are loaded before printing
-                    const images = document.querySelectorAll('img');
-                    const promises = Array.from(images).map(img => {
-                        if (img.complete) return Promise.resolve();
-                        return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
-                    });
-                    Promise.all(promises).then(() => {
-                        window.print();
-                        window.close();
-                    });
-                </script>
-            </body>
-        </html>
-    `);
-    printWindow.document.title = originalTitle;
-    printWindow.document.close();
+    window.print();
   };
 
   const handleDownload = async () => {
@@ -115,7 +88,10 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
         </DialogHeader>
 
         <div className="flex justify-center py-4">
-            <IdCard employee={employee} ref={idCardRef} />
+            {/* This div is what will be printed */}
+            <div className="printing">
+                <IdCard employee={employee} ref={idCardRef} />
+            </div>
         </div>
 
         <DialogFooter className="dialog-footer">
