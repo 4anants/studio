@@ -67,14 +67,14 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
             </div>
             
             <div className="w-full text-sm space-y-3 text-left flex-grow">
-                <div className="grid grid-cols-2">
+                 <div className="flex justify-between">
                     <span className="font-medium text-gray-500">Employee Code</span>
-                    <span className="font-semibold text-gray-800 text-right">{employee.id}</span>
+                    <span className="font-semibold text-gray-800">{employee.id}</span>
                 </div>
-                <div className="grid grid-cols-2">
+                 <div className="flex justify-between">
                     <span className="font-medium text-gray-500">Status</span>
                     <span className={cn(
-                        "font-semibold text-right",
+                        "font-semibold",
                         employee.status === 'active' && 'text-green-600',
                         employee.status === 'inactive' && 'text-red-600',
                         employee.status === 'pending' && 'text-yellow-600',
@@ -83,9 +83,9 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
                         {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
                     </span>
                 </div>
-                <div className="grid grid-cols-2 items-center">
+                <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-500">Blood Group</span>
-                    <span className="font-semibold text-gray-800 flex items-center justify-end gap-1">
+                    <span className="font-semibold text-gray-800 flex items-center gap-1">
                         <Droplet className="h-4 w-4 text-red-500"/> {employee.bloodGroup || 'N/A'}
                     </span>
                 </div>
