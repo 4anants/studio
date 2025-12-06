@@ -1,7 +1,8 @@
+
 'use client'
 import { useState, useEffect } from 'react';
 import type { User, CompanyName } from "@/lib/mock-data";
-import { companies } from "@/lib/mock-data";
+import { companies, locations } from "@/lib/mock-data";
 import Image from "next/image";
 import { Droplet, User as UserIcon } from "lucide-react";
 
@@ -47,6 +48,7 @@ export function IdCard({ employee }: { employee: User }) {
   }, []);
 
   const company = companies.find(c => c.name === employee.company);
+  const address = employee.location ? locations[employee.location] : '';
 
   return (
     <div className="bg-white rounded-lg shadow-md max-w-sm mx-auto font-sans text-gray-800">
@@ -91,7 +93,8 @@ export function IdCard({ employee }: { employee: User }) {
         </div>
         <div className="bg-gray-100 rounded-b-lg p-3 mt-4 text-xs text-center text-gray-500">
             <p className="font-bold">{employee.company || "Your Company"}</p>
-            <p>This card is the property of the company and must be surrendered upon termination of employment.</p>
+            {address && <p>{address}</p>}
+            <p className="mt-2">This card is the property of the company and must be surrendered upon termination of employment.</p>
         </div>
     </div>
   );
