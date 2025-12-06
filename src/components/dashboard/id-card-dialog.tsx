@@ -32,6 +32,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
         scale: 3,
         useCORS: true,
         allowTaint: true,
+        backgroundColor: '#ffffff',
       }).then((canvas) => {
         const dataUrl = canvas.toDataURL("image/png");
         const printWindow = window.open('', '', 'height=600,width=800');
@@ -57,7 +58,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
             scale: 3,
             useCORS: true,
             allowTaint: true,
-            backgroundColor: null,
+            backgroundColor: '#ffffff',
         }).then((canvas) => {
             const link = document.createElement('a');
             link.download = `id-card-${employee.id}.png`;
