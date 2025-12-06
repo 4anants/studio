@@ -5,7 +5,7 @@ import { companies, locations } from "@/lib/mock-data";
 // Helper function to fetch an image and convert it to a data URI
 async function imageToDataURI(url: string): Promise<string> {
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, { cache: 'force-cache' });
         if (!response.ok) {
           throw new Error(`Failed to fetch image: ${response.statusText}`);
         }
@@ -61,6 +61,7 @@ export async function IdCardSvg({ employee }: { employee: User }): Promise<strin
     return `
 <svg width="320" height="540" viewBox="0 0 320 540" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     .font { font-family: 'Inter', sans-serif; }
     .heavy { font-weight: 700; }
     .medium { font-weight: 500; }
