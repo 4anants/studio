@@ -69,7 +69,7 @@ const prompt = ai.definePrompt({
   name: 'generateIdCardPrompt',
   input: { schema: promptInputSchema },
   output: { schema: IdCardOutputSchema },
-  model: 'googleai/imagen-2.0-fast-image-generate-001',
+  model: 'googleai/imagen-4.0-fast-generate-001',
   prompt: `Generate a photorealistic, professional employee ID card with a final image resolution of 640x1080 pixels (portrait orientation).
 
 The ID card must be vertically oriented and have a clean, modern design. It must contain the exact information provided below, rendered clearly and legibly.
