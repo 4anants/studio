@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import type { User } from "@/lib/mock-data";
 import { companies, locations } from "@/lib/mock-data";
 import Image from "next/image";
-import { Droplet, User as UserIcon, QrCode } from "lucide-react";
+import { Droplet, User as UserIcon, QrCode, Mail, Phone } from "lucide-react";
+import { cn } from '@/lib/utils';
 
 const AseLogo = ({ className }: { className?: string }) => (
     <svg
@@ -113,69 +114,74 @@ export function IdCard({ employee }: { employee: User }) {
   const address = employee.location ? locations[employee.location] : '';
 
   return (
-    <div className="bg-white rounded-lg shadow-md w-[320px] h-[512px] mx-auto font-sans text-gray-800 flex flex-col overflow-hidden">
-        {/* Top section */}
-        <div className="relative h-1/3 bg-primary text-primary-foreground">
-            <div 
-                className="absolute bottom-0 left-0 w-full h-16 bg-white"
-                style={{ clipPath: 'polygon(0 100%, 100% 0, 100% 100%)'}}
-            ></div>
-            <div className="p-4 flex justify-between items-start">
-                {logoSrc ? (
-                    <Image src={logoSrc} alt="Company Logo" width={50} height={50} className="rounded-md object-contain" />
+    <div className="bg-white rounded-lg shadow-md w-[320px] h-[512px] mx-auto font-sans text-gray-800 flex flex-col overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-primary -z-0" 
+            style={{
+                clipPath: 'polygon(0 0, 100% 0, 100% 70%, 0% 100%)'
+            }}
+        />
+        <div className="absolute bottom-0 left-0 w-full h-1/4 bg-primary/80 -z-0" 
+            style={{
+                clipPath: 'polygon(0 30%, 100% 0, 100% 100%, 0 100%)'
+            }}
+        />
+        
+        <div className="relative z-10 flex flex-col h-full p-6">
+            {/* Header */}
+            <header className='flex items-center justify-between'>
+                 {logoSrc ? (
+                    <Image src={logoSrc} alt="Company Logo" width={60} height={60} className="rounded-md object-contain" />
                 ) : (
-                    <AseLogo className="h-12 w-12" />
+                    <AseLogo className="h-16 w-16" />
                 )}
-                <div className="text-right">
-                    <h2 className="text-xl font-bold leading-tight">{company?.shortName || company?.name}</h2>
-                    <p className="text-xs text-primary-foreground/80">{company?.name}</p>
+                 <div className="text-right">
+                    <h2 className="text-xl font-bold leading-tight text-white">{company?.shortName || company?.name}</h2>
                 </div>
-            </div>
-        </div>
+            </header>
 
-        {/* Middle section with Photo */}
-        <div className="relative flex flex-col items-center flex-grow -mt-24 z-10">
-            <Image
-                src={`https://picsum.photos/seed/${employee.avatar}/160/160`}
-                width={160}
-                height={160}
-                alt={employee.name}
-                className="rounded-full border-4 border-white bg-white shadow-lg"
-                data-ai-hint="person portrait" 
-            />
-            <h1 className="text-3xl font-bold mt-3 text-center">{employee.name}</h1>
-            <p className="text-md text-muted-foreground font-medium">{employee.department || 'N/A'}</p>
-
-            <div className="w-full mt-6 px-6 space-y-4 text-sm">
-                <div className="flex items-center justify-between p-2 rounded-lg bg-gray-100">
-                    <span className="font-semibold text-gray-500">Employee Code</span>
-                    <span className="font-mono text-lg font-bold text-primary">{employee.id}</span>
-                </div>
-
-                <div className="flex justify-between items-center text-center">
-                     {employee.bloodGroup && (
-                        <div className="flex flex-col items-center">
-                            <span className="font-semibold text-gray-500 flex items-center gap-1"><Droplet size={14}/> Blood Group</span>
-                            <span className="font-semibold text-xl text-red-600">{employee.bloodGroup}</span>
+            {/* Body */}
+            <main className="flex-grow flex flex-col items-center justify-center text-center -mt-8">
+                <Image
+                    src={`https://picsum.photos/seed/${employee.avatar}/160/160`}
+                    width={128}
+                    height={128}
+                    alt={employee.name}
+                    className="rounded-full border-4 border-white bg-white shadow-lg"
+                    data-ai-hint="person portrait" 
+                />
+                <h1 className="text-2xl font-bold mt-4 text-gray-800">{employee.name}</h1>
+                <p className="text-md text-primary font-medium">{employee.department || 'N/A'}</p>
+                
+                <div className="mt-6 space-y-2 text-sm text-left w-full">
+                    {employee.mobile && (
+                         <div className="flex items-center gap-3">
+                            <Phone className="w-4 h-4 text-primary"/>
+                            <span>{employee.mobile}</span>
                         </div>
                     )}
-                    <div className="flex flex-col items-center">
-                         <span className="font-semibold text-gray-500 flex items-center gap-1"><UserIcon size={14}/> Status</span>
-                        <span className={`px-3 py-1 mt-1 rounded-full text-xs font-medium ${
-                            employee.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>{employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}</span>
-                    </div>
+                     {employee.email && (
+                         <div className="flex items-center gap-3">
+                            <Mail className="w-4 h-4 text-primary"/>
+                            <span>{employee.email}</span>
+                        </div>
+                    )}
+                     {address && (
+                         <div className="flex items-start gap-3">
+                            <UserIcon className="w-4 h-4 text-primary mt-1"/>
+                            <span>{address}</span>
+                        </div>
+                    )}
                 </div>
-            </div>
-        </div>
-        
-        {/* Bottom section */}
-        <div className="mt-auto p-4 flex items-end justify-between">
-             <div className="text-xs text-gray-500 text-left">
-                <p className="font-bold">{employee.company || "Your Company"}</p>
-                {address && <p>{address}</p>}
-            </div>
-            <PlaceholderQrCode className="w-20 h-20 text-gray-700" />
+            </main>
+
+            {/* Footer */}
+            <footer className='flex items-end justify-between mt-auto'>
+                <div className='text-left'>
+                    <p className='text-xs text-gray-500'>Employee Code</p>
+                    <p className='font-bold text-lg text-primary'>{employee.id}</p>
+                </div>
+                <PlaceholderQrCode className="w-16 h-16 text-gray-700" />
+            </footer>
         </div>
     </div>
   );
