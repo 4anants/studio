@@ -52,10 +52,10 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
         </div>
 
         {/* Bottom half: Information */}
-        <div className="p-5 flex flex-col flex-grow bg-white h-[226px]">
+        <div className="p-5 flex flex-col flex-grow bg-white">
             <div className="text-center mb-4">
                 <h1 className="text-2xl font-bold text-gray-800">{employee.name}</h1>
-                <p className="text-md text-gray-500 font-medium">{employee.department || 'N/A'}</p>
+                <p className="text-md text-gray-500 font-medium">{employee.designation || 'N/A'}</p>
             </div>
             
             <div className="grid grid-cols-3 items-center w-full text-sm flex-grow">
@@ -98,8 +98,9 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-100 text-gray-600 text-center p-3 flex-shrink-0 border-t h-[44px]">
-             <p className="font-bold text-sm text-gray-800">{company?.name || "Company Name"}</p>
+        <div className="bg-gray-100 text-gray-600 text-center p-3 flex-shrink-0 border-t">
+            <p className="font-bold text-sm text-gray-800">{company?.name || "Company Name"}</p>
+            <p className="text-xs">{companyAddress}</p>
         </div>
     </div>
   );
