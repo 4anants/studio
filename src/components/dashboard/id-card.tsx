@@ -1,10 +1,10 @@
 
 'use client';
-import { useState, useEffect } from "react";
 import type { User } from "@/lib/mock-data";
 import { companies, locations } from "@/lib/mock-data";
 import Image from "next/image";
 import { Droplet } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 export function IdCard({ employee }: { employee: User }) {
   const company = companies.find(c => c.name === employee.company);
@@ -39,6 +39,18 @@ export function IdCard({ employee }: { employee: User }) {
                 <div className="flex justify-between">
                     <span className="font-medium text-gray-500">Employee Code:</span>
                     <span className="font-semibold text-gray-800">{employee.id}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="font-medium text-gray-500">Status:</span>
+                    <span className={cn(
+                        "font-semibold",
+                        employee.status === 'active' && 'text-green-600',
+                        employee.status === 'inactive' && 'text-red-600',
+                        employee.status === 'pending' && 'text-yellow-600',
+                        employee.status === 'deleted' && 'text-red-600',
+                    )}>
+                        {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
+                    </span>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-500">Blood Group:</span>
