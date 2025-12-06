@@ -66,14 +66,14 @@ export function IdCard({ employee }: { employee: User }) {
             </div>
             
             <div className="w-full text-sm space-y-3 text-left flex-grow">
-                <div className="flex justify-between">
-                    <span className="font-medium text-gray-500">Employee Code:</span>
-                    <span className="font-semibold text-gray-800">{employee.id}</span>
+                <div className="grid grid-cols-2">
+                    <span className="font-medium text-gray-500">Employee Code</span>
+                    <span className="font-semibold text-gray-800 text-right">{employee.id}</span>
                 </div>
-                <div className="flex justify-between">
-                    <span className="font-medium text-gray-500">Status:</span>
+                <div className="grid grid-cols-2">
+                    <span className="font-medium text-gray-500">Status</span>
                     <span className={cn(
-                        "font-semibold",
+                        "font-semibold text-right",
                         employee.status === 'active' && 'text-green-600',
                         employee.status === 'inactive' && 'text-red-600',
                         employee.status === 'pending' && 'text-yellow-600',
@@ -82,9 +82,9 @@ export function IdCard({ employee }: { employee: User }) {
                         {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
                     </span>
                 </div>
-                <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-500">Blood Group:</span>
-                    <span className="font-semibold text-gray-800 flex items-center gap-1">
+                <div className="grid grid-cols-2 items-center">
+                    <span className="font-medium text-gray-500">Blood Group</span>
+                    <span className="font-semibold text-gray-800 flex items-center justify-end gap-1">
                         <Droplet className="h-4 w-4 text-red-500"/> {employee.bloodGroup || 'N/A'}
                     </span>
                 </div>
