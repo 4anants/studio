@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useRouter } from 'next/navigation'
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -27,6 +28,14 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
+  const [allowedDomains, setAllowedDomains] = useState(['yourdomain.com']);
+
+  useEffect(() => {
+    const storedDomains = localStorage.getItem('allowedDomains');
+    if (storedDomains) {
+      setAllowedDomains(JSON.parse(storedDomains));
+    }
+  }, []);
 
   const handleNewUser = (user: { uid: string, email?: string | null, displayName?: string | null }) => {
     if (user.email && !users.some(u => u.email === user.email)) {
@@ -57,7 +66,6 @@ export function LoginForm() {
     }
     const provider = new OAuthProvider('microsoft.com');
 
-    // To restrict login to your organization's tenant, add your tenant ID here.
     provider.setCustomParameters({ tenant: 'YOUR_TENANT_ID' }); // Replace YOUR_TENANT_ID
     
     try {
@@ -66,11 +74,7 @@ export function LoginForm() {
         const userEmail = user.email;
 
         // --- Domain Validation ---
-        // IMPORTANT: Replace 'yourdomain.com' and 'anotherdomain.com' with your actual company domains.
-        const allowedDomains = ['yourdomain.com', 'anotherdomain.com'];
-
         if (!userEmail || !allowedDomains.some(domain => userEmail.endsWith(`@${domain}`))) {
-            // If the user's email domain is not in the allowed list, show an error and sign them out.
             await auth.signOut();
             toast({
                 variant: 'destructive',
@@ -125,3 +129,5 @@ export function LoginForm() {
     </>
   )
 }
+
+    

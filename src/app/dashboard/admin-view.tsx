@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName, initialCompanies, Company } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash, ArrowLeft } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash, ArrowLeft, Shield } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -106,6 +106,8 @@ export function AdminView() {
   const [tempSiteName, setTempSiteName] = useState(CompanyName);
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
   const [auth, setAuth] = useState<Auth | null>(null);
+  const [allowedDomains, setAllowedDomains] = useState<string[]>(['yourdomain.com']);
+  const [newDomain, setNewDomain] = useState('');
   const { toast } = useToast();
   const router = useRouter();
   const authHook = useAuth();
@@ -120,14 +122,19 @@ export function AdminView() {
       setActiveTab('announcements');
     };
     window.addEventListener('view-announcements', handleViewAnnouncements);
+
     const storedLogo = localStorage.getItem('companyLogo');
-    if (storedLogo) {
-      setLogoSrc(storedLogo);
-    }
+    if (storedLogo) setLogoSrc(storedLogo);
+
     const storedSiteName = localStorage.getItem('siteName');
     if (storedSiteName) {
       setSiteName(storedSiteName);
       setTempSiteName(storedSiteName);
+    }
+    
+    const storedDomains = localStorage.getItem('allowedDomains');
+    if (storedDomains) {
+        setAllowedDomains(JSON.parse(storedDomains));
     }
 
     return () => {
@@ -169,6 +176,25 @@ export function AdminView() {
       title: 'Site Name Updated',
       description: 'The site name has been changed successfully.',
     });
+  };
+
+  const handleAddDomain = () => {
+    if (newDomain && !allowedDomains.includes(newDomain)) {
+        const newDomains = [...allowedDomains, newDomain];
+        setAllowedDomains(newDomains);
+        localStorage.setItem('allowedDomains', JSON.stringify(newDomains));
+        setNewDomain('');
+        toast({ title: 'Domain Added', description: `Domain "${newDomain}" has been added.` });
+    } else {
+        toast({ variant: 'destructive', title: 'Invalid Domain', description: 'Domain is either empty or already exists.' });
+    }
+  };
+
+  const handleRemoveDomain = (domainToRemove: string) => {
+    const newDomains = allowedDomains.filter(d => d !== domainToRemove);
+    setAllowedDomains(newDomains);
+    localStorage.setItem('allowedDomains', JSON.stringify(newDomains));
+    toast({ title: 'Domain Removed', description: `Domain "${domainToRemove}" has been removed.` });
   };
 
   const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
@@ -1358,6 +1384,7 @@ const handleExportUsers = () => {
                       <TabsTrigger value="branding">Branding</TabsTrigger>
                       <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                       <TabsTrigger value="departments">Departments</TabsTrigger>
+                      <TabsTrigger value="security">Security</TabsTrigger>
                     </TabsList>
                   </div>
                   <TabsContent value="companies" className="pt-6">
@@ -1626,6 +1653,52 @@ const handleExportUsers = () => {
                                    )}
                                 </TableBody>
                             </Table>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="security" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Authentication Security</CardTitle>
+                            <CardDescription>Manage which email domains are allowed to sign in.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="new-domain">Add New Domain</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        id="new-domain"
+                                        value={newDomain}
+                                        onChange={(e) => setNewDomain(e.target.value)}
+                                        placeholder="e.g., example.com"
+                                        className="max-w-xs"
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddDomain(); }}
+                                    />
+                                    <Button onClick={handleAddDomain}>Add Domain</Button>
+                                </div>
+                                <p className="text-sm text-muted-foreground">Enter a domain that is allowed to sign in.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Allowed Domains</Label>
+                                {allowedDomains.length > 0 ? (
+                                    <div className="border rounded-md p-4 space-y-2 max-w-md">
+                                        {allowedDomains.map(domain => (
+                                            <div key={domain} className="flex items-center justify-between">
+                                                <span className="flex items-center gap-2 text-sm">
+                                                    <Shield className="h-4 w-4 text-green-500"/> {domain}
+                                                </span>
+                                                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleRemoveDomain(domain)}>
+                                                    <X className="mr-2 h-4 w-4" /> Remove
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground max-w-md">
+                                        No domains have been added. The default fallback domain will be used for authentication.
+                                    </p>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                   </TabsContent>
