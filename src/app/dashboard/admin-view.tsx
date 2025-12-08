@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName, initialCompanies, Company } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash, ArrowLeft } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -78,9 +78,11 @@ type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: s
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
+  const [deletedDocs, setDeletedDocs] = useState<Document[]>([]);
   const [users, setUsers] = useState(initialUsers)
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
   const [departments, setDepartments] = useState(initialDepartments);
+  const [deletedDepartments, setDeletedDepartments] = useState<string[]>([]);
   const [companies, setCompanies] = useState(initialCompanies);
   const [holidays, setHolidays] = useState(initialHolidays);
   const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: true, status: a.status || 'published'}))); // Admins see all as read initially
@@ -359,13 +361,40 @@ const handleExportUsers = () => {
 
   const handleDeleteDepartment = useCallback((departmentToDelete: string) => {
     setDepartments(prev => prev.filter(d => d !== departmentToDelete));
-    // Also update users who were in this department
-    setUsers(prevUsers => prevUsers.map(u => u.department === departmentToDelete ? { ...u, department: undefined } : u));
+    setDeletedDepartments(prev => [...prev, departmentToDelete]);
     toast({
       title: 'Department Deleted',
-      description: `"${departmentToDelete}" has been deleted.`,
+      description: `"${departmentToDelete}" has been moved to the deleted items list.`,
     });
   }, [toast]);
+
+  const handleRestoreDepartment = useCallback((departmentToRestore: string) => {
+    setDeletedDepartments(prev => prev.filter(d => d !== departmentToRestore));
+    setDepartments(prev => [...prev, departmentToRestore]);
+    toast({
+      title: 'Department Restored',
+      description: `"${departmentToRestore}" has been restored.`,
+    });
+  }, [toast]);
+  
+  const handlePermanentDeleteDepartment = useCallback((departmentToDelete: string) => {
+    const isDeptInUse = users.some(u => u.department === departmentToDelete);
+    if (isDeptInUse) {
+        toast({
+            variant: 'destructive',
+            title: 'Cannot Delete Department',
+            description: `"${departmentToDelete}" is currently assigned to one or more employees. Please reassign them before permanently deleting.`,
+        });
+        return;
+    }
+    setDeletedDepartments(prev => prev.filter(d => d !== departmentToDelete));
+    toast({
+        variant: 'destructive',
+        title: 'Department Permanently Deleted',
+        description: `"${departmentToDelete}" has been permanently removed.`,
+    });
+  }, [toast, users]);
+
 
   const handleAddHoliday = useCallback((newHoliday: {name: string, date: Date, location: HolidayLocation}) => {
     const newHolidayItem: Holiday = {
@@ -434,18 +463,19 @@ const handleExportUsers = () => {
 
   const handleSaveCompany = useCallback((companyToSave: Company) => {
     let isEditing = false;
+    let newCompanies: Company[] = [];
     setCompanies(prev => {
         const index = prev.findIndex(c => c.id === companyToSave.id);
         if (index > -1) {
             isEditing = true;
-            const newCompanies = [...prev];
+            newCompanies = [...prev];
             newCompanies[index] = companyToSave;
-            return newCompanies;
         } else {
             isEditing = false;
             const newCompany = { ...companyToSave, id: `comp-${Date.now()}` };
-            return [...prev, newCompany];
+            newCompanies = [...prev, newCompany];
         }
+        return newCompanies;
     });
 
     if (isEditing) {
@@ -521,6 +551,10 @@ const handleExportUsers = () => {
     dept.toLowerCase().includes(searchTerm.toLowerCase())
   ), [departments, searchTerm]);
 
+  const filteredDeletedDepartments = useMemo(() => deletedDepartments.filter(dept =>
+    dept.toLowerCase().includes(searchTerm.toLowerCase())
+  ), [deletedDepartments, searchTerm]);
+
   const filteredCompanies = useMemo(() => companies.filter(comp =>
     comp.name.toLowerCase().includes(searchTerm.toLowerCase()) || (comp.shortName && comp.shortName.toLowerCase().includes(searchTerm.toLowerCase()))
   ), [companies, searchTerm]);
@@ -546,6 +580,14 @@ const handleExportUsers = () => {
         announcement.message.toLowerCase().includes(searchTerm.toLowerCase())
     ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [deletedAnnouncements, searchTerm]);
+  
+  const filteredDeletedDocs = useMemo(() => {
+    return deletedDocs.filter(doc =>
+        doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.type.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a,b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+  }, [deletedDocs, searchTerm]);
+
 
     const { unassignedDocuments, docsByType } = useMemo(() => {
         const userMap = new Map(users.map(u => [u.id, u]));
@@ -638,7 +680,43 @@ const handleExportUsers = () => {
       description: `Document "${doc?.name}" has been assigned to ${user?.name}.`
     });
   }, [users, docs, toast]);
+
+  const handleDeleteDocument = useCallback((docId: string) => {
+    const docToDelete = docs.find(d => d.id === docId);
+    if (docToDelete) {
+        setDocs(prev => prev.filter(d => d.id !== docId));
+        setDeletedDocs(prev => [...prev, docToDelete]);
+        toast({
+            title: "Document Deleted",
+            description: `"${docToDelete.name}" has been moved to deleted items.`
+        });
+    }
+  }, [docs, toast]);
+
+  const handleRestoreDocument = useCallback((docId: string) => {
+    const docToRestore = deletedDocs.find(d => d.id === docId);
+    if (docToRestore) {
+        setDeletedDocs(prev => prev.filter(d => d.id !== docId));
+        setDocs(prev => [...prev, docToRestore]);
+        toast({
+            title: "Document Restored",
+            description: `"${docToRestore.name}" has been restored.`
+        });
+    }
+  }, [deletedDocs, toast]);
   
+  const handlePermanentDeleteDocument = useCallback((docId: string) => {
+    const docToDelete = deletedDocs.find(d => d.id === docId);
+    if(docToDelete) {
+        setDeletedDocs(prev => prev.filter(d => d.id !== docId));
+        toast({
+            variant: "destructive",
+            title: "Document Permanently Deleted",
+            description: `"${docToDelete.name}" has been permanently removed.`
+        });
+    }
+  }, [deletedDocs, toast]);
+
   const onTabChange = useCallback((value: string) => {
     setActiveTab(value);
     setSelectedUserIds([]);
@@ -790,7 +868,7 @@ const handleExportUsers = () => {
                      <CardHeader>
                         <div className="flex items-center gap-4">
                             <Button variant="outline" size="icon" onClick={() => setExplorerState({ view: 'docTypes'})}>
-                                <ArrowLeft />
+                                <ArrowLeft className="h-4 w-4" />
                             </Button>
                             <div>
                                 <CardTitle>Employees with "{explorerState.docType}"</CardTitle>
@@ -824,6 +902,7 @@ const handleExportUsers = () => {
                                     sortConfig={null}
                                     showOwner={true}
                                     onReassign={handleReassignDocument}
+                                    onDelete={handleDeleteDocument}
                                 />
                             </div>
                         ) : (
@@ -1442,7 +1521,9 @@ const handleExportUsers = () => {
                     <Tabs defaultValue="users" className="w-full">
                         <TabsList>
                             <TabsTrigger value="users">Users</TabsTrigger>
+                            <TabsTrigger value="documents">Documents</TabsTrigger>
                             <TabsTrigger value="announcements">Announcements</TabsTrigger>
+                            <TabsTrigger value="departments">Departments</TabsTrigger>
                             <TabsTrigger value="companies">Companies</TabsTrigger>
                         </TabsList>
                         <TabsContent value="users" className="pt-6">
@@ -1497,6 +1578,26 @@ const handleExportUsers = () => {
                                 </CardContent>
                             </Card>
                         </TabsContent>
+                        <TabsContent value="documents" className="pt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Documents</CardTitle>
+                                    <CardDescription>A list of all deleted documents. You can restore or permanently delete them.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <DocumentList 
+                                        documents={filteredDeletedDocs}
+                                        users={users}
+                                        showOwner
+                                        onSort={() => {}}
+                                        sortConfig={null}
+                                        isDeletedList
+                                        onRestore={handleRestoreDocument}
+                                        onPermanentDelete={handlePermanentDeleteDocument}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                         <TabsContent value="announcements" className="pt-6">
                             <Card>
                                 <CardHeader>
@@ -1524,17 +1625,69 @@ const handleExportUsers = () => {
                                                             <Button variant="outline" size="sm" onClick={() => handleRestoreAnnouncement(announcement.id)}>
                                                                 <ArchiveRestore className="mr-2 h-4 w-4" /> Restore
                                                             </Button>
-                                                            <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handlePermanentDeleteAnnouncement(announcement.id)} isPermanent={true}>
+                                                            <PermanentDeleteDialog
+                                                                itemName={announcement.title}
+                                                                itemType='announcement'
+                                                                onDelete={() => handlePermanentDeleteAnnouncement(announcement.id)}
+                                                            >
                                                                 <Button variant="destructive" size="sm">
                                                                     <Trash className="mr-2 h-4 w-4" /> Delete Permanently
                                                                 </Button>
-                                                            </DeleteAnnouncementDialog>
+                                                            </PermanentDeleteDialog>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
                                             )) : (
                                                 <TableRow>
                                                     <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted announcements found.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                         <TabsContent value="departments" className="pt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Departments</CardTitle>
+                                    <CardDescription>A list of all deleted departments. You can restore or permanently delete them.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Department Name</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredDeletedDepartments.length > 0 ? filteredDeletedDepartments.map(dept => (
+                                                <TableRow key={dept}>
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                            <Building className="h-4 w-4 text-muted-foreground" />
+                                                            {dept}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right space-x-2">
+                                                        <Button variant="outline" size="sm" onClick={() => handleRestoreDepartment(dept)}>
+                                                            <Undo className="mr-2 h-4 w-4" /> Restore
+                                                        </Button>
+                                                         <PermanentDeleteDialog
+                                                          itemName={dept}
+                                                          itemType="department"
+                                                          onDelete={() => handlePermanentDeleteDepartment(dept)}
+                                                        >
+                                                            <Button variant="destructive" size="sm">
+                                                                <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                                                            </Button>
+                                                        </PermanentDeleteDialog>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No deleted departments found.</TableCell>
                                                 </TableRow>
                                             )}
                                         </TableBody>

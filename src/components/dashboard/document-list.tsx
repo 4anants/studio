@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2, ChevronsUpDown, ArrowUp, ArrowDown, UserPlus, Send } from 'lucide-react'
+import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2, ChevronsUpDown, ArrowUp, ArrowDown, UserPlus, Send, Undo, Trash } from 'lucide-react'
 import type { Document, User } from '@/lib/mock-data'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -27,6 +27,7 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select';
+import { PermanentDeleteDialog } from './permanent-delete-dialog'
 
 function getFileIcon(fileType: Document['fileType']) {
   switch (fileType) {
@@ -51,6 +52,10 @@ interface DocumentListProps {
   onSort: (key: SortKey) => void;
   sortConfig: { key: SortKey; direction: SortDirection } | null;
   onReassign?: (docId: string, newOwnerId: string) => void;
+  onDelete?: (docId: string) => void;
+  isDeletedList?: boolean;
+  onRestore?: (docId: string) => void;
+  onPermanentDelete?: (docId: string) => void;
 }
 
 const SortableHeader = React.memo(({
@@ -85,7 +90,7 @@ const SortableHeader = React.memo(({
 SortableHeader.displayName = 'SortableHeader';
 
 
-export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign }: DocumentListProps) => {
+export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, isDeletedList = false, onRestore, onPermanentDelete }: DocumentListProps) => {
   const { toast } = useToast()
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [assignToUserId, setAssignToUserId] = useState<string | null>(null);
@@ -94,14 +99,6 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
     toast({
       title: "Downloading...",
       description: `${docName} is being downloaded.`,
-    })
-  }
-
-  const handleDelete = (docName: string) => {
-    toast({
-      variant: 'destructive',
-      title: "Deleting...",
-      description: `${docName} is being deleted.`,
     })
   }
   
@@ -115,7 +112,7 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
       if (checked) {
         return [...prev, docId];
       } else {
-        return prev.filter(id => id !== docId);
+        return prev.filter(id => id !== id);
       }
     });
   };
@@ -174,7 +171,7 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                   <TableHead className="w-[40px]">
                     <Checkbox
                         checked={numSelected === numDocuments && numDocuments > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
-                        onCheckedChange={handleSelectAll}
+                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
                         aria-label="Select all documents"
                     />
                 </TableHead>
@@ -211,11 +208,37 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                 <TableCell className="hidden md:table-cell">{doc.size}</TableCell>
                 <TableCell className="hidden lg:table-cell">{doc.uploadDate}</TableCell>
                 <TableCell className="text-right">
-                    <div className="hidden sm:block">
-                        <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
-                            <Download className="mr-2 h-4 w-4" /> Download
-                        </Button>
-                    </div>
+                    {isDeletedList ? (
+                        <div className="flex items-center justify-end gap-2">
+                            {onRestore && 
+                                <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)}>
+                                    <Undo className="mr-2 h-4 w-4" /> Restore
+                                </Button>
+                            }
+                             {onPermanentDelete && 
+                                <PermanentDeleteDialog
+                                    itemName={doc.name}
+                                    itemType="document"
+                                    onDelete={() => onPermanentDelete(doc.id)}
+                                >
+                                    <Button variant="destructive" size="sm">
+                                        <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                                    </Button>
+                                </PermanentDeleteDialog>
+                            }
+                        </div>
+                    ) : (
+                        <div className="hidden sm:flex items-center justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
+                                <Download className="mr-2 h-4 w-4" /> Download
+                            </Button>
+                             {onDelete && (
+                                <Button variant="destructive" size="sm" onClick={() => onDelete(doc.id)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </Button>
+                            )}
+                        </div>
+                    )}
                     <div className="sm:hidden">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -224,12 +247,37 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleDownload(doc.name)}>
-                                    <Download className="mr-2 h-4 w-4" /> Download
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(doc.name)}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
+                                {isDeletedList ? (
+                                    <>
+                                        {onRestore && 
+                                            <DropdownMenuItem onClick={() => onRestore(doc.id)}>
+                                                <Undo className="mr-2 h-4 w-4" /> Restore
+                                            </DropdownMenuItem>
+                                        }
+                                        {onPermanentDelete && 
+                                            <PermanentDeleteDialog
+                                                itemName={doc.name}
+                                                itemType="document"
+                                                onDelete={() => onPermanentDelete(doc.id)}
+                                            >
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                    <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                                                </DropdownMenuItem>
+                                            </PermanentDeleteDialog>
+                                        }
+                                    </>
+                                ) : (
+                                    <>
+                                        <DropdownMenuItem onClick={() => handleDownload(doc.name)}>
+                                            <Download className="mr-2 h-4 w-4" /> Download
+                                        </DropdownMenuItem>
+                                        {onDelete && (
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(doc.id)}>
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                        </DropdownMenuItem>
+                                        )}
+                                    </>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -242,5 +290,3 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
   )
 });
 DocumentList.displayName = 'DocumentList';
-
-    

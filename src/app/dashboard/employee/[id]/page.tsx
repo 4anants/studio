@@ -2,7 +2,7 @@
 
 'use client';
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
-import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList } from '@/lib/mock-data';
+import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList, Company, initialCompanies } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck, ShieldAlert } from 'lucide-react';
@@ -24,6 +24,8 @@ export default function EmployeeProfilePage() {
   const params = useParams<{ id: string }>();
   
   const [users, setUsers] = useState<UserType[]>(initialUsers);
+  const [companies, setCompanies] = useState<Company[]>(initialCompanies);
+  const [docs, setDocs] = useState<Document[]>(allDocuments);
   
   const id = params?.id;
 
@@ -65,10 +67,16 @@ export default function EmployeeProfilePage() {
     });
   }, [router, id]);
 
+  const handleDeleteDocument = useCallback((docId: string) => {
+    setDocs(prev => prev.filter(d => d.id !== docId));
+    // In a real app, you'd probably also call an API to delete it from the server
+    // and maybe move it to a 'deletedDocs' state if you have a trash feature.
+  }, []);
+
   const userDocuments = useMemo(() => {
     if (!id) return [];
-    return allDocuments.filter(doc => doc.ownerId === id);
-  }, [id]);
+    return docs.filter(doc => doc.ownerId === id);
+  }, [id, docs]);
 
   const requestSort = useCallback((key: SortKey) => {
     setSortConfig(currentSortConfig => {
@@ -168,7 +176,7 @@ export default function EmployeeProfilePage() {
                                         </Button>
                                     </EmployeeSelfEditDialog>
                                 ) : (
-                                    <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
+                                    <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
                                         <Button variant="outline" className="w-full">
                                             <Edit className="mr-2 h-4 w-4"/> Edit Profile
                                         </Button>
@@ -244,7 +252,7 @@ export default function EmployeeProfilePage() {
                             <CardDescription>All documents uploaded for {user.name}.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <DocumentList documents={sortedDocuments} users={initialUsers} onSort={requestSort} sortConfig={sortConfig} />
+                            <DocumentList documents={sortedDocuments} users={initialUsers} onSort={requestSort} sortConfig={sortConfig} onDelete={handleDeleteDocument} />
                         </CardContent>
                     </Card>
                 )}
