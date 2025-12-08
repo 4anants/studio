@@ -1,7 +1,7 @@
 
 'use client';
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
-import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList, Company, initialCompanies } from '@/lib/mock-data';
+import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList, Company, companies as initialCompanies } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck, ShieldAlert } from 'lucide-react';
@@ -260,5 +260,3 @@ export default function EmployeeProfilePage() {
     </div>
   )
 }
-
-    

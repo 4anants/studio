@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName, initialCompanies, Company } from '@/lib/mock-data'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName, companies as initialCompanies, Company } from '@/lib/mock-data'
 import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash, ArrowLeft, Shield } from 'lucide-react'
 import {
   Tabs,
@@ -113,7 +113,9 @@ export function AdminView() {
   const authHook = useAuth();
 
   useEffect(() => {
-    setAuth(authHook);
+    if (authHook) {
+        setAuth(authHook);
+    }
   }, [authHook]);
 
 
@@ -2030,5 +2032,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
