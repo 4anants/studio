@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName, initialCompanies, Company } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle, ArrowLeft, Eye, Home } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -69,10 +69,10 @@ import {
 import { BulkRoleChangeDialog } from '@/components/dashboard/bulk-role-change-dialog'
 import { BulkUserImportDialog } from '@/components/dashboard/bulk-user-import-dialog'
 import Papa from 'papaparse'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { DocumentList } from '@/components/dashboard/document-list'
 import { CompanyManagementDialog } from '@/components/dashboard/company-management-dialog'
 import { DeleteCompanyDialog } from '@/components/dashboard/delete-company-dialog'
+import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-dialog'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -303,6 +303,15 @@ const handleExportUsers = () => {
     });
   }, [toast]);
 
+  const handlePermanentDeleteUser = useCallback((employeeId: string) => {
+    setUsers(prevUsers => prevUsers.filter(u => u.id !== employeeId));
+    toast({
+      variant: 'destructive',
+      title: 'User Permanently Deleted',
+      description: 'The user has been permanently removed from the system.',
+    });
+  }, [toast]);
+
   const handleResetPassword = useCallback((employeeName: string) => {
     toast({
       title: "Password Reset Link Sent",
@@ -417,6 +426,7 @@ const handleExportUsers = () => {
   const handlePermanentDeleteAnnouncement = useCallback((announcementId: string) => {
     setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
     toast({
+      variant: 'destructive',
       title: 'Announcement Permanently Deleted',
       description: 'The announcement has been permanently removed from the system.',
     });
@@ -505,7 +515,7 @@ const handleExportUsers = () => {
   ), [departments, searchTerm]);
 
   const filteredCompanies = useMemo(() => companies.filter(comp =>
-    comp.name.toLowerCase().includes(searchTerm.toLowerCase()) || comp.shortName.toLowerCase().includes(searchTerm.toLowerCase())
+    comp.name.toLowerCase().includes(searchTerm.toLowerCase()) || (comp.shortName && comp.shortName.toLowerCase().includes(searchTerm.toLowerCase()))
   ), [companies, searchTerm]);
 
 
@@ -701,6 +711,7 @@ const handleExportUsers = () => {
                 <TabsTrigger value="announcements">Announcements</TabsTrigger>
                 <TabsTrigger value="holidays">Holidays</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
+                <TabsTrigger value="deleted-items">Deleted Items</TabsTrigger>
             </TabsList>
             <div className="ml-auto flex items-center gap-2">
                 <div className="relative">
@@ -713,6 +724,7 @@ const handleExportUsers = () => {
                             : activeTab === 'holidays' ? 'Search holidays...'
                             : activeTab === 'announcements' ? 'Search announcements...'
                             : activeTab === 'settings' ? 'Search settings...'
+                            : activeTab === 'deleted-items' ? 'Search deleted items...'
                             : 'Search...'
                         }
                         className="w-full sm:w-[300px] pl-8"
@@ -1150,8 +1162,6 @@ const handleExportUsers = () => {
                     <TabsTrigger value="branding">Branding</TabsTrigger>
                     <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                     <TabsTrigger value="departments">Departments</TabsTrigger>
-                    <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
-                    <TabsTrigger value="deleted-announcements">Deleted Announcements</TabsTrigger>
                   </TabsList>
                   <TabsContent value="companies" className="pt-6">
                     <Card>
@@ -1411,100 +1421,133 @@ const handleExportUsers = () => {
                         </CardContent>
                     </Card>
                   </TabsContent>
-                   <TabsContent value="deleted-users" className="pt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Deleted Users</CardTitle>
-                            <CardDescription>A list of all deleted employees. You can restore them from here.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredDeletedUsers.length > 0 ? filteredDeletedUsers.map(user => (
-                                        <TableRow key={user.id}>
-                                            <TableCell className="hidden sm:table-cell">
-                                                <Image src={getAvatarSrc(user)} width={40} height={40} className="rounded-full object-cover" alt={user.name} data-ai-hint="person portrait" />
-                                            </TableCell>
-                                            <TableCell className="font-medium">{user.name}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
-                                            <TableCell className="text-right space-x-2">
-                                                <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}>
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View
-                                                </Button>
-                                                <Button variant="outline" size="sm" onClick={() => handleRestoreUser(user.id)}>
-                                                    <Undo className="mr-2 h-4 w-4" />
-                                                    Restore
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted users found.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="deleted-announcements" className="pt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Deleted Announcements</CardTitle>
-                            <CardDescription>A list of all deleted announcements. You can restore or permanently delete them from here.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Title</TableHead>
-                                        <TableHead className="hidden md:table-cell">Message</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredDeletedAnnouncements.length > 0 ? filteredDeletedAnnouncements.map(announcement => (
-                                        <TableRow key={announcement.id}>
-                                            <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
-                                            <TableCell>{announcement.title}</TableCell>
-                                            <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button variant="outline" size="sm" onClick={() => handleRestoreAnnouncement(announcement.id)}>
-                                                        <ArchiveRestore className="mr-2 h-4 w-4" />
-                                                        Restore
-                                                    </Button>
-                                                    <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handlePermanentDeleteAnnouncement(announcement.id)} isPermanent={true}>
-                                                        <Button variant="destructive" size="sm">
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Delete Permanently
-                                                        </Button>
-                                                    </DeleteAnnouncementDialog>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted announcements found.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                  </TabsContent>
                 </Tabs>
               </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="deleted-items">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Deleted Items</CardTitle>
+                    <CardDescription>Manage, restore, or permanently delete items.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="users" className="w-full">
+                        <TabsList>
+                            <TabsTrigger value="users">Users</TabsTrigger>
+                            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+                            <TabsTrigger value="companies">Companies</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="users" className="pt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Users</CardTitle>
+                                    <CardDescription>A list of all deleted employees. You can restore or permanently delete them.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>Email</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredDeletedUsers.length > 0 ? filteredDeletedUsers.map(user => (
+                                                <TableRow key={user.id}>
+                                                    <TableCell className="hidden sm:table-cell">
+                                                        <Image src={getAvatarSrc(user)} width={40} height={40} className="rounded-full object-cover" alt={user.name} data-ai-hint="person portrait" />
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                                    <TableCell>{user.email}</TableCell>
+                                                    <TableCell className="text-right space-x-2">
+                                                        <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}>
+                                                            <Eye className="mr-2 h-4 w-4" /> View
+                                                        </Button>
+                                                        <Button variant="outline" size="sm" onClick={() => handleRestoreUser(user.id)}>
+                                                            <Undo className="mr-2 h-4 w-4" /> Restore
+                                                        </Button>
+                                                        <PermanentDeleteDialog
+                                                          itemName={user.name}
+                                                          itemType="user"
+                                                          onDelete={() => handlePermanentDeleteUser(user.id)}
+                                                        >
+                                                            <Button variant="destructive" size="sm">
+                                                                <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                                                            </Button>
+                                                        </PermanentDeleteDialog>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted users found.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="announcements" className="pt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Announcements</CardTitle>
+                                    <CardDescription>A list of all deleted announcements. You can restore or permanently delete them here.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead>Title</TableHead>
+                                                <TableHead className="hidden md:table-cell">Message</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredDeletedAnnouncements.length > 0 ? filteredDeletedAnnouncements.map(announcement => (
+                                                <TableRow key={announcement.id}>
+                                                    <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                                    <TableCell>{announcement.title}</TableCell>
+                                                    <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <Button variant="outline" size="sm" onClick={() => handleRestoreAnnouncement(announcement.id)}>
+                                                                <ArchiveRestore className="mr-2 h-4 w-4" /> Restore
+                                                            </Button>
+                                                            <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handlePermanentDeleteAnnouncement(announcement.id)} isPermanent={true}>
+                                                                <Button variant="destructive" size="sm">
+                                                                    <Trash className="mr-2 h-4 w-4" /> Delete Permanently
+                                                                </Button>
+                                                            </DeleteAnnouncementDialog>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted announcements found.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="companies" className="pt-6">
+                           <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Companies</CardTitle>
+                                    <CardDescription>This feature is not yet implemented.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-8">
+                                    <p>Management of deleted companies will be available here soon.</p>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
             </Card>
         </TabsContent>
       </Tabs>
@@ -1547,5 +1590,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
