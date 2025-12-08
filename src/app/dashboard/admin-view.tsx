@@ -433,19 +433,26 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handleSaveCompany = useCallback((companyToSave: Company) => {
+    let isEditing = false;
     setCompanies(prev => {
         const index = prev.findIndex(c => c.id === companyToSave.id);
         if (index > -1) {
+            isEditing = true;
             const newCompanies = [...prev];
             newCompanies[index] = companyToSave;
-            toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
             return newCompanies;
         } else {
+            isEditing = false;
             const newCompany = { ...companyToSave, id: `comp-${Date.now()}` };
-            toast({ title: 'Company Added', description: `${newCompany.name} has been added.` });
             return [...prev, newCompany];
         }
     });
+
+    if (isEditing) {
+        toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
+    } else {
+        toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
+    }
   }, [toast]);
 
   const handleDeleteCompany = useCallback((companyId: string) => {
