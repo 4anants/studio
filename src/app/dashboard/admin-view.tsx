@@ -84,6 +84,7 @@ export function AdminView() {
   const [departments, setDepartments] = useState(initialDepartments);
   const [deletedDepartments, setDeletedDepartments] = useState<string[]>([]);
   const [companies, setCompanies] = useState(initialCompanies);
+  const [deletedCompanies, setDeletedCompanies] = useState<Company[]>([]);
   const [holidays, setHolidays] = useState(initialHolidays);
   const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: true, status: a.status || 'published'}))); // Admins see all as read initially
   const [searchTerm, setSearchTerm] = useState('')
@@ -465,6 +466,8 @@ const handleExportUsers = () => {
     let isEditing = false;
     let newCompaniesList: Company[] = [];
 
+    const wasEditing = companies.some(c => c.id === companyToSave.id && companyToSave.id);
+
     setCompanies(prev => {
         const index = prev.findIndex(c => c.id === companyToSave.id);
         if (index > -1) {
@@ -479,42 +482,56 @@ const handleExportUsers = () => {
         return newCompaniesList;
     });
 
-    // This part is moved outside and will run after the state update.
-    // However, since `isEditing` is determined inside the updater, we need to determine it before.
-    const wasEditing = companies.some(c => c.id === companyToSave.id && companyToSave.id);
-    
-    // We'll have to rely on this less-than-ideal way for now due to how `setCompanies` is structured
-    setTimeout(() => {
-        if (wasEditing) {
-            toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
-        } else {
-            toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
-        }
-    }, 0);
+    if (wasEditing) {
+        toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
+    } else {
+        toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
+    }
 
   }, [toast, companies]);
 
   const handleDeleteCompany = useCallback((companyId: string) => {
-    const company = companies.find(c => c.id === companyId);
-    if (!company) return;
+    const companyToDelete = companies.find(c => c.id === companyId);
+    if (!companyToDelete) return;
 
-    // Check if any user is associated with this company
-    const isCompanyInUse = users.some(u => u.company === company.name);
+    const isCompanyInUse = users.some(u => u.company === companyToDelete.name);
     if (isCompanyInUse) {
         toast({
             variant: 'destructive',
             title: 'Cannot Delete Company',
-            description: `"${company.name}" is currently assigned to one or more employees. Please reassign them before deleting.`,
+            description: `"${companyToDelete.name}" is currently assigned to one or more employees. Please reassign them before deleting.`,
         });
         return;
     }
 
     setCompanies(prev => prev.filter(c => c.id !== companyId));
+    setDeletedCompanies(prev => [...prev, companyToDelete]);
     toast({
         title: 'Company Deleted',
-        description: `"${company.name}" has been deleted successfully.`,
+        description: `"${companyToDelete.name}" has been moved to the deleted items list.`,
     });
-}, [companies, users, toast]);
+  }, [companies, users, toast]);
+
+  const handleRestoreCompany = useCallback((companyId: string) => {
+    const companyToRestore = deletedCompanies.find(c => c.id === companyId);
+    if (companyToRestore) {
+        setDeletedCompanies(prev => prev.filter(c => c.id !== companyId));
+        setCompanies(prev => [...prev, companyToRestore]);
+        toast({
+            title: 'Company Restored',
+            description: `"${companyToRestore.name}" has been restored.`
+        });
+    }
+  }, [deletedCompanies, toast]);
+
+  const handlePermanentDeleteCompany = useCallback((companyId: string) => {
+    setDeletedCompanies(prev => prev.filter(c => c.id !== companyId));
+    toast({
+        variant: 'destructive',
+        title: 'Company Permanently Deleted',
+        description: 'The company has been permanently removed from the system.',
+    });
+  }, [toast]);
 
 
   const activeUsers = useMemo(() => users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending'), [users]);
@@ -567,6 +584,10 @@ const handleExportUsers = () => {
   const filteredCompanies = useMemo(() => companies.filter(comp =>
     comp.name.toLowerCase().includes(searchTerm.toLowerCase()) || (comp.shortName && comp.shortName.toLowerCase().includes(searchTerm.toLowerCase()))
   ), [companies, searchTerm]);
+
+  const filteredDeletedCompanies = useMemo(() => deletedCompanies.filter(comp =>
+    comp.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ), [deletedCompanies, searchTerm]);
 
 
   const filteredHolidays = useMemo(() => {
@@ -1535,6 +1556,119 @@ const handleExportUsers = () => {
                             <TabsTrigger value="users">Users</TabsTrigger>
                             <TabsTrigger value="announcements">Announcements</TabsTrigger>
                         </TabsList>
+                         <TabsContent value="companies" className="pt-6">
+                           <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Companies</CardTitle>
+                                    <CardDescription>A list of all deleted companies. You can restore or permanently delete them.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>Email</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredDeletedCompanies.length > 0 ? filteredDeletedCompanies.map(company => (
+                                                <TableRow key={company.id}>
+                                                    <TableCell className="font-medium">{company.name}</TableCell>
+                                                    <TableCell>{company.email}</TableCell>
+                                                    <TableCell className="text-right space-x-2">
+                                                        <Button variant="outline" size="sm" onClick={() => handleRestoreCompany(company.id)}>
+                                                            <Undo className="mr-2 h-4 w-4" /> Restore
+                                                        </Button>
+                                                        <PermanentDeleteDialog
+                                                          itemName={company.name}
+                                                          itemType="company"
+                                                          onDelete={() => handlePermanentDeleteCompany(company.id)}
+                                                        >
+                                                            <Button variant="destructive" size="sm">
+                                                                <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                                                            </Button>
+                                                        </PermanentDeleteDialog>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="text-center text-muted-foreground">No deleted companies found.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="departments" className="pt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Departments</CardTitle>
+                                    <CardDescription>A list of all deleted departments. You can restore or permanently delete them.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Department Name</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredDeletedDepartments.length > 0 ? filteredDeletedDepartments.map(dept => (
+                                                <TableRow key={dept}>
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                            <Building className="h-4 w-4 text-muted-foreground" />
+                                                            {dept}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right space-x-2">
+                                                        <Button variant="outline" size="sm" onClick={() => handleRestoreDepartment(dept)}>
+                                                            <Undo className="mr-2 h-4 w-4" /> Restore
+                                                        </Button>
+                                                         <PermanentDeleteDialog
+                                                          itemName={dept}
+                                                          itemType="department"
+                                                          onDelete={() => handlePermanentDeleteDepartment(dept)}
+                                                        >
+                                                            <Button variant="destructive" size="sm">
+                                                                <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                                                            </Button>
+                                                        </PermanentDeleteDialog>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No deleted departments found.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="documents" className="pt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Documents</CardTitle>
+                                    <CardDescription>A list of all deleted documents. You can restore or permanently delete them.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <DocumentList 
+                                        documents={filteredDeletedDocs}
+                                        users={users}
+                                        showOwner
+                                        onSort={() => {}}
+                                        sortConfig={null}
+                                        isDeletedList
+                                        onRestore={handleRestoreDocument}
+                                        onPermanentDelete={handlePermanentDeleteDocument}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                         <TabsContent value="users" className="pt-6">
                             <Card>
                                 <CardHeader>
@@ -1587,26 +1721,6 @@ const handleExportUsers = () => {
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                        <TabsContent value="documents" className="pt-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Deleted Documents</CardTitle>
-                                    <CardDescription>A list of all deleted documents. You can restore or permanently delete them.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <DocumentList 
-                                        documents={filteredDeletedDocs}
-                                        users={users}
-                                        showOwner
-                                        onSort={() => {}}
-                                        sortConfig={null}
-                                        isDeletedList
-                                        onRestore={handleRestoreDocument}
-                                        onPermanentDelete={handlePermanentDeleteDocument}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
                         <TabsContent value="announcements" className="pt-6">
                             <Card>
                                 <CardHeader>
@@ -1653,65 +1767,6 @@ const handleExportUsers = () => {
                                             )}
                                         </TableBody>
                                     </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                         <TabsContent value="departments" className="pt-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Deleted Departments</CardTitle>
-                                    <CardDescription>A list of all deleted departments. You can restore or permanently delete them.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Department Name</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredDeletedDepartments.length > 0 ? filteredDeletedDepartments.map(dept => (
-                                                <TableRow key={dept}>
-                                                    <TableCell className="font-medium">
-                                                        <div className="flex items-center gap-2">
-                                                            <Building className="h-4 w-4 text-muted-foreground" />
-                                                            {dept}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right space-x-2">
-                                                        <Button variant="outline" size="sm" onClick={() => handleRestoreDepartment(dept)}>
-                                                            <Undo className="mr-2 h-4 w-4" /> Restore
-                                                        </Button>
-                                                         <PermanentDeleteDialog
-                                                          itemName={dept}
-                                                          itemType="department"
-                                                          onDelete={() => handlePermanentDeleteDepartment(dept)}
-                                                        >
-                                                            <Button variant="destructive" size="sm">
-                                                                <Trash className="mr-2 h-4 w-4" /> Permanent Delete
-                                                            </Button>
-                                                        </PermanentDeleteDialog>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No deleted departments found.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                        <TabsContent value="companies" className="pt-6">
-                           <Card>
-                                <CardHeader>
-                                    <CardTitle>Deleted Companies</CardTitle>
-                                    <CardDescription>This feature is not yet implemented.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="text-center text-muted-foreground py-8">
-                                    <p>Management of deleted companies will be available here soon.</p>
                                 </CardContent>
                             </Card>
                         </TabsContent>
