@@ -75,6 +75,7 @@ import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-d
 import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 import { useAuth } from '@/firebase'
+import type { Auth } from 'firebase/auth'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -104,9 +105,15 @@ export function AdminView() {
   const [siteName, setSiteName] = useState(CompanyName);
   const [tempSiteName, setTempSiteName] = useState(CompanyName);
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
+  const [auth, setAuth] = useState<Auth | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const auth = useAuth();
+  const authHook = useAuth();
+
+  useEffect(() => {
+    setAuth(authHook);
+  }, [authHook]);
+
 
   useEffect(() => {
     const handleViewAnnouncements = () => {
@@ -320,6 +327,7 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handleResetPassword = useCallback((employeeName: string) => {
+    if (!auth) return;
     const user = users.find(u => u.name === employeeName);
     if (user && user.email) {
         auth.sendPasswordResetEmail(user.email)
