@@ -84,6 +84,15 @@ export function LoginForm() {
   async function signInWithMicrosoft() {
     setIsLoading('microsoft');
     const { auth } = initializeFirebase();
+    if (!auth) {
+        toast({
+            variant: 'destructive',
+            title: 'Microsoft Sign-In Failed',
+            description: 'Authentication service is not available.',
+        });
+        setIsLoading(false);
+        return;
+    }
     const provider = new OAuthProvider('microsoft.com');
     
     try {
@@ -110,6 +119,15 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>, role: 'employee' | 'admin') {
     setIsLoading(role)
     const { auth } = initializeFirebase();
+    if (!auth) {
+        toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: 'Authentication service is not available.',
+        });
+        setIsLoading(false);
+        return;
+    }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password)
       const user = userCredential.user
@@ -149,6 +167,14 @@ export function LoginForm() {
   const handleForgotPassword = async () => {
     if (forgotPasswordEmail) {
       const { auth } = initializeFirebase();
+      if (!auth) {
+        toast({
+            variant: 'destructive',
+            title: 'Failed to Send Email',
+            description: "Authentication service not available.",
+        });
+        return;
+      }
       try {
         await sendPasswordResetEmail(auth, forgotPasswordEmail);
         toast({
@@ -286,3 +312,5 @@ export function LoginForm() {
     </>
   )
 }
+
+    

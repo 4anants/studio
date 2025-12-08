@@ -1,5 +1,4 @@
 
-
 'use client';
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
 import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList, Company, initialCompanies } from '@/lib/mock-data';
@@ -261,6 +260,5 @@ export default function EmployeeProfilePage() {
     </div>
   )
 }
-    
 
     
