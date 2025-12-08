@@ -76,6 +76,7 @@ import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-typ
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 import { useAuth } from '@/firebase'
 import type { Auth } from 'firebase/auth'
+import { ToastAction } from '@/components/ui/toast'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -202,17 +203,38 @@ export function AdminView() {
     toast({ title: 'Domain Removed', description: `Domain "${domainToRemove}" has been removed.` });
   };
 
-  const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
-    const fullNewDocs: Document[] = newDocs.map(d => ({
-        ...d,
-        id: `doc-${Date.now()}-${Math.random()}`,
-        size: `${(Math.random() * 1000).toFixed(0)} KB`,
-        uploadDate: new Date().toISOString().split('T')[0],
-        fileType: d.name.endsWith('.pdf') ? 'pdf' : d.name.endsWith('.doc') || d.name.endsWith('.docx') ? 'doc' : 'image',
-        ownerId: d.ownerId, // Ensure ownerId is carried over
-    }))
+  const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[], originalFiles: File[]) => {
+    const docIds: string[] = [];
+    const fullNewDocs: Document[] = newDocs.map((d, i) => {
+        const id = `doc-${Date.now()}-${i}`;
+        docIds.push(id);
+        return {
+            ...d,
+            id: id,
+            size: `${(originalFiles[i].size / 1024).toFixed(0)} KB`,
+            uploadDate: new Date().toISOString().split('T')[0],
+            fileType: d.name.endsWith('.pdf') ? 'pdf' : d.name.endsWith('.doc') || d.name.endsWith('.docx') ? 'doc' : 'image',
+        };
+    });
     setDocs(prev => [...fullNewDocs, ...prev]);
-  }, []);
+
+    const handleUndo = () => {
+        setDocs(prev => prev.filter(d => !docIds.includes(d.id)));
+        toast({
+            title: 'Upload Undone',
+            description: `${docIds.length} document(s) have been removed.`,
+        });
+    };
+
+    toast({
+        title: 'Upload Successful!',
+        description: `${newDocs.length} documents have been added.`,
+        action: <ToastAction altText="Undo" onClick={handleUndo}>
+            <Undo className="mr-2 h-4 w-4" /> Undo
+        </ToastAction>
+    });
+
+  }, [toast]);
 
   const handleEmployeeSave = useCallback((employee: Partial<User> & { originalId?: string }) => {
     const isSadmin = employee.originalId === 'sadmin' || employee.id === 'sadmin';

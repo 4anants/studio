@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Tag } from 'lucide-react';
+import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Tag, Calendar, Undo } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import type { User, Document } from '@/lib/mock-data'
 import { documentTypesList } from '@/lib/mock-data';
@@ -36,8 +36,12 @@ type UploadedFile = {
   error?: string;
 };
 
+const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
+
 interface BulkUploadDialogProps {
-    onBulkUploadComplete: (documents: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => void;
+    onBulkUploadComplete: (documents: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[], originalFiles: File[]) => void;
     users: User[];
 }
 
@@ -48,6 +52,8 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   const [isPending, startTransition] = useTransition();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedDocType, setSelectedDocType] = useState<string>('');
+  const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth()).toString());
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -77,7 +83,11 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   
   const processWithFilename = () => {
     const results = uploadedFiles.map(f => {
-        const filename = f.file.name.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ');
+        let filename = f.file.name.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ');
+        if (selectedDocType === 'Salary Slip') {
+            filename += ` salary slip for ${monthNames[parseInt(selectedMonth)]} ${selectedYear}`;
+        }
+
 
         let bestMatch: { user: User; score: number } | null = null;
 
@@ -194,16 +204,19 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   };
 
   const handleFinish = () => {
-    const newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[] = uploadedFiles
-        .filter(f => f.status === 'success' && f.result && f.selected)
+    const successfulUploads = uploadedFiles.filter(f => f.status === 'success' && f.result && f.selected);
+
+    const newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[] = successfulUploads
         .map(f => ({
             name: f.file.name,
             ownerId: f.result!.employeeId!,
             type: f.result!.documentType!,
         }));
     
+    const originalFiles = successfulUploads.map(f => f.file);
+    
     startTransition(() => {
-        onBulkUploadComplete(newDocs);
+        onBulkUploadComplete(newDocs, originalFiles);
     });
 
     setOpen(false);
@@ -286,6 +299,30 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
                     </SelectContent>
                 </Select>
               </div>
+               {selectedDocType === 'Salary Slip' && (
+                 <div className="flex items-center space-x-2">
+                    <Label htmlFor="month-select" className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-blue-500"/>
+                        <span>For Period</span>
+                    </Label>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                         <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {monthNames.map((month, i) => <SelectItem key={month} value={String(i)}>{month}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="w-[100px]">
+                            <SelectValue placeholder="Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {years.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+              )}
             </div>
             <div {...getRootProps()} className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}>
                 <input {...getInputProps()} />
