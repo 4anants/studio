@@ -97,6 +97,8 @@ export function AdminView() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
   const [isBulkRoleChangeDialogOpen, setIsBulkRoleChangeDialogOpen] = useState(false)
+  const [lastBulkUploadIds, setLastBulkUploadIds] = useState<string[]>([]);
+  const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('file-explorer');
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
@@ -203,6 +205,18 @@ export function AdminView() {
     toast({ title: 'Domain Removed', description: `Domain "${domainToRemove}" has been removed.` });
   };
 
+  const handleUndoLastBulkUpload = () => {
+    if (lastBulkUploadIds.length > 0) {
+      setDocs(prev => prev.filter(d => !lastBulkUploadIds.includes(d.id)));
+      toast({
+        title: 'Upload Undone',
+        description: `${lastBulkUploadIds.length} document(s) have been removed.`,
+      });
+      setLastBulkUploadIds([]);
+    }
+    setIsUndoDialogOpen(false);
+  };
+
   const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[], originalFiles: File[]) => {
     const docIds: string[] = [];
     const fullNewDocs: Document[] = newDocs.map((d, i) => {
@@ -217,19 +231,21 @@ export function AdminView() {
         };
     });
     setDocs(prev => [...fullNewDocs, ...prev]);
+    setLastBulkUploadIds(docIds);
 
-    const handleUndo = () => {
+    const handleUndoToast = () => {
         setDocs(prev => prev.filter(d => !docIds.includes(d.id)));
         toast({
             title: 'Upload Undone',
             description: `${docIds.length} document(s) have been removed.`,
         });
+        setLastBulkUploadIds([]); // Also clear the persistent undo option
     };
 
     toast({
         title: 'Upload Successful!',
         description: `${newDocs.length} documents have been added.`,
-        action: <ToastAction altText="Undo" onClick={handleUndo}>
+        action: <ToastAction altText="Undo" onClick={handleUndoToast}>
             <Undo className="mr-2 h-4 w-4" /> Undo
         </ToastAction>
     });
@@ -239,11 +255,11 @@ export function AdminView() {
   const handleEmployeeSave = useCallback((employee: Partial<User> & { originalId?: string }) => {
     const isSadmin = employee.originalId === 'sadmin' || employee.id === 'sadmin';
 
-    if (isSadmin && employee.id !== auth?.currentUser?.uid && employee.email !== 'sadmin@internal.local') {
+    if (isSadmin && (employee.id !== 'sadmin' || employee.email !== 'sadmin@internal.local' || employee.role !== 'admin')) {
         toast({
             variant: 'destructive',
             title: 'Permission Denied',
-            description: 'You cannot modify the Super Admin account.',
+            description: 'You cannot modify the Super Admin ID, email, or role.',
         });
         return;
     }
@@ -257,7 +273,6 @@ export function AdminView() {
         const updatedUser = {
             ...existingUser,
             ...employee,
-            role: isSadmin ? 'admin' : (employee.role || existingUser.role), // Prevent sadmin role change
         };
         updatedUsers[userIndex] = updatedUser as User;
         
@@ -299,7 +314,7 @@ export function AdminView() {
         return [...prevUsers, newUser];
       }
     });
-  }, [toast, auth]);
+  }, [toast]);
 
   const handleBulkUserImport = useCallback((newUsers: User[]) => {
     setUsers(prevUsers => {
@@ -984,6 +999,11 @@ const handleExportUsers = () => {
                     <Button className="w-full sm:w-auto">Add Employee</Button>
                 </EmployeeManagementDialog>
                 <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
+                {lastBulkUploadIds.length > 0 && (
+                    <Button variant="outline" className="text-destructive" onClick={() => setIsUndoDialogOpen(true)}>
+                        <Undo className="mr-2 h-4 w-4" /> Undo Last Upload
+                    </Button>
+                )}
             </div>
           )}
         </div>
@@ -2104,6 +2124,24 @@ const handleExportUsers = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkResetPassword}>
                 Send Reset Links
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Undo Last Bulk Upload Confirmation Dialog */}
+      <AlertDialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Undo Last Bulk Upload?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the last batch of {lastBulkUploadIds.length} uploaded document(s). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUndoLastBulkUpload} className="bg-destructive hover:bg-destructive/90">
+              Yes, Undo Upload
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
