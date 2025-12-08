@@ -28,6 +28,16 @@ import {
     SelectValue,
   } from '@/components/ui/select';
 import { PermanentDeleteDialog } from './permanent-delete-dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+  } from '@/components/ui/alert-dialog';
 
 function getFileIcon(fileType: Document['fileType']) {
   switch (fileType) {
@@ -53,6 +63,7 @@ interface DocumentListProps {
   sortConfig: { key: SortKey; direction: SortDirection } | null;
   onReassign?: (docId: string, newOwnerId: string) => void;
   onDelete?: (docId: string) => void;
+  onBulkDelete?: (docIds: string[]) => void;
   isDeletedList?: boolean;
   onRestore?: (docId: string) => void;
   onPermanentDelete?: (docId: string) => void;
@@ -90,10 +101,11 @@ const SortableHeader = React.memo(({
 SortableHeader.displayName = 'SortableHeader';
 
 
-export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, isDeletedList = false, onRestore, onPermanentDelete }: DocumentListProps) => {
+export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, onBulkDelete, isDeletedList = false, onRestore, onPermanentDelete }: DocumentListProps) => {
   const { toast } = useToast()
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [assignToUserId, setAssignToUserId] = useState<string | null>(null);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     
   const handleDownload = (docName: string) => {
     toast({
@@ -112,12 +124,12 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
       if (checked) {
         return [...prev, docId];
       } else {
-        return prev.filter(id => id !== id);
+        return prev.filter(id => id !== docId);
       }
     });
   };
 
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked) {
       setSelectedDocIds(documents.map(d => d.id));
     } else {
@@ -134,6 +146,14 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
       setAssignToUserId(null);
     }
   }
+
+  const handleConfirmBulkDelete = () => {
+    if (onBulkDelete && selectedDocIds.length > 0) {
+        onBulkDelete(selectedDocIds);
+    }
+    setSelectedDocIds([]);
+    setIsBulkDeleteDialogOpen(false);
+  }
   
   const numSelected = selectedDocIds.length;
   const numDocuments = documents.length;
@@ -144,34 +164,47 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
 
   return (
     <div>
-        {onReassign && (
-        <div className="flex items-center gap-2 mb-4 p-2 bg-muted rounded-lg">
-            <UserPlus className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm font-medium">Re-assign {numSelected > 0 ? `${numSelected} selected` : 'document(s)'} to:</span>
-            <Select onValueChange={setAssignToUserId} value={assignToUserId || ''}>
-                <SelectTrigger className="w-[250px]">
-                    <SelectValue placeholder="Select an employee" />
-                </SelectTrigger>
-                <SelectContent>
-                    {users.map(user => (
-                        <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Button onClick={handleBulkReassign} disabled={!assignToUserId || numSelected === 0}>
-                <Send className="mr-2 h-4 w-4" />
-                Assign
-            </Button>
-        </div>
-      )}
+        {(onReassign || onBulkDelete) && numSelected > 0 && (
+            <div className="flex items-center gap-2 mb-4 p-2 bg-muted rounded-lg justify-between">
+                <div className='flex items-center gap-2'>
+                    <span className="text-sm font-medium text-muted-foreground">{numSelected} selected</span>
+                    {onReassign && (
+                        <>
+                            <UserPlus className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm font-medium">Re-assign to:</span>
+                            <Select onValueChange={setAssignToUserId} value={assignToUserId || ''}>
+                                <SelectTrigger className="w-[200px] bg-background">
+                                    <SelectValue placeholder="Select employee" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {users.map(user => (
+                                        <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button size="sm" onClick={handleBulkReassign} disabled={!assignToUserId}>
+                                <Send className="mr-2 h-4 w-4" />
+                                Assign
+                            </Button>
+                        </>
+                    )}
+                </div>
+                 {onBulkDelete && (
+                    <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteDialogOpen(true)}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Selected ({numSelected})
+                    </Button>
+                )}
+            </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
-              {onReassign && (
+              {(onReassign || onBulkDelete) && !isDeletedList && (
                   <TableHead className="w-[40px]">
                     <Checkbox
                         checked={numSelected === numDocuments && numDocuments > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
-                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                        onCheckedChange={handleSelectAll}
                         aria-label="Select all documents"
                     />
                 </TableHead>
@@ -188,7 +221,7 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
           <TableBody>
             {documents.map((doc) => (
               <TableRow key={doc.id} data-state={selectedDocIds.includes(doc.id) && "selected"}>
-                 {onReassign && (
+                 {(onReassign || onBulkDelete) && !isDeletedList && (
                     <TableCell>
                         <Checkbox
                             checked={selectedDocIds.includes(doc.id)}
@@ -286,6 +319,23 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
             ))}
           </TableBody>
         </Table>
+
+        <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                This will move the selected {numSelected} document(s) to the deleted items list. You can restore them later.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete {numSelected} Document(s)
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   )
 });

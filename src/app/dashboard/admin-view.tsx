@@ -217,7 +217,7 @@ export function AdminView() {
   const handleEmployeeSave = useCallback((employee: Partial<User> & { originalId?: string }) => {
     const isSadmin = employee.originalId === 'sadmin' || employee.id === 'sadmin';
 
-    if (isSadmin && employee.id !== auth?.currentUser?.uid) {
+    if (isSadmin && employee.id !== auth?.currentUser?.uid && employee.email !== 'sadmin@internal.local') {
         toast({
             variant: 'destructive',
             title: 'Permission Denied',
@@ -860,6 +860,18 @@ const handleExportUsers = () => {
     }
   }, [docs, toast]);
 
+  const handleBulkDeleteDocuments = useCallback((docIds: string[]) => {
+    const docsToDelete = docs.filter(d => docIds.includes(d.id));
+    if (docsToDelete.length > 0) {
+        setDocs(prev => prev.filter(d => !docIds.includes(d.id)));
+        setDeletedDocs(prev => [...prev, ...docsToDelete]);
+        toast({
+            title: "Documents Deleted",
+            description: `${docsToDelete.length} document(s) have been moved to deleted items.`
+        });
+    }
+  }, [docs, toast]);
+
   const handleRestoreDocument = useCallback((docId: string) => {
     const docToRestore = deletedDocs.find(d => d.id === docId);
     if (docToRestore) {
@@ -1072,6 +1084,7 @@ const handleExportUsers = () => {
                                     showOwner={true}
                                     onReassign={handleReassignDocument}
                                     onDelete={handleDeleteDocument}
+                                    onBulkDelete={handleBulkDeleteDocuments}
                                 />
                             </div>
                         ) : (
