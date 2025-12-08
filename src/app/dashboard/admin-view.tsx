@@ -73,6 +73,8 @@ import { DocumentList } from '@/components/dashboard/document-list'
 import { CompanyManagementDialog } from '@/components/dashboard/company-management-dialog'
 import { DeleteCompanyDialog } from '@/components/dashboard/delete-company-dialog'
 import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-dialog'
+import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
+import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -81,6 +83,7 @@ export function AdminView() {
   const [deletedDocs, setDeletedDocs] = useState<Document[]>([]);
   const [users, setUsers] = useState(initialUsers)
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
+  const [deletedDocumentTypes, setDeletedDocumentTypes] = useState<string[]>([]);
   const [departments, setDepartments] = useState(initialDepartments);
   const [deletedDepartments, setDeletedDepartments] = useState<string[]>([]);
   const [companies, setCompanies] = useState(initialCompanies);
@@ -341,6 +344,63 @@ const handleExportUsers = () => {
     });
   }, [toast]);
 
+  const handleEditDocumentType = useCallback((oldType: string, newType: string) => {
+    if (oldType.toLowerCase() === newType.toLowerCase()) return;
+  
+    if (documentTypes.find(dt => dt.toLowerCase() === newType.toLowerCase())) {
+        toast({
+            variant: 'destructive',
+            title: 'Duplicate Type',
+            description: `"${newType.trim()}" already exists.`,
+        });
+        return;
+    }
+
+    setDocumentTypes(prev => prev.map(dt => dt === oldType ? newType : dt));
+    setDocs(prevDocs => prevDocs.map(doc => doc.type === oldType ? { ...doc, type: newType } : doc));
+    toast({
+      title: 'Document Type Updated',
+      description: `"${oldType}" has been renamed to "${newType}" and all associated documents have been updated.`,
+    });
+  }, [documentTypes, toast]);
+
+
+  const handleDeleteDocumentType = useCallback((typeToDelete: string) => {
+    const isTypeInUse = docs.some(d => d.type === typeToDelete);
+    if (isTypeInUse) {
+        toast({
+            variant: 'destructive',
+            title: 'Cannot Delete Document Type',
+            description: `"${typeToDelete}" is currently in use by one or more documents. Please re-assign them before deleting.`,
+        });
+        return;
+    }
+    setDocumentTypes(prev => prev.filter(dt => dt !== typeToDelete));
+    setDeletedDocumentTypes(prev => [...prev, typeToDelete]);
+    toast({
+      title: 'Document Type Deleted',
+      description: `"${typeToDelete}" has been moved to the deleted items list.`,
+    });
+  }, [docs, toast]);
+  
+  const handleRestoreDocumentType = useCallback((typeToRestore: string) => {
+    setDeletedDocumentTypes(prev => prev.filter(d => d !== typeToRestore));
+    setDocumentTypes(prev => [...prev, typeToRestore]);
+    toast({
+      title: 'Document Type Restored',
+      description: `"${typeToRestore}" has been restored.`,
+    });
+  }, [toast]);
+
+  const handlePermanentDeleteDocumentType = useCallback((typeToDelete: string) => {
+    setDeletedDocumentTypes(prev => prev.filter(d => d !== typeToDelete));
+    toast({
+        variant: 'destructive',
+        title: 'Document Type Permanently Deleted',
+        description: `"${typeToDelete}" has been permanently removed.`,
+    });
+  }, [toast]);
+
   const handleAddDepartment = useCallback((newDepartment: string) => {
     setDepartments(prev => {
         if (!prev.find(d => d.toLowerCase() === newDepartment.toLowerCase())) {
@@ -463,26 +523,22 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handleSaveCompany = useCallback((companyToSave: Company) => {
-    let isEditing = false;
-    let newCompaniesList: Company[] = [];
-
-    const wasEditing = companies.some(c => c.id === companyToSave.id && companyToSave.id);
+    let newCompaniesList: Company[];
+    const isEditing = companies.some(c => c.id === companyToSave.id && companyToSave.id);
 
     setCompanies(prev => {
         const index = prev.findIndex(c => c.id === companyToSave.id);
         if (index > -1) {
-            isEditing = true;
             newCompaniesList = [...prev];
             newCompaniesList[index] = companyToSave;
         } else {
-            isEditing = false;
             const newCompany = { ...companyToSave, id: `comp-${Date.now()}` };
             newCompaniesList = [...prev, newCompany];
         }
         return newCompaniesList;
     });
 
-    if (wasEditing) {
+    if (isEditing) {
         toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
     } else {
         toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
@@ -572,6 +628,10 @@ const handleExportUsers = () => {
   const filteredDocTypes = useMemo(() => documentTypes.filter(type => 
     type.toLowerCase().includes(searchTerm.toLowerCase())
   ), [documentTypes, searchTerm]);
+
+  const filteredDeletedDocTypes = useMemo(() => deletedDocumentTypes.filter(type => 
+    type.toLowerCase().includes(searchTerm.toLowerCase())
+  ), [deletedDocumentTypes, searchTerm]);
 
   const filteredDepartments = useMemo(() => departments.filter(dept =>
     dept.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1468,12 +1528,23 @@ const handleExportUsers = () => {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm" disabled>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </Button>
-                                                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled>
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </Button>
+                                                <EditDocumentTypeDialog
+                                                    documentType={type}
+                                                    onEdit={handleEditDocumentType}
+                                                >
+                                                    <Button variant="ghost" size="sm">
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                                    </Button>
+                                                </EditDocumentTypeDialog>
+                                                <DeleteDocumentTypeDialog
+                                                    documentType={type}
+                                                    onDelete={() => handleDeleteDocumentType(type)}
+                                                    isTypeInUse={docs.some(d => d.type === type)}
+                                                >
+                                                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </Button>
+                                                </DeleteDocumentTypeDialog>
                                             </TableCell>
                                         </TableRow>
                                    )) : (
@@ -1552,6 +1623,7 @@ const handleExportUsers = () => {
                         <TabsList>
                             <TabsTrigger value="companies">Companies</TabsTrigger>
                             <TabsTrigger value="departments">Departments</TabsTrigger>
+                            <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                             <TabsTrigger value="documents">Documents</TabsTrigger>
                             <TabsTrigger value="users">Users</TabsTrigger>
                             <TabsTrigger value="announcements">Announcements</TabsTrigger>
@@ -1642,6 +1714,54 @@ const handleExportUsers = () => {
                                             )) : (
                                                 <TableRow>
                                                     <TableCell colSpan={2} className="text-center text-muted-foreground">No deleted departments found.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="doc-types" className="pt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Deleted Document Types</CardTitle>
+                                    <CardDescription>A list of all deleted document types. You can restore or permanently delete them.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Type Name</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredDeletedDocTypes.length > 0 ? filteredDeletedDocTypes.map(type => (
+                                                <TableRow key={type}>
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                            <Tag className="h-4 w-4 text-muted-foreground" />
+                                                            {type}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right space-x-2">
+                                                        <Button variant="outline" size="sm" onClick={() => handleRestoreDocumentType(type)}>
+                                                            <Undo className="mr-2 h-4 w-4" /> Restore
+                                                        </Button>
+                                                        <PermanentDeleteDialog
+                                                            itemName={type}
+                                                            itemType="document type"
+                                                            onDelete={() => handlePermanentDeleteDocumentType(type)}
+                                                        >
+                                                            <Button variant="destructive" size="sm">
+                                                                <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                                                            </Button>
+                                                        </PermanentDeleteDialog>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No deleted document types found.</TableCell>
                                                 </TableRow>
                                             )}
                                         </TableBody>
