@@ -1,5 +1,3 @@
-
-
 'use client'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -846,12 +844,12 @@ const handleExportUsers = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
          <div className="grid gap-2">
             <h1 className="text-3xl font-bold tracking-tight">{siteName}</h1>
             <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full md:w-auto">
           {numSelected > 0 && activeTab === 'employee-management' && activeSubTab === 'manage' ? (
             <>
                 <span className="text-sm text-muted-foreground">{numSelected} selected</span>
@@ -868,9 +866,9 @@ const handleExportUsers = () => {
                 </Button>
             </>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
                 <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments} companies={companies}>
-                    <Button>Add Employee</Button>
+                    <Button className="w-full sm:w-auto">Add Employee</Button>
                 </EmployeeManagementDialog>
                 <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
             </div>
@@ -879,17 +877,19 @@ const handleExportUsers = () => {
       </div>
       
       <Tabs value={activeTab} onValueChange={onTabChange} className="mt-4">
-        <div className="flex items-center mb-4">
-            <TabsList>
-                <TabsTrigger value="file-explorer">File Explorer</TabsTrigger>
-                <TabsTrigger value="employee-management">Employee Management</TabsTrigger>
-                <TabsTrigger value="announcements">Announcements</TabsTrigger>
-                <TabsTrigger value="holidays">Holidays</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-                <TabsTrigger value="deleted-items">Deleted Items</TabsTrigger>
-            </TabsList>
-            <div className="ml-auto flex items-center gap-2">
-                <div className="relative">
+        <div className="flex flex-col md:flex-row items-start md:items-center mb-4 gap-4">
+            <div className="overflow-x-auto w-full pb-2">
+                <TabsList className="w-max">
+                    <TabsTrigger value="file-explorer">File Explorer</TabsTrigger>
+                    <TabsTrigger value="employee-management">Employee Management</TabsTrigger>
+                    <TabsTrigger value="announcements">Announcements</TabsTrigger>
+                    <TabsTrigger value="holidays">Holidays</TabsTrigger>
+                    <TabsTrigger value="settings">Settings</TabsTrigger>
+                    <TabsTrigger value="deleted-items">Deleted Items</TabsTrigger>
+                </TabsList>
+            </div>
+            <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
+                <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
@@ -902,7 +902,7 @@ const handleExportUsers = () => {
                             : activeTab === 'deleted-items' ? 'Search deleted items...'
                             : 'Search...'
                         }
-                        className="w-full sm:w-[300px] pl-8"
+                        className="w-full pl-8"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -915,7 +915,7 @@ const handleExportUsers = () => {
                 <div className="flex items-center gap-2">
                     <Label className="text-sm font-medium">Department</Label>
                     <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                        <SelectTrigger className="w-[220px]">
+                        <SelectTrigger className="w-full sm:w-[220px]">
                             <SelectValue placeholder="Select Department" />
                         </SelectTrigger>
                         <SelectContent>
@@ -932,7 +932,7 @@ const handleExportUsers = () => {
                 <div className="flex items-center gap-2">
                     <Label className="text-sm font-medium">Role</Label>
                     <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Select Role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1080,18 +1080,18 @@ const handleExportUsers = () => {
             <TabsContent value="manage" className="mt-4">
               <Card>
                   <CardHeader>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                           <div>
                               <CardTitle>Manage Employees</CardTitle>
                               <CardDescription>A list of all active employees in the system.</CardDescription>
                           </div>
-                          <div className="flex items-center gap-2">
-                              <Button onClick={handleExportUsers} variant="outline">
+                          <div className="flex items-center gap-2 w-full md:w-auto">
+                              <Button onClick={handleExportUsers} variant="outline" className="w-full sm:w-auto">
                                   <Download className="mr-2 h-4 w-4" /> 
                                   {numSelected > 0 ? `Export Selected (${numSelected})` : 'Export All Users'}
                               </Button>
                               <BulkUserImportDialog onImport={handleBulkUserImport}>
-                                  <Button variant="outline">
+                                  <Button variant="outline" className="w-full sm:w-auto">
                                       <Upload className="mr-2 h-4 w-4" /> Import Users
                                   </Button>
                               </BulkUserImportDialog>
@@ -1194,7 +1194,7 @@ const handleExportUsers = () => {
 
         <TabsContent value="announcements">
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <CardTitle>Manage Announcements</CardTitle>
                         <CardDescription>Create and publish announcements for all employees.</CardDescription>
@@ -1264,11 +1264,11 @@ const handleExportUsers = () => {
                         <CardTitle>Manage Holidays</CardTitle>
                         <CardDescription>Add or remove holidays for the organization.</CardDescription>
                     </div>
-                    <div className="flex w-full sm:w-auto items-center gap-4">
-                        <div className="flex items-center gap-2">
+                    <div className="flex w-full flex-col sm:flex-row sm:w-auto items-center gap-4">
+                        <div className="flex items-center gap-2 w-full">
                            <Label className="text-sm font-medium">Location</Label>
                            <Select value={holidayLocationFilter} onValueChange={(value) => setHolidayLocationFilter(value as any)}>
-                                <SelectTrigger className="w-[180px]">
+                                <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Select Location" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1282,7 +1282,7 @@ const handleExportUsers = () => {
                             </Select>
                         </div>
                          <AddHolidayDialog onAdd={handleAddHoliday}>
-                            <Button variant="outline">
+                            <Button variant="outline" className="w-full sm:w-auto">
                                 <CalendarPlus className="mr-2 h-4 w-4" /> Add Holiday
                             </Button>
                         </AddHolidayDialog>
@@ -1333,15 +1333,17 @@ const handleExportUsers = () => {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="companies" className="w-full">
-                  <TabsList>
-                    <TabsTrigger value="companies">Companies</TabsTrigger>
-                    <TabsTrigger value="branding">Branding</TabsTrigger>
-                    <TabsTrigger value="doc-types">Document Types</TabsTrigger>
-                    <TabsTrigger value="departments">Departments</TabsTrigger>
-                  </TabsList>
+                  <div className="overflow-x-auto w-full pb-2">
+                    <TabsList className="w-max">
+                      <TabsTrigger value="companies">Companies</TabsTrigger>
+                      <TabsTrigger value="branding">Branding</TabsTrigger>
+                      <TabsTrigger value="doc-types">Document Types</TabsTrigger>
+                      <TabsTrigger value="departments">Departments</TabsTrigger>
+                    </TabsList>
+                  </div>
                   <TabsContent value="companies" className="pt-6">
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
+                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div>
                                 <CardTitle>Manage Companies</CardTitle>
                                 <CardDescription>Add, edit, or delete companies from the organization.</CardDescription>
@@ -1359,8 +1361,8 @@ const handleExportUsers = () => {
                                         <TableHead>Logo</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Short Name</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Phone</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Email</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Phone</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -1378,8 +1380,8 @@ const handleExportUsers = () => {
                                             </TableCell>
                                             <TableCell className="font-medium">{company.name}</TableCell>
                                             <TableCell>{company.shortName}</TableCell>
-                                            <TableCell>{company.email}</TableCell>
-                                            <TableCell>{company.phone}</TableCell>
+                                            <TableCell className="hidden sm:table-cell">{company.email}</TableCell>
+                                            <TableCell className="hidden sm:table-cell">{company.phone}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -1499,7 +1501,7 @@ const handleExportUsers = () => {
                   </TabsContent>
                   <TabsContent value="doc-types" className="pt-6">
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
+                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div>
                                 <CardTitle>Manage Document Types</CardTitle>
                                 <CardDescription>Add or edit document categories for the whole organization.</CardDescription>
@@ -1559,7 +1561,7 @@ const handleExportUsers = () => {
                   </TabsContent>
                   <TabsContent value="departments" className="pt-6">
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
+                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div>
                                 <CardTitle>Manage Departments</CardTitle>
                                 <CardDescription>Add, edit, or delete departments for the organization.</CardDescription>
@@ -1620,14 +1622,16 @@ const handleExportUsers = () => {
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="companies" className="w-full">
-                        <TabsList>
-                            <TabsTrigger value="companies">Companies</TabsTrigger>
-                            <TabsTrigger value="departments">Departments</TabsTrigger>
-                            <TabsTrigger value="doc-types">Document Types</TabsTrigger>
-                            <TabsTrigger value="documents">Documents</TabsTrigger>
-                            <TabsTrigger value="users">Users</TabsTrigger>
-                            <TabsTrigger value="announcements">Announcements</TabsTrigger>
-                        </TabsList>
+                        <div className="overflow-x-auto w-full pb-2">
+                            <TabsList className="w-max">
+                                <TabsTrigger value="companies">Companies</TabsTrigger>
+                                <TabsTrigger value="departments">Departments</TabsTrigger>
+                                <TabsTrigger value="doc-types">Document Types</TabsTrigger>
+                                <TabsTrigger value="documents">Documents</TabsTrigger>
+                                <TabsTrigger value="users">Users</TabsTrigger>
+                                <TabsTrigger value="announcements">Announcements</TabsTrigger>
+                            </TabsList>
+                        </div>
                          <TabsContent value="companies" className="pt-6">
                            <Card>
                                 <CardHeader>

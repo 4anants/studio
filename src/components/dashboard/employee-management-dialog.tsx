@@ -187,12 +187,12 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
              <FormField
               control={form.control}
               name="id"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Employee ID</FormLabel>
                   <FormControl>
                     <Input placeholder="user-id-123" {...field} />
@@ -205,7 +205,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
@@ -218,7 +218,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="email"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Official Email</FormLabel>
                   <FormControl>
                     <Input placeholder="john.doe@company.com" {...field} />
@@ -231,7 +231,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="personalEmail"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Personal Email</FormLabel>
                   <FormControl>
                     <Input placeholder="john.doe@personal.com" {...field} />
@@ -244,7 +244,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="mobile"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Mobile No.</FormLabel>
                   <FormControl>
                     <div className="relative">
@@ -262,7 +262,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="emergencyContact"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Emergency Contact</FormLabel>
                    <FormControl>
                     <div className="relative">
@@ -280,7 +280,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="dateOfBirth"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
@@ -293,7 +293,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="joiningDate"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Joining Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
@@ -306,7 +306,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="resignationDate"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Resignation Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
@@ -319,7 +319,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="password"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder={isEditing ? "Leave blank to keep current" : "••••••••"} {...field} />
@@ -332,7 +332,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="company"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Company</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
@@ -354,7 +354,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="location"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Location</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
@@ -376,7 +376,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="department"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Department</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
@@ -398,7 +398,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="designation"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Designation</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. Software Engineer" {...field} />
@@ -411,7 +411,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 control={form.control}
                 name="bloodGroup"
                 render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1">
+                    <FormItem className="col-span-1">
                     <FormLabel>Blood Group</FormLabel>
                     <FormControl>
                         <Input placeholder="e.g. A+" {...field} />
@@ -424,7 +424,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Status</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
@@ -446,7 +446,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               control={form.control}
               name="role"
               render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
+                <FormItem className="col-span-1">
                   <FormLabel>Role</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
@@ -463,7 +463,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 </FormItem>
               )}
             />
-             <DialogFooter className="col-span-2 pt-4">
+             <DialogFooter className="col-span-1 sm:col-span-2 pt-4">
                 <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isEditing ? 'Save Changes' : 'Create Employee'}
