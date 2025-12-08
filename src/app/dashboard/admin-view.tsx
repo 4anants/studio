@@ -74,7 +74,7 @@ import { DeleteCompanyDialog } from '@/components/dashboard/delete-company-dialo
 import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-dialog'
 import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
-import { getAuth } from 'firebase/auth'
+import { useAuth } from '@/firebase'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -106,7 +106,7 @@ export function AdminView() {
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
   const { toast } = useToast();
   const router = useRouter();
-  const auth = getAuth();
+  const auth = useAuth();
 
   useEffect(() => {
     const handleViewAnnouncements = () => {
@@ -1949,3 +1949,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
