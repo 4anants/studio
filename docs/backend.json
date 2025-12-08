@@ -141,7 +141,7 @@
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": ["password", "microsoft.com"]
   },
   "firestore": {
     "/users/{userId}": {

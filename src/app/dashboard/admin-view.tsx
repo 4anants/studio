@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -73,6 +74,7 @@ import { DeleteCompanyDialog } from '@/components/dashboard/delete-company-dialo
 import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-dialog'
 import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
+import { getAuth } from 'firebase/auth'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -104,6 +106,7 @@ export function AdminView() {
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
   const { toast } = useToast();
   const router = useRouter();
+  const auth = getAuth();
 
   useEffect(() => {
     const handleViewAnnouncements = () => {
@@ -208,7 +211,7 @@ export function AdminView() {
            personalEmail: employee.personalEmail,
            avatar: employee.avatar || String(Date.now()),
            mobile: employee.mobile,
-           password: employee.password,
+           // password: employee.password, // Password is not stored in state
            dateOfBirth: employee.dateOfBirth,
            joiningDate: employee.joiningDate,
            resignationDate: employee.resignationDate,
@@ -317,11 +320,24 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handleResetPassword = useCallback((employeeName: string) => {
-    toast({
-      title: "Password Reset Link Sent",
-      description: `An email has been sent to ${employeeName} with password reset instructions.`
-    });
-  }, [toast]);
+    const user = users.find(u => u.name === employeeName);
+    if (user && user.email) {
+        auth.sendPasswordResetEmail(user.email)
+            .then(() => {
+                toast({
+                    title: "Password Reset Link Sent",
+                    description: `An email has been sent to ${employeeName} with password reset instructions.`
+                });
+            })
+            .catch(error => {
+                toast({
+                    variant: 'destructive',
+                    title: "Error Sending Reset Email",
+                    description: error.message,
+                });
+            });
+    }
+  }, [auth, toast, users]);
 
   const handleAddDocumentType = useCallback((newType: string) => {
     setDocumentTypes(prev => {
@@ -521,27 +537,22 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handleSaveCompany = useCallback((companyToSave: Company) => {
-    let newCompaniesList: Company[];
     const isEditing = companies.some(c => c.id === companyToSave.id && companyToSave.id);
-
+  
     setCompanies(prev => {
-        const index = prev.findIndex(c => c.id === companyToSave.id);
-        if (index > -1) {
-            newCompaniesList = [...prev];
-            newCompaniesList[index] = companyToSave;
-        } else {
-            const newCompany = { ...companyToSave, id: `comp-${Date.now()}` };
-            newCompaniesList = [...prev, newCompany];
-        }
-        return newCompaniesList;
+      if (isEditing) {
+        return prev.map(c => c.id === companyToSave.id ? companyToSave : c);
+      } else {
+        const newCompany = { ...companyToSave, id: `comp-${Date.now()}` };
+        return [...prev, newCompany];
+      }
     });
-
+  
     if (isEditing) {
-        toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
+      toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
     } else {
-        toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
+      toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
     }
-
   }, [toast, companies]);
 
   const handleDeleteCompany = useCallback((companyId: string) => {
