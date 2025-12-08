@@ -19,17 +19,31 @@ export * from './firestore/use-doc';
 export * from './provider';
 
 // Initialize Firebase app if it hasn't been already
-const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+let app: FirebaseApp;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
+
 const auth: Auth = getAuth(app);
 const firestore: Firestore = getFirestore(app);
 
 // In a development environment, connect to the local emulators
-if (process.env.NODE_ENV === 'development') {
-  // It's recommended to use different ports for each service
-  console.log('Connecting to Firebase Emulators');
-  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-  connectFirestoreEmulator(firestore, 'localhost', 8080);
+// We check for window to ensure this only runs on the client
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('Connecting to Firebase Emulators');
+    // Check if emulators are already connected to prevent errors on hot reloads
+    // @ts-ignore - _emulatorConfig is not in the type definition but it is there
+    if (!auth.emulatorConfig) {
+        connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+    }
+    // @ts-ignore
+    if (!firestore._settings.host) {
+        connectFirestoreEmulator(firestore, 'localhost', 8080);
+    }
 }
+
 
 /**
  * Returns the initialized Firebase services.
