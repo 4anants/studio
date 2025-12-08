@@ -35,17 +35,19 @@ export function LoginForm() {
   const [localIsLoading, setLocalIsLoading] = useState(false);
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
-  const auth = useAuth();
+  const [auth, setAuth] = useState<any>(null);
+  const authHook = useAuth();
   const [allowedDomains, setAllowedDomains] = useState<string[]>(['yourdomain.com']);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   useEffect(() => {
+    setAuth(authHook);
     const storedDomains = localStorage.getItem('allowedDomains');
     if (storedDomains) {
       setAllowedDomains(JSON.parse(storedDomains));
     }
-  }, []);
+  }, [authHook]);
 
   const handleNewUser = (user: { uid: string, email?: string | null, displayName?: string | null }) => {
     if (user.email && !users.some(u => u.email === user.email)) {
@@ -182,7 +184,7 @@ export function LoginForm() {
                         <Input
                         id="email"
                         type="email"
-                        placeholder="sadmin@internal.local"
+                        placeholder="Email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
