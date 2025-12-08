@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useRouter } from 'next/navigation'
@@ -67,16 +66,16 @@ export function LoginForm() {
         const userEmail = user.email;
 
         // --- Domain Validation ---
-        // IMPORTANT: Replace 'yourdomain.com' with your actual company domain.
-        const allowedDomain = 'yourdomain.com';
+        // IMPORTANT: Replace 'yourdomain.com' and 'anotherdomain.com' with your actual company domains.
+        const allowedDomains = ['yourdomain.com', 'anotherdomain.com'];
 
-        if (!userEmail || !userEmail.endsWith(`@${allowedDomain}`)) {
-            // If the user's email domain is not the one you want, show an error and sign them out.
+        if (!userEmail || !allowedDomains.some(domain => userEmail.endsWith(`@${domain}`))) {
+            // If the user's email domain is not in the allowed list, show an error and sign them out.
             await auth.signOut();
             toast({
                 variant: 'destructive',
                 title: 'Access Denied',
-                description: `You must use an @${allowedDomain} email address to sign in.`,
+                description: 'You must use an approved company email address to sign in.',
             });
             setIsLoading(false);
             return;
