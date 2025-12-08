@@ -9,13 +9,22 @@ export type Document = {
   fileType: 'pdf' | 'doc' | 'image';
 };
 
-export const companies = [
-    { name: 'ASE ENGINEERS PRIVATE LIMITED', shortName: 'ASE' },
-    { name: 'ALLIANCE MEP PRIVATE LIMITED', shortName: 'AMEP' },
-    { name: 'POTOMAC CONSULTING SERVICES PRIVATE LIMITED', shortName: 'POTOMAC' },
-] as const;
-export type Company = typeof companies[number];
+export type Company = {
+  id: string;
+  name: string;
+  shortName: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  logo?: string; // data URI
+};
 export type CompanyName = Company['name'];
+
+export const initialCompanies: Company[] = [
+    { id: 'comp-1', name: 'ASE ENGINEERS PRIVATE LIMITED', shortName: 'ASE', address: 'B-813, K P Epitome, Near Makarba Lake, Makarba, Ahmedabad - 380051.', phone: '123-456-7890', email: 'contact@ase.com' },
+    { id: 'comp-2', name: 'ALLIANCE MEP PRIVATE LIMITED', shortName: 'AMEP', address: '8-1-305/306, 4th Floor, Anand Silicon Chip, Shaikpet, Hyderabad - 500008.', phone: '123-456-7891', email: 'contact@amep.com' },
+    { id: 'comp-3', name: 'POTOMAC CONSULTING SERVICES PRIVATE LIMITED', shortName: 'POTOMAC', address: 'Some other address, City, State - 123456', phone: '123-456-7892', email: 'contact@potomac.com' },
+];
 
 export const locations = {
     'AMD': 'B-813, K P Epitome, Near Makarba Lake, Makarba, Ahmedabad - 380051.',

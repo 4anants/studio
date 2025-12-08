@@ -8,9 +8,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { companies, locations } from '@/lib/mock-data';
+import { initialCompanies, locations } from '@/lib/mock-data';
 
-const companyNames = companies.map(c => c.name) as [string, ...string[]];
+const companyNames = initialCompanies.map(c => c.name) as [string, ...string[]];
 const locationKeys = Object.keys(locations) as [string, ...string[]];
 
 const IdCardInputSchema = z.object({
@@ -40,7 +40,7 @@ export async function generateIdCardImage(input: IdCardInput): Promise<IdCardOut
 }
 
 const getCompanyDetails = (input: IdCardInput) => {
-    const company = companies.find(c => c.name === input.employee.company);
+    const company = initialCompanies.find(c => c.name === input.employee.company);
     const address = input.employee.location ? locations[input.employee.location] : 'N/A';
     return {
         name: company?.name || "Company Name",

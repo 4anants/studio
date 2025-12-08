@@ -1,0 +1,210 @@
+
+'use client'
+
+import { useState, useCallback } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+  } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Camera } from 'lucide-react';
+import type { Company } from '@/lib/mock-data';
+import { useToast } from '@/hooks/use-toast';
+import { useDropzone } from 'react-dropzone';
+import Image from 'next/image';
+
+const formSchema = z.object({
+  name: z.string().min(2, { message: 'Company name is required.' }),
+  shortName: z.string().min(1, { message: 'Short name is required.' }),
+  email: z.string().email({ message: 'A valid email is required.' }).optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  logo: z.string().optional(),
+});
+
+interface CompanyManagementDialogProps {
+  company?: Company;
+  onSave: (company: Company) => void;
+  children: React.ReactNode;
+}
+
+export function CompanyManagementDialog({ company, onSave, children }: CompanyManagementDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const isEditing = !!company;
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: company?.name || '',
+      shortName: company?.shortName || '',
+      email: company?.email || '',
+      phone: company?.phone || '',
+      address: company?.address || '',
+      logo: company?.logo || '',
+    },
+  });
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setLogoPreview(dataUri);
+        form.setValue('logo', dataUri);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [form]);
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept: { 'image/*': [] },
+    multiple: false,
+  });
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
+    setTimeout(() => {
+      onSave({
+        ...values,
+        id: company?.id || '', // id is handled by parent
+      });
+      setIsLoading(false);
+      setOpen(false);
+      form.reset();
+      setLogoPreview(null);
+    }, 500);
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      form.reset({
+        name: company?.name || '',
+        shortName: company?.shortName || '',
+        email: company?.email || '',
+        phone: company?.phone || '',
+        address: company?.address || '',
+        logo: company?.logo || '',
+      });
+      setLogoPreview(null);
+    }
+    setOpen(isOpen);
+  };
+
+  const currentLogo = logoPreview || company?.logo;
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Edit Company' : 'Add New Company'}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? `Update details for ${company.name}.` : 'Enter the details for the new company.'}
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-6">
+            <div className="flex justify-center">
+              <div {...getRootProps()} className="relative cursor-pointer group">
+                <input {...getInputProps()} />
+                <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center border">
+                  {currentLogo ? (
+                    <Image src={currentLogo} width={96} height={96} alt="Company Logo" className="rounded-full object-cover h-full w-full" />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Logo</span>
+                  )}
+                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-opacity">
+                        <Camera className="h-8 w-8 text-white opacity-0 group-hover:opacity-100" />
+                    </div>
+                </div>
+              </div>
+            </div>
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Name</FormLabel>
+                  <FormControl><Input placeholder="Full legal name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="shortName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Short Name / Abbreviation</FormLabel>
+                  <FormControl><Input placeholder="e.g., ACME" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl><Input placeholder="contact@company.com" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl><Input placeholder="+1-123-456-7890" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl><Textarea placeholder="Company's full address" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter className="pt-4">
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? 'Save Changes' : 'Add Company'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

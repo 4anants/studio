@@ -10,8 +10,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle, ArrowLeft, Eye } from 'lucide-react'
+import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName, initialCompanies, Company } from '@/lib/mock-data'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, ShieldQuestion, Users, Upload, Download, ArchiveRestore, Folder, Save, AlertTriangle, ArrowLeft, Eye, Home } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -70,6 +70,8 @@ import { BulkUserImportDialog } from '@/components/dashboard/bulk-user-import-di
 import Papa from 'papaparse'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { DocumentList } from '@/components/dashboard/document-list'
+import { CompanyManagementDialog } from '@/components/dashboard/company-management-dialog'
+import { DeleteCompanyDialog } from '@/components/dashboard/delete-company-dialog'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -78,6 +80,7 @@ export function AdminView() {
   const [users, setUsers] = useState(initialUsers)
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
   const [departments, setDepartments] = useState(initialDepartments);
+  const [companies, setCompanies] = useState(initialCompanies);
   const [holidays, setHolidays] = useState(initialHolidays);
   const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: true, status: a.status || 'published'}))); // Admins see all as read initially
   const [searchTerm, setSearchTerm] = useState('')
@@ -418,6 +421,44 @@ const handleExportUsers = () => {
     });
   }, [toast]);
 
+  const handleSaveCompany = useCallback((companyToSave: Company) => {
+    setCompanies(prev => {
+        const index = prev.findIndex(c => c.id === companyToSave.id);
+        if (index > -1) {
+            const newCompanies = [...prev];
+            newCompanies[index] = companyToSave;
+            toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
+            return newCompanies;
+        } else {
+            const newCompany = { ...companyToSave, id: `comp-${Date.now()}` };
+            toast({ title: 'Company Added', description: `${newCompany.name} has been added.` });
+            return [...prev, newCompany];
+        }
+    });
+  }, [toast]);
+
+  const handleDeleteCompany = useCallback((companyId: string) => {
+    const company = companies.find(c => c.id === companyId);
+    if (!company) return;
+
+    // Check if any user is associated with this company
+    const isCompanyInUse = users.some(u => u.company === company.name);
+    if (isCompanyInUse) {
+        toast({
+            variant: 'destructive',
+            title: 'Cannot Delete Company',
+            description: `"${company.name}" is currently assigned to one or more employees. Please reassign them before deleting.`,
+        });
+        return;
+    }
+
+    setCompanies(prev => prev.filter(c => c.id !== companyId));
+    toast({
+        title: 'Company Deleted',
+        description: `"${company.name}" has been deleted successfully.`,
+    });
+}, [companies, users, toast]);
+
 
   const activeUsers = useMemo(() => users.filter(user => user.status === 'active' || user.status === 'inactive' || user.status === 'pending'), [users]);
   const deletedUsers = useMemo(() => users.filter(user => user.status === 'deleted'), [users]);
@@ -461,6 +502,11 @@ const handleExportUsers = () => {
   const filteredDepartments = useMemo(() => departments.filter(dept =>
     dept.toLowerCase().includes(searchTerm.toLowerCase())
   ), [departments, searchTerm]);
+
+  const filteredCompanies = useMemo(() => companies.filter(comp =>
+    comp.name.toLowerCase().includes(searchTerm.toLowerCase()) || comp.shortName.toLowerCase().includes(searchTerm.toLowerCase())
+  ), [companies, searchTerm]);
+
 
   const filteredHolidays = useMemo(() => {
     return holidays.filter(holiday => 
@@ -637,7 +683,7 @@ const handleExportUsers = () => {
             </>
           ) : (
             <div className="flex items-center gap-2">
-                <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments}>
+                <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments} companies={companies}>
                     <Button>Add Employee</Button>
                 </EmployeeManagementDialog>
                 <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
@@ -923,7 +969,7 @@ const handleExportUsers = () => {
                                                   </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="end">
-                                                  <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments}>
+                                                  <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
                                                       <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                                           <Edit className="mr-2 h-4 w-4" />
                                                           Edit Employee
@@ -1100,6 +1146,7 @@ const handleExportUsers = () => {
                 <Tabs defaultValue="branding" className="w-full">
                   <TabsList>
                     <TabsTrigger value="branding">Branding</TabsTrigger>
+                    <TabsTrigger value="companies">Companies</TabsTrigger>
                     <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                     <TabsTrigger value="departments">Departments</TabsTrigger>
                     <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
@@ -1189,6 +1236,79 @@ const handleExportUsers = () => {
                             </div>
                         </CardContent>
                       </Card>
+                  </TabsContent>
+                   <TabsContent value="companies" className="pt-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Manage Companies</CardTitle>
+                                <CardDescription>Add, edit, or delete companies from the organization.</CardDescription>
+                            </div>
+                            <CompanyManagementDialog onSave={handleSaveCompany}>
+                                <Button variant="outline">
+                                    <Home className="mr-2 h-4 w-4" /> Add Company
+                                </Button>
+                            </CompanyManagementDialog>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Logo</TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Short Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Phone</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {filteredCompanies.length > 0 ? filteredCompanies.map(company => (
+                                        <TableRow key={company.id}>
+                                            <TableCell>
+                                                {company.logo ? (
+                                                    <Image src={company.logo} alt={company.name} width={40} height={40} className="rounded-md object-cover"/>
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                                        No Logo
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="font-medium">{company.name}</TableCell>
+                                            <TableCell>{company.shortName}</TableCell>
+                                            <TableCell>{company.email}</TableCell>
+                                            <TableCell>{company.phone}</TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon">
+                                                            <MoreVertical className="h-5 w-5" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <CompanyManagementDialog company={company} onSave={handleSaveCompany}>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                                            </DropdownMenuItem>
+                                                        </CompanyManagementDialog>
+                                                        <DeleteCompanyDialog company={company} onDelete={() => handleDeleteCompany(company.id)}>
+                                                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                          </DropdownMenuItem>
+                                                        </DeleteCompanyDialog>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                   )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center text-muted-foreground">No companies found.</TableCell>
+                                        </TableRow>
+                                   )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
                   </TabsContent>
                   <TabsContent value="doc-types" className="pt-6">
                     <Card>
