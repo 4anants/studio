@@ -463,27 +463,36 @@ const handleExportUsers = () => {
 
   const handleSaveCompany = useCallback((companyToSave: Company) => {
     let isEditing = false;
-    let newCompanies: Company[] = [];
+    let newCompaniesList: Company[] = [];
+
     setCompanies(prev => {
         const index = prev.findIndex(c => c.id === companyToSave.id);
         if (index > -1) {
             isEditing = true;
-            newCompanies = [...prev];
-            newCompanies[index] = companyToSave;
+            newCompaniesList = [...prev];
+            newCompaniesList[index] = companyToSave;
         } else {
             isEditing = false;
             const newCompany = { ...companyToSave, id: `comp-${Date.now()}` };
-            newCompanies = [...prev, newCompany];
+            newCompaniesList = [...prev, newCompany];
         }
-        return newCompanies;
+        return newCompaniesList;
     });
 
-    if (isEditing) {
-        toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
-    } else {
-        toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
-    }
-  }, [toast]);
+    // This part is moved outside and will run after the state update.
+    // However, since `isEditing` is determined inside the updater, we need to determine it before.
+    const wasEditing = companies.some(c => c.id === companyToSave.id && companyToSave.id);
+    
+    // We'll have to rely on this less-than-ideal way for now due to how `setCompanies` is structured
+    setTimeout(() => {
+        if (wasEditing) {
+            toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
+        } else {
+            toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
+        }
+    }, 0);
+
+  }, [toast, companies]);
 
   const handleDeleteCompany = useCallback((companyId: string) => {
     const company = companies.find(c => c.id === companyId);
@@ -1518,13 +1527,13 @@ const handleExportUsers = () => {
                     <CardDescription>Manage, restore, or permanently delete items.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="users" className="w-full">
+                    <Tabs defaultValue="companies" className="w-full">
                         <TabsList>
-                            <TabsTrigger value="users">Users</TabsTrigger>
-                            <TabsTrigger value="documents">Documents</TabsTrigger>
-                            <TabsTrigger value="announcements">Announcements</TabsTrigger>
-                            <TabsTrigger value="departments">Departments</TabsTrigger>
                             <TabsTrigger value="companies">Companies</TabsTrigger>
+                            <TabsTrigger value="departments">Departments</TabsTrigger>
+                            <TabsTrigger value="documents">Documents</TabsTrigger>
+                            <TabsTrigger value="users">Users</TabsTrigger>
+                            <TabsTrigger value="announcements">Announcements</TabsTrigger>
                         </TabsList>
                         <TabsContent value="users" className="pt-6">
                             <Card>
