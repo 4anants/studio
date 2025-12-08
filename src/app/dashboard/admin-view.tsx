@@ -1,4 +1,5 @@
 
+
 'use client'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -1143,15 +1144,88 @@ const handleExportUsers = () => {
                   <CardDescription>Manage global application settings and configurations.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="branding" className="w-full">
+                <Tabs defaultValue="companies" className="w-full">
                   <TabsList>
-                    <TabsTrigger value="branding">Branding</TabsTrigger>
                     <TabsTrigger value="companies">Companies</TabsTrigger>
+                    <TabsTrigger value="branding">Branding</TabsTrigger>
                     <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                     <TabsTrigger value="departments">Departments</TabsTrigger>
                     <TabsTrigger value="deleted-users">Deleted Users</TabsTrigger>
                     <TabsTrigger value="deleted-announcements">Deleted Announcements</TabsTrigger>
                   </TabsList>
+                  <TabsContent value="companies" className="pt-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Manage Companies</CardTitle>
+                                <CardDescription>Add, edit, or delete companies from the organization.</CardDescription>
+                            </div>
+                            <CompanyManagementDialog onSave={handleSaveCompany}>
+                                <Button variant="outline">
+                                    <Home className="mr-2 h-4 w-4" /> Add Company
+                                </Button>
+                            </CompanyManagementDialog>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Logo</TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Short Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Phone</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {filteredCompanies.length > 0 ? filteredCompanies.map(company => (
+                                        <TableRow key={company.id}>
+                                            <TableCell>
+                                                {company.logo ? (
+                                                    <Image src={company.logo} alt={company.name} width={40} height={40} className="rounded-md object-cover"/>
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                                        No Logo
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="font-medium">{company.name}</TableCell>
+                                            <TableCell>{company.shortName}</TableCell>
+                                            <TableCell>{company.email}</TableCell>
+                                            <TableCell>{company.phone}</TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon">
+                                                            <MoreVertical className="h-5 w-5" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <CompanyManagementDialog company={company} onSave={handleSaveCompany}>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                                            </DropdownMenuItem>
+                                                        </CompanyManagementDialog>
+                                                        <DeleteCompanyDialog company={company} onDelete={() => handleDeleteCompany(company.id)}>
+                                                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                          </DropdownMenuItem>
+                                                        </DeleteCompanyDialog>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                   )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center text-muted-foreground">No companies found.</TableCell>
+                                        </TableRow>
+                                   )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
                   <TabsContent value="branding" className="pt-6">
                       <Card>
                         <CardHeader>
@@ -1236,79 +1310,6 @@ const handleExportUsers = () => {
                             </div>
                         </CardContent>
                       </Card>
-                  </TabsContent>
-                   <TabsContent value="companies" className="pt-6">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Manage Companies</CardTitle>
-                                <CardDescription>Add, edit, or delete companies from the organization.</CardDescription>
-                            </div>
-                            <CompanyManagementDialog onSave={handleSaveCompany}>
-                                <Button variant="outline">
-                                    <Home className="mr-2 h-4 w-4" /> Add Company
-                                </Button>
-                            </CompanyManagementDialog>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Logo</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Short Name</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Phone</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                   {filteredCompanies.length > 0 ? filteredCompanies.map(company => (
-                                        <TableRow key={company.id}>
-                                            <TableCell>
-                                                {company.logo ? (
-                                                    <Image src={company.logo} alt={company.name} width={40} height={40} className="rounded-md object-cover"/>
-                                                ) : (
-                                                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                                                        No Logo
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="font-medium">{company.name}</TableCell>
-                                            <TableCell>{company.shortName}</TableCell>
-                                            <TableCell>{company.email}</TableCell>
-                                            <TableCell>{company.phone}</TableCell>
-                                            <TableCell className="text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon">
-                                                            <MoreVertical className="h-5 w-5" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <CompanyManagementDialog company={company} onSave={handleSaveCompany}>
-                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                                            </DropdownMenuItem>
-                                                        </CompanyManagementDialog>
-                                                        <DeleteCompanyDialog company={company} onDelete={() => handleDeleteCompany(company.id)}>
-                                                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                          </DropdownMenuItem>
-                                                        </DeleteCompanyDialog>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-                                   )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="text-center text-muted-foreground">No companies found.</TableCell>
-                                        </TableRow>
-                                   )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
                   </TabsContent>
                   <TabsContent value="doc-types" className="pt-6">
                     <Card>
@@ -1546,3 +1547,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
