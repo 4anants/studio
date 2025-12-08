@@ -1,0 +1,172 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's full name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address"
+        },
+        "personalEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "The user's personal email address"
+        },
+        "avatar": {
+            "type": "string",
+            "description": "A seed for the user's avatar"
+        },
+        "mobile": {
+            "type": "string",
+            "description": "The user's mobile number"
+        },
+        "emergencyContact": {
+            "type": "string",
+            "description": "The user's emergency contact number"
+        },
+        "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "description": "The user's date of birth"
+        },
+        "joiningDate": {
+            "type": "string",
+            "format": "date",
+            "description": "The user's joining date"
+        },
+        "resignationDate": {
+            "type": "string",
+            "format": "date",
+            "description": "The user's resignation date"
+        },
+        "designation": {
+            "type": "string",
+            "description": "The user's designation"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive", "pending", "deleted"]
+        },
+        "department": {
+            "type": "string",
+            "description": "The user's department"
+        },
+        "bloodGroup": {
+            "type": "string",
+            "description": "The user's blood group"
+        },
+        "company": {
+            "type": "string",
+            "description": "The user's company"
+        },
+        "location": {
+            "type": "string",
+            "description": "The user's location"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "employee"]
+        }
+      },
+      "required": ["name", "email", "role", "status"]
+    },
+    "document": {
+        "title": "Document",
+        "description": "A document uploaded by a user",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string" },
+            "size": { "type": "string" },
+            "uploadDate": { "type": "string", "format": "date-time" },
+            "ownerId": { "type": "string" },
+            "fileType": { "type": "string", "enum": ["pdf", "doc", "image"] }
+        },
+        "required": ["name", "type", "uploadDate", "ownerId"]
+    },
+    "company": {
+        "title": "Company",
+        "description": "A company in the organization",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "shortName": { "type": "string" },
+            "address": { "type": "string" },
+            "phone": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "logo": { "type": "string" }
+        },
+        "required": ["name", "shortName"]
+    },
+    "department": {
+        "title": "Department",
+        "description": "An organizational department",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" }
+        },
+        "required": ["name"]
+    },
+    "holiday": {
+        "title": "Holiday",
+        "description": "A company holiday",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date" },
+            "name": { "type": "string" },
+            "location": { "type": "string" }
+        },
+        "required": ["date", "name", "location"]
+    },
+    "announcement": {
+        "title": "Announcement",
+        "description": "A company-wide announcement",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string" },
+            "message": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "author": { "type": "string" },
+            "status": { "type": "string", "enum": ["published", "deleted"] },
+            "eventDate": { "type": "string", "format": "date" }
+        },
+        "required": ["title", "message", "date", "author", "status"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+        "schema": { "$ref": "#/entities/user" },
+        "description": "Stores user profile information."
+    },
+    "/documents/{documentId}": {
+        "schema": { "$ref": "#/entities/document" },
+        "description": "Stores metadata for uploaded documents."
+    },
+    "/companies/{companyId}": {
+        "schema": { "$ref": "#/entities/company" },
+        "description": "Stores company information."
+    },
+    "/departments/{departmentId}": {
+        "schema": { "$ref": "#/entities/department" },
+        "description": "Stores organizational departments."
+    },
+    "/holidays/{holidayId}": {
+        "schema": { "$ref": "#/entities/holiday" },
+        "description": "Stores company holidays."
+    },
+    "/announcements/{announcementId}": {
+        "schema": { "$ref": "#/entities/announcement" },
+        "description": "Stores company-wide announcements."
+    }
+  }
+}
