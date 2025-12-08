@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
@@ -19,10 +19,21 @@ const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined
  * Provider component that initializes Firebase and makes the instances available to the rest of the app.
  */
 export function FirebaseProvider({ children }: { children: ReactNode }) {
-  const firebaseServices = initializeFirebase();
+  const [services, setServices] = useState<FirebaseContextType>({
+    app: null,
+    auth: null,
+    firestore: null,
+  });
+
+  useEffect(() => {
+    // Firebase should only be initialized on the client side.
+    const firebaseServices = initializeFirebase();
+    setServices(firebaseServices);
+  }, []);
+
   return (
-    <FirebaseContext.Provider value={firebaseServices}>
-      {children}
+    <FirebaseContext.Provider value={services}>
+      {services.app ? children : null /* Render children only when Firebase is initialized */}
     </FirebaseContext.Provider>
   );
 }

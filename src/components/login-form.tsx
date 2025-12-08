@@ -4,15 +4,21 @@
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-
 import { users as initialUsers, User } from '@/lib/mock-data'
 import { signInWithPopup, OAuthProvider } from 'firebase/auth'
-import { initializeFirebase } from '@/firebase'
+import { useAuth } from '@/firebase'
 
 const MicrosoftLogo = () => (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -26,9 +32,13 @@ const MicrosoftLogo = () => (
 export function LoginForm() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [localIsLoading, setLocalIsLoading] = useState(false);
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
-  const [allowedDomains, setAllowedDomains] = useState(['yourdomain.com']);
+  const auth = useAuth();
+  const [allowedDomains, setAllowedDomains] = useState<string[]>(['yourdomain.com']);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     const storedDomains = localStorage.getItem('allowedDomains');
@@ -52,9 +62,35 @@ export function LoginForm() {
     }
   };
 
+  async function handleLocalLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLocalIsLoading(true);
+
+    // Hardcoded Super Admin check
+    if (email === 'sadmin@internal.local' && password === 'Supper@321..') {
+        setTimeout(() => {
+            toast({
+                title: 'Login Successful',
+                description: `Welcome, Super Admin!`,
+            });
+            router.push(`/dashboard?role=admin`);
+            setLocalIsLoading(false);
+        }, 500);
+        return;
+    }
+
+    setTimeout(() => {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Credentials',
+            description: 'The email or password you entered is incorrect.',
+        });
+        setLocalIsLoading(false);
+    }, 500);
+  }
+
   async function signInWithMicrosoft() {
     setIsLoading(true);
-    const { auth } = initializeFirebase();
     if (!auth) {
         toast({
             variant: 'destructive',
@@ -66,7 +102,9 @@ export function LoginForm() {
     }
     const provider = new OAuthProvider('microsoft.com');
 
-    provider.setCustomParameters({ tenant: 'YOUR_TENANT_ID' }); // Replace YOUR_TENANT_ID
+    // IMPORTANT: You should replace this with your actual Microsoft tenant ID for production
+    // This restricts login to your organization only.
+    provider.setCustomParameters({ tenant: 'YOUR_TENANT_ID' }); 
     
     try {
         const result = await signInWithPopup(auth, provider);
@@ -113,10 +151,13 @@ export function LoginForm() {
     <>
     <Card className="shadow-lg w-full">
       <CardHeader>
-        <CardTitle>Sign in with your work account</CardTitle>
+        <CardTitle>Sign in</CardTitle>
+        <CardDescription>
+            Use your Microsoft account to sign in.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-            <Button onClick={signInWithMicrosoft} variant="outline" className="w-full" disabled={isLoading}>
+            <Button onClick={signInWithMicrosoft} variant="outline" className="w-full" disabled={isLoading || localIsLoading}>
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -124,10 +165,49 @@ export function LoginForm() {
               )}
               <span className="ml-2">Sign in with Microsoft</span>
             </Button>
+            <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                    </span>
+                </div>
+            </div>
+             <form onSubmit={handleLocalLogin}>
+                <div className="grid gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                        id="email"
+                        type="email"
+                        placeholder="sadmin@internal.local"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading || localIsLoading}
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input 
+                            id="password" 
+                            type="password" 
+                            required 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={isLoading || localIsLoading}
+                        />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading || localIsLoading}>
+                        {localIsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Sign in
+                    </Button>
+                </div>
+            </form>
       </CardContent>
     </Card>
     </>
   )
 }
-
-    
