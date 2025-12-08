@@ -1,15 +1,15 @@
+
+'use client';
+
 import type { Metadata } from 'next'
 import { AdminView } from '@/app/dashboard/admin-view'
 import { EmployeeView } from '@/components/dashboard/employee-view'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { useSearchParams } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Dashboard - AE INTRAWEB',
-}
-
-function DashboardContent({ role }: { role: string | string[] | undefined }) {
+function DashboardContent({ role }: { role: string | null }) {
   if (role === 'admin') {
     return <AdminView />
   }
@@ -39,18 +39,24 @@ function DashboardSkeleton() {
     )
 }
 
-export default function DashboardPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
-  const { role } = searchParams
+function DashboardPageContent() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role');
 
   return (
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent role={role} />
+      </Suspense>
+    </main>
+  );
+}
+
+
+export default function DashboardPage() {
+    return (
         <Suspense fallback={<DashboardSkeleton />}>
-           <DashboardContent role={role} />
+            <DashboardPageContent />
         </Suspense>
-      </main>
-  )
+    )
 }
