@@ -100,7 +100,9 @@ export function DashboardHeader() {
           href={`/dashboard?role=${role || 'employee'}`}
           className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
         >
-          <AseLogo />
+          <div className="h-8 w-8">
+            <AseLogo />
+          </div>
           <span className="font-bold">{siteName}</span>
         </Link>
       </nav>
