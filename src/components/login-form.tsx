@@ -2,7 +2,6 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import * as z from 'zod'
 
 import { Button } from '@/components/ui/button'
 
@@ -60,18 +59,37 @@ export function LoginForm() {
     const provider = new OAuthProvider('microsoft.com');
 
     // To restrict login to your organization's tenant, add your tenant ID here.
-    // provider.setCustomParameters({ tenant: 'YOUR_TENANT_ID' });
+    provider.setCustomParameters({ tenant: 'YOUR_TENANT_ID' }); // Replace YOUR_TENANT_ID
     
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        const appUser = users.find(u => u.email.toLowerCase() === user.email?.toLowerCase());
+        const userEmail = user.email;
+
+        // --- Domain Validation ---
+        // IMPORTANT: Replace 'yourdomain.com' with your actual company domain.
+        const allowedDomain = 'yourdomain.com';
+
+        if (!userEmail || !userEmail.endsWith(`@${allowedDomain}`)) {
+            // If the user's email domain is not the one you want, show an error and sign them out.
+            await auth.signOut();
+            toast({
+                variant: 'destructive',
+                title: 'Access Denied',
+                description: `You must use an @${allowedDomain} email address to sign in.`,
+            });
+            setIsLoading(false);
+            return;
+        }
+        // --- End of Domain Validation ---
+
+        const appUser = users.find(u => u.email.toLowerCase() === userEmail.toLowerCase());
 
         handleNewUser(user);
 
         toast({
             title: 'Login Successful',
-            description: `Welcome, ${user.displayName || user.email}!`,
+            description: `Welcome, ${user.displayName || userEmail}!`,
         });
 
         const targetRole = appUser?.role || 'employee';
