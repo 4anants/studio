@@ -1,7 +1,7 @@
 
 'use client';
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
-import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList, Company, companies as initialCompanies } from '@/lib/mock-data';
+import { users as initialUsers, departments, CompanyName, User as UserType, documents as allDocuments, documentTypesList, companies as initialCompanies, Company } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck, ShieldAlert } from 'lucide-react';
@@ -40,6 +40,7 @@ export default function EmployeeProfilePage() {
   
   const role = searchParams.get('role');
   const isSelfView = role !== 'admin';
+  const isSadmin = user?.id === 'sadmin';
   
   const handleEmployeeSave = useCallback((employee: Partial<UserType> & { originalId?: string }) => {
     setUsers(currentUsers => {
@@ -134,6 +135,8 @@ export default function EmployeeProfilePage() {
   const col1Details = userDetails.slice(0, Math.ceil(userDetails.length / 2));
   const col2Details = userDetails.slice(Math.ceil(userDetails.length / 2));
 
+  const canEdit = !isSadmin || isSelfView;
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -168,18 +171,20 @@ export default function EmployeeProfilePage() {
                                         <BadgeCheck className="mr-2 h-4 w-4"/> ID Card
                                     </Button>
                                 </IdCardDialog>
-                                {isSelfView ? (
-                                    <EmployeeSelfEditDialog employee={user} onSave={handleEmployeeSave}>
-                                        <Button variant="outline" className="w-full">
-                                            <Edit className="mr-2 h-4 w-4"/> Edit Profile
-                                        </Button>
-                                    </EmployeeSelfEditDialog>
-                                ) : (
-                                    <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
-                                        <Button variant="outline" className="w-full">
-                                            <Edit className="mr-2 h-4 w-4"/> Edit Profile
-                                        </Button>
-                                    </EmployeeManagementDialog>
+                                {canEdit && (
+                                  isSelfView ? (
+                                      <EmployeeSelfEditDialog employee={user} onSave={handleEmployeeSave}>
+                                          <Button variant="outline" className="w-full">
+                                              <Edit className="mr-2 h-4 w-4"/> Edit Profile
+                                          </Button>
+                                      </EmployeeSelfEditDialog>
+                                  ) : (
+                                      <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
+                                          <Button variant="outline" className="w-full">
+                                              <Edit className="mr-2 h-4 w-4"/> Edit Profile
+                                          </Button>
+                                      </EmployeeManagementDialog>
+                                  )
                                 )}
                             </CardContent>
                         </Card>

@@ -106,7 +106,7 @@ export function AdminView() {
   const [tempSiteName, setTempSiteName] = useState(CompanyName);
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
   const [auth, setAuth] = useState<Auth | null>(null);
-  const [allowedDomains, setAllowedDomains] = useState<string[]>(['yourdomain.com']);
+  const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState('');
   const { toast } = useToast();
   const router = useRouter();
@@ -137,6 +137,9 @@ export function AdminView() {
     const storedDomains = localStorage.getItem('allowedDomains');
     if (storedDomains) {
         setAllowedDomains(JSON.parse(storedDomains));
+    } else {
+        // Fallback for initial setup
+        setAllowedDomains(['yourdomain.com']);
     }
 
     return () => {
@@ -212,6 +215,17 @@ export function AdminView() {
   }, []);
 
   const handleEmployeeSave = useCallback((employee: Partial<User> & { originalId?: string }) => {
+    const isSadmin = employee.originalId === 'sadmin' || employee.id === 'sadmin';
+
+    if (isSadmin && employee.id !== auth?.currentUser?.uid) {
+        toast({
+            variant: 'destructive',
+            title: 'Permission Denied',
+            description: 'You cannot modify the Super Admin account.',
+        });
+        return;
+    }
+
     setUsers(prevUsers => {
       const userIndex = prevUsers.findIndex(u => u.id === (employee.originalId || employee.id));
       if (userIndex > -1) {
@@ -221,7 +235,7 @@ export function AdminView() {
         const updatedUser = {
             ...existingUser,
             ...employee,
-            role: employee.role || existingUser.role, // Ensure role is preserved
+            role: isSadmin ? 'admin' : (employee.role || existingUser.role), // Prevent sadmin role change
         };
         updatedUsers[userIndex] = updatedUser as User;
         
@@ -234,6 +248,11 @@ export function AdminView() {
             toast({
                 title: "Profile Updated",
                 description: `An email notification has been sent to the admins regarding the update of ${updatedUser.name}'s profile.`,
+            });
+        } else if (isSadmin) {
+            toast({
+                title: 'Super Admin Updated',
+                description: 'Super Admin profile has been updated.',
             });
         }
         return updatedUsers;
@@ -258,7 +277,7 @@ export function AdminView() {
         return [...prevUsers, newUser];
       }
     });
-  }, [toast]);
+  }, [toast, auth]);
 
   const handleBulkUserImport = useCallback((newUsers: User[]) => {
     setUsers(prevUsers => {
@@ -325,6 +344,10 @@ const handleExportUsers = () => {
 
 
   const handleEmployeeDelete = useCallback((employeeId: string) => {
+    if (employeeId === 'sadmin') {
+        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The Super Admin account cannot be deleted.' });
+        return;
+    }
     setUsers(prevUsers => prevUsers.map(u => 
         u.id === employeeId ? { ...u, status: 'deleted' } : u
     ));
@@ -346,6 +369,10 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handlePermanentDeleteUser = useCallback((employeeId: string) => {
+    if (employeeId === 'sadmin') {
+        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The Super Admin account cannot be permanently deleted.' });
+        return;
+    }
     setUsers(prevUsers => prevUsers.filter(u => u.id !== employeeId));
     toast({
       variant: 'destructive',
@@ -354,15 +381,19 @@ const handleExportUsers = () => {
     });
   }, [toast]);
 
-  const handleResetPassword = useCallback((employeeName: string) => {
+  const handleResetPassword = useCallback((employeeId: string) => {
+    if (employeeId === 'sadmin') {
+        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Password for the Super Admin must be changed via the edit profile screen.' });
+        return;
+    }
     if (!auth) return;
-    const user = users.find(u => u.name === employeeName);
+    const user = users.find(u => u.id === employeeId);
     if (user && user.email) {
         auth.sendPasswordResetEmail(user.email)
             .then(() => {
                 toast({
                     title: "Password Reset Link Sent",
-                    description: `An email has been sent to ${employeeName} with password reset instructions.`
+                    description: `An email has been sent to ${user.name} with password reset instructions.`
                 });
             })
             .catch(error => {
@@ -746,7 +777,7 @@ const handleExportUsers = () => {
         return { unassignedDocuments: unassigned, docsByType: byType };
     }, [docs, users]);
 
-  const filteredUsersForSelection = activeSubTab === 'manage' ? filteredActiveUsersForTable : [];
+  const filteredUsersForSelection = activeSubTab === 'manage' ? filteredActiveUsersForTable.filter(u => u.id !== 'sadmin') : [];
 
   const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
     if (checked === true) {
@@ -757,6 +788,7 @@ const handleExportUsers = () => {
   }, [filteredUsersForSelection]);
   
   const handleSelectUser = useCallback((userId: string, checked: boolean) => {
+    if (userId === 'sadmin') return;
     if (checked) {
       setSelectedUserIds(prev => [...prev, userId]);
     } else {
@@ -778,7 +810,7 @@ const handleExportUsers = () => {
 
   const handleBulkResetPassword = useCallback(() => {
     const selectedUsers = users.filter(u => selectedUserIds.includes(u.id));
-    selectedUsers.forEach(user => handleResetPassword(user.name));
+    selectedUsers.forEach(user => handleResetPassword(user.id));
     toast({
         title: "Bulk Password Reset",
         description: `Password reset links have been sent to ${selectedUserIds.length} employee(s).`
@@ -1154,6 +1186,7 @@ const handleExportUsers = () => {
                                           checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
                                           onCheckedChange={handleSelectAll}
                                           aria-label="Select all"
+                                          disabled={filteredUsersForSelection.length === 0}
                                       />
                                   </TableHead>
                                   <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
@@ -1173,6 +1206,7 @@ const handleExportUsers = () => {
                                               checked={selectedUserIds.includes(user.id)}
                                               onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
                                               aria-label={`Select ${user.name}`}
+                                              disabled={user.id === 'sadmin'}
                                           />
                                       </TableCell>
                                       <TableCell className="hidden sm:table-cell">
@@ -1198,6 +1232,15 @@ const handleExportUsers = () => {
                                           </span>
                                       </TableCell>
                                       <TableCell className="text-right">
+                                        {user.id === 'sadmin' ? (
+                                            <div className="flex items-center justify-end">
+                                                 <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
+                                                     <Button variant="ghost" size="sm">
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                                     </Button>
+                                                 </EmployeeManagementDialog>
+                                            </div>
+                                        ) : (
                                           <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                   <Button variant="ghost" size="icon">
@@ -1211,7 +1254,7 @@ const handleExportUsers = () => {
                                                           Edit Employee
                                                       </DropdownMenuItem>
                                                   </EmployeeManagementDialog>
-                                                  <DropdownMenuItem onClick={() => handleResetPassword(user.name)}>
+                                                  <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
                                                       <KeyRound className="mr-2 h-4 w-4" />
                                                       Reset Password
                                                   </DropdownMenuItem>
@@ -1224,6 +1267,7 @@ const handleExportUsers = () => {
                                                   </DeleteEmployeeDialog>
                                               </DropdownMenuContent>
                                           </DropdownMenu>
+                                          )}
                                       </TableCell>
                                   </TableRow>
                               )) : (
