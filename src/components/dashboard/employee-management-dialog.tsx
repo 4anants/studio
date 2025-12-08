@@ -26,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-import type { User, Company, LocationKey } from '@/lib/mock-data';
+import type { User, Company } from '@/lib/mock-data';
 import { locations } from '@/lib/mock-data';
 import {
   Select,
@@ -37,9 +37,9 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
-const locationKeys = Object.keys(locations) as [string, ...string[]];
+const locationKeys = Object.keys(locations) as [string, ...string[]] | [];
 
-const formSchema = z.object({
+const baseFormSchema = z.object({
   id: z.string().min(1, { message: 'Employee ID is required.' }),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid official email.' }),
@@ -55,9 +55,10 @@ const formSchema = z.object({
   department: z.string().optional(),
   bloodGroup: z.string().optional(),
   company: z.string().optional(),
-  location: z.enum(locationKeys).optional(),
+  location: z.enum(locationKeys as [string, ...string[]]).optional(),
   role: z.enum(['admin', 'employee']),
 });
+
 
 interface EmployeeManagementDialogProps {
   employee?: User;
@@ -73,15 +74,14 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   const { toast } = useToast();
   const isEditing = !!employee;
 
-  const companyNames = companies.map(c => c.name) as [string, ...string[]];
-  const companyEnum = companyNames.length > 0 ? z.enum(companyNames) : z.string();
-
-  const dynamicFormSchema = formSchema.extend({
-      company: companyEnum.optional(),
+  const companyNames = companies.length > 0 ? companies.map(c => c.name) as [string, ...string[]] : [] as const;
+  
+  const formSchema = baseFormSchema.extend({
+      company: z.enum(companyNames).optional(),
   });
 
-  const form = useForm<z.infer<typeof dynamicFormSchema>>({
-    resolver: zodResolver(dynamicFormSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       id: employee?.id || '',
       name: employee?.name || '',
@@ -104,13 +104,13 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   });
   
   const finalSchema = isEditing 
-  ? dynamicFormSchema 
-  : dynamicFormSchema.extend({
+  ? formSchema 
+  : formSchema.extend({
       password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
     });
 
 
-  const onSubmit = (values: z.infer<typeof dynamicFormSchema>) => {
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
     const validation = finalSchema.safeParse(values);
     if (!validation.success) {
         Object.entries(validation.error.flatten().fieldErrors).forEach(([name, errors]) => {
@@ -363,7 +363,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.keys(locations).map(loc => (
+                      {locationKeys.map(loc => (
                         <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                       ))}
                     </SelectContent>
@@ -475,3 +475,5 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
     </Dialog>
   );
 }
+
+    
