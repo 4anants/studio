@@ -76,7 +76,6 @@ import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-typ
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 import { useAuth } from '@/firebase'
 import type { Auth } from 'firebase/auth'
-import { ToastAction } from '@/components/ui/toast'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -233,21 +232,9 @@ export function AdminView() {
     setDocs(prev => [...fullNewDocs, ...prev]);
     setLastBulkUploadIds(docIds);
 
-    const handleUndoToast = () => {
-        setDocs(prev => prev.filter(d => !docIds.includes(d.id)));
-        toast({
-            title: 'Upload Undone',
-            description: `${docIds.length} document(s) have been removed.`,
-        });
-        setLastBulkUploadIds([]); // Also clear the persistent undo option
-    };
-
     toast({
         title: 'Upload Successful!',
         description: `${newDocs.length} documents have been added.`,
-        action: <ToastAction altText="Undo" onClick={handleUndoToast}>
-            <Undo className="mr-2 h-4 w-4" /> Undo
-        </ToastAction>
     });
 
   }, [toast]);
@@ -2149,3 +2136,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
