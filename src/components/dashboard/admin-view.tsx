@@ -76,6 +76,7 @@ import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-typ
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 import { useAuth } from '@/firebase'
 import type { Auth } from 'firebase/auth'
+import { ToastAction } from '@/components/ui/toast'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -95,7 +96,8 @@ export function AdminView() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
-  const [isBulkRoleChangeDialogOpen, setIsBulkRoleChangeDialogOpen] = useState(false)
+  const [lastBulkUploadInfo, setLastBulkUploadInfo] = useState<{ ids: string[], timestamp: number } | null>(null);
+  const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('file-explorer');
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
@@ -106,14 +108,16 @@ export function AdminView() {
   const [tempSiteName, setTempSiteName] = useState(CompanyName);
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
   const [auth, setAuth] = useState<Auth | null>(null);
-  const [allowedDomains, setAllowedDomains] = useState<string[]>(['yourdomain.com']);
+  const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState('');
   const { toast } = useToast();
   const router = useRouter();
   const authHook = useAuth();
 
   useEffect(() => {
-    setAuth(authHook);
+    if (authHook) {
+        setAuth(authHook);
+    }
   }, [authHook]);
 
 
@@ -135,6 +139,9 @@ export function AdminView() {
     const storedDomains = localStorage.getItem('allowedDomains');
     if (storedDomains) {
         setAllowedDomains(JSON.parse(storedDomains));
+    } else {
+        // Fallback for initial setup
+        setAllowedDomains(['yourdomain.com']);
     }
 
     return () => {
@@ -197,19 +204,58 @@ export function AdminView() {
     toast({ title: 'Domain Removed', description: `Domain "${domainToRemove}" has been removed.` });
   };
 
-  const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[]) => {
-    const fullNewDocs: Document[] = newDocs.map(d => ({
-        ...d,
-        id: `doc-${Date.now()}-${Math.random()}`,
-        size: `${(Math.random() * 1000).toFixed(0)} KB`,
-        uploadDate: new Date().toISOString().split('T')[0],
-        fileType: d.name.endsWith('.pdf') ? 'pdf' : d.name.endsWith('.doc') || d.name.endsWith('.docx') ? 'doc' : 'image',
-        ownerId: d.ownerId, // Ensure ownerId is carried over
-    }))
+  const handleUndoLastBulkUpload = () => {
+    if (lastBulkUploadInfo && lastBulkUploadInfo.ids.length > 0) {
+      setDocs(prev => prev.filter(d => !lastBulkUploadInfo.ids.includes(d.id)));
+      toast({
+        title: 'Upload Undone',
+        description: `${lastBulkUploadInfo.ids.length} document(s) have been removed.`,
+      });
+      setLastBulkUploadInfo(null);
+    }
+    setIsUndoDialogOpen(false);
+  };
+
+  const handleBulkUploadComplete = useCallback((newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[], originalFiles: File[]) => {
+    const docIds: string[] = [];
+    const fullNewDocs: Document[] = newDocs.map((d, i) => {
+        const id = `doc-${Date.now()}-${i}`;
+        docIds.push(id);
+        return {
+            ...d,
+            id: id,
+            size: `${(originalFiles[i].size / 1024).toFixed(0)} KB`,
+            uploadDate: new Date().toISOString().split('T')[0],
+            fileType: d.name.endsWith('.pdf') ? 'pdf' : d.name.endsWith('.doc') || d.name.endsWith('.docx') ? 'doc' : 'image',
+        };
+    });
     setDocs(prev => [...fullNewDocs, ...prev]);
-  }, []);
+    setLastBulkUploadInfo({ ids: docIds, timestamp: Date.now() });
+
+    toast({
+        title: 'Upload Successful!',
+        description: `${newDocs.length} documents have been added.`,
+        action: (
+          <ToastAction altText="Undo" onClick={() => setIsUndoDialogOpen(true)}>
+            Undo
+          </ToastAction>
+        ),
+    });
+
+  }, [toast]);
 
   const handleEmployeeSave = useCallback((employee: Partial<User> & { originalId?: string }) => {
+    const isSadmin = employee.originalId === 'sadmin' || employee.id === 'sadmin';
+
+    if (isSadmin && (employee.id !== 'sadmin' || employee.email !== 'sadmin@internal.local' || employee.role !== 'admin')) {
+        toast({
+            variant: 'destructive',
+            title: 'Permission Denied',
+            description: 'You cannot modify the Super Admin ID, email, or role.',
+        });
+        return;
+    }
+
     setUsers(prevUsers => {
       const userIndex = prevUsers.findIndex(u => u.id === (employee.originalId || employee.id));
       if (userIndex > -1) {
@@ -219,7 +265,6 @@ export function AdminView() {
         const updatedUser = {
             ...existingUser,
             ...employee,
-            role: employee.role || existingUser.role, // Ensure role is preserved
         };
         updatedUsers[userIndex] = updatedUser as User;
         
@@ -232,6 +277,11 @@ export function AdminView() {
             toast({
                 title: "Profile Updated",
                 description: `An email notification has been sent to the admins regarding the update of ${updatedUser.name}'s profile.`,
+            });
+        } else if (isSadmin) {
+            toast({
+                title: 'Super Admin Updated',
+                description: 'Super Admin profile has been updated.',
             });
         }
         return updatedUsers;
@@ -323,6 +373,10 @@ const handleExportUsers = () => {
 
 
   const handleEmployeeDelete = useCallback((employeeId: string) => {
+    if (employeeId === 'sadmin') {
+        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The Super Admin account cannot be deleted.' });
+        return;
+    }
     setUsers(prevUsers => prevUsers.map(u => 
         u.id === employeeId ? { ...u, status: 'deleted' } : u
     ));
@@ -344,6 +398,10 @@ const handleExportUsers = () => {
   }, [toast]);
 
   const handlePermanentDeleteUser = useCallback((employeeId: string) => {
+    if (employeeId === 'sadmin') {
+        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The Super Admin account cannot be permanently deleted.' });
+        return;
+    }
     setUsers(prevUsers => prevUsers.filter(u => u.id !== employeeId));
     toast({
       variant: 'destructive',
@@ -352,15 +410,19 @@ const handleExportUsers = () => {
     });
   }, [toast]);
 
-  const handleResetPassword = useCallback((employeeName: string) => {
+  const handleResetPassword = useCallback((employeeId: string) => {
+    if (employeeId === 'sadmin') {
+        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Password for the Super Admin must be changed via the edit profile screen.' });
+        return;
+    }
     if (!auth) return;
-    const user = users.find(u => u.name === employeeName);
+    const user = users.find(u => u.id === employeeId);
     if (user && user.email) {
         auth.sendPasswordResetEmail(user.email)
             .then(() => {
                 toast({
                     title: "Password Reset Link Sent",
-                    description: `An email has been sent to ${employeeName} with password reset instructions.`
+                    description: `An email has been sent to ${user.name} with password reset instructions.`
                 });
             })
             .catch(error => {
@@ -744,7 +806,7 @@ const handleExportUsers = () => {
         return { unassignedDocuments: unassigned, docsByType: byType };
     }, [docs, users]);
 
-  const filteredUsersForSelection = activeSubTab === 'manage' ? filteredActiveUsersForTable : [];
+  const filteredUsersForSelection = activeSubTab === 'manage' ? filteredActiveUsersForTable.filter(u => u.id !== 'sadmin') : [];
 
   const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
     if (checked === true) {
@@ -755,6 +817,7 @@ const handleExportUsers = () => {
   }, [filteredUsersForSelection]);
   
   const handleSelectUser = useCallback((userId: string, checked: boolean) => {
+    if (userId === 'sadmin') return;
     if (checked) {
       setSelectedUserIds(prev => [...prev, userId]);
     } else {
@@ -768,7 +831,7 @@ const handleExportUsers = () => {
     ));
     toast({
         title: "Bulk Delete Successful",
-        description: `${selectedUserIds.length} employee(s) have been moved to the deleted list.`
+        description: `${selectedUserIds.length} employee(s) have been moved to the deleted users list.`
     });
     setSelectedUserIds([]);
     setIsBulkDeleteDialogOpen(false);
@@ -776,7 +839,7 @@ const handleExportUsers = () => {
 
   const handleBulkResetPassword = useCallback(() => {
     const selectedUsers = users.filter(u => selectedUserIds.includes(u.id));
-    selectedUsers.forEach(user => handleResetPassword(user.name));
+    selectedUsers.forEach(user => handleResetPassword(user.id));
     toast({
         title: "Bulk Password Reset",
         description: `Password reset links have been sent to ${selectedUserIds.length} employee(s).`
@@ -794,7 +857,6 @@ const handleExportUsers = () => {
         description: `The role for ${selectedUserIds.length} employee(s) has been changed to ${newRole}.`
     });
     setSelectedUserIds([]);
-    setIsBulkRoleChangeDialogOpen(false);
   }, [selectedUserIds, toast]);
 
   const handleReassignDocument = useCallback((docId: string, newOwnerId: string) => {
@@ -822,6 +884,18 @@ const handleExportUsers = () => {
         toast({
             title: "Document Deleted",
             description: `"${docToDelete.name}" has been moved to deleted items.`
+        });
+    }
+  }, [docs, toast]);
+
+  const handleBulkDeleteDocuments = useCallback((docIds: string[]) => {
+    const docsToDelete = docs.filter(d => docIds.includes(d.id));
+    if (docsToDelete.length > 0) {
+        setDocs(prev => prev.filter(d => !docIds.includes(d.id)));
+        setDeletedDocs(prev => [...prev, ...docsToDelete]);
+        toast({
+            title: "Documents Deleted",
+            description: `${docsToDelete.length} document(s) have been moved to deleted items.`
         });
     }
   }, [docs, toast]);
@@ -1038,6 +1112,7 @@ const handleExportUsers = () => {
                                     showOwner={true}
                                     onReassign={handleReassignDocument}
                                     onDelete={handleDeleteDocument}
+                                    onBulkDelete={handleBulkDeleteDocuments}
                                 />
                             </div>
                         ) : (
@@ -1152,6 +1227,7 @@ const handleExportUsers = () => {
                                           checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
                                           onCheckedChange={handleSelectAll}
                                           aria-label="Select all"
+                                          disabled={filteredUsersForSelection.length === 0}
                                       />
                                   </TableHead>
                                   <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
@@ -1171,6 +1247,7 @@ const handleExportUsers = () => {
                                               checked={selectedUserIds.includes(user.id)}
                                               onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
                                               aria-label={`Select ${user.name}`}
+                                              disabled={user.id === 'sadmin'}
                                           />
                                       </TableCell>
                                       <TableCell className="hidden sm:table-cell">
@@ -1196,6 +1273,15 @@ const handleExportUsers = () => {
                                           </span>
                                       </TableCell>
                                       <TableCell className="text-right">
+                                        {user.id === 'sadmin' ? (
+                                            <div className="flex items-center justify-end">
+                                                 <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
+                                                     <Button variant="ghost" size="sm">
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                                     </Button>
+                                                 </EmployeeManagementDialog>
+                                            </div>
+                                        ) : (
                                           <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                   <Button variant="ghost" size="icon">
@@ -1209,7 +1295,7 @@ const handleExportUsers = () => {
                                                           Edit Employee
                                                       </DropdownMenuItem>
                                                   </EmployeeManagementDialog>
-                                                  <DropdownMenuItem onClick={() => handleResetPassword(user.name)}>
+                                                  <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
                                                       <KeyRound className="mr-2 h-4 w-4" />
                                                       Reset Password
                                                   </DropdownMenuItem>
@@ -1222,6 +1308,7 @@ const handleExportUsers = () => {
                                                   </DeleteEmployeeDialog>
                                               </DropdownMenuContent>
                                           </DropdownMenu>
+                                          )}
                                       </TableCell>
                                   </TableRow>
                               )) : (
@@ -1385,6 +1472,7 @@ const handleExportUsers = () => {
                       <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                       <TabsTrigger value="departments">Departments</TabsTrigger>
                       <TabsTrigger value="security">Security</TabsTrigger>
+                      <TabsTrigger value="data-management">Data Management</TabsTrigger>
                     </TabsList>
                   </div>
                   <TabsContent value="companies" className="pt-6">
@@ -1698,6 +1786,32 @@ const handleExportUsers = () => {
                                         No domains have been added. The default fallback domain will be used for authentication.
                                     </p>
                                 )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="data-management" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Data Management</CardTitle>
+                            <CardDescription>Perform sensitive actions like undoing bulk uploads.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="p-4 border border-destructive/50 bg-destructive/10 rounded-lg">
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div>
+                                        <h3 className="font-semibold">Undo Last Bulk Upload</h3>
+                                        <p className="text-sm text-destructive/80">This will permanently delete the last batch of {lastBulkUploadInfo?.ids.length || 0} uploaded document(s). This action cannot be undone.</p>
+                                    </div>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => setIsUndoDialogOpen(true)}
+                                        disabled={!lastBulkUploadInfo || lastBulkUploadInfo.ids.length === 0}
+                                    >
+                                        <Undo className="mr-2 h-4 w-4" />
+                                        Undo Last Upload ({lastBulkUploadInfo?.ids.length || 0})
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -2023,6 +2137,24 @@ const handleExportUsers = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkResetPassword}>
                 Send Reset Links
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Undo Last Bulk Upload Confirmation Dialog */}
+      <AlertDialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Undo Last Bulk Upload?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the last batch of {lastBulkUploadInfo?.ids.length || 0} uploaded document(s). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUndoLastBulkUpload} className="bg-destructive hover:bg-destructive/90">
+              Yes, Undo Upload
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

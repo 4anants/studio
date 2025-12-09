@@ -35,7 +35,7 @@ export function LoginForm() {
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
   const auth = useAuth();
-  const [allowedDomains, setAllowedDomains] = useState<string[]>(['yourdomain.com']);
+  const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -43,6 +43,9 @@ export function LoginForm() {
     const storedDomains = localStorage.getItem('allowedDomains');
     if (storedDomains) {
       setAllowedDomains(JSON.parse(storedDomains));
+    } else {
+        // Fallback for initial setup
+        setAllowedDomains(['yourdomain.com']);
     }
   }, []);
 
@@ -65,34 +68,32 @@ export function LoginForm() {
     e.preventDefault();
     setLocalIsLoading(true);
 
-    const sadminUser = users.find(u => u.email === 'sadmin@internal.local');
-    
-    // Special check for sadmin user
-    if (email === 'sadmin@internal.local') {
-        if (sadminUser && password === sadminUser.password) {
-            toast({
-                title: 'Login Successful',
-                description: `Welcome, Super Admin!`,
-            });
-            router.push(`/dashboard?role=admin`);
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Login Failed',
-                description: 'The email or password you entered is incorrect.',
-            });
-        }
-        setLocalIsLoading(false);
-        return;
-    }
-
-    if (!auth) {
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
-        setLocalIsLoading(false);
-        return;
-    }
-
     try {
+        const sadminUser = users.find(u => u.email === 'sadmin@internal.local' || u.id === 'sadmin');
+        const isSadminLogin = email.toLowerCase() === 'sadmin@internal.local' || email.toLowerCase() === 'sadmin';
+
+        if (isSadminLogin) {
+            if (sadminUser && password === sadminUser.password) {
+                toast({
+                    title: 'Login Successful',
+                    description: `Welcome, Super Admin!`,
+                });
+                router.push(`/dashboard?role=admin`);
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Login Failed',
+                    description: 'The email or password you entered is incorrect.',
+                });
+            }
+            return;
+        }
+
+        if (!auth) {
+            toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
+            return;
+        }
+
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const userEmail = user.email;
@@ -142,6 +143,11 @@ export function LoginForm() {
     }
     const provider = new OAuthProvider('microsoft.com');
     
+    // Optional: If you want to restrict to a specific Microsoft Entra ID tenant
+    // provider.setCustomParameters({
+    //   tenant: 'YOUR_TENANT_ID',
+    // });
+
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
@@ -173,10 +179,16 @@ export function LoginForm() {
         router.push(`/dashboard?role=${targetRole}`);
         
     } catch (error: any) {
+        let description = 'An unexpected error occurred.';
+        if (error.code === 'auth/popup-closed-by-user') {
+            description = 'The sign-in window was closed before completing the sign-in. Please try again.';
+        } else if (error.code === 'auth/account-exists-with-different-credential') {
+            description = 'An account already exists with the same email address but different sign-in credentials. Sign in using a provider associated with this email address.';
+        }
         toast({
             variant: 'destructive',
             title: 'Microsoft Sign-In Failed',
-            description: error.message || 'An unexpected error occurred.',
+            description: description,
         });
     } finally {
         setIsLoading(false);
