@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useRouter } from 'next/navigation'
@@ -142,10 +141,6 @@ export function LoginForm() {
         return;
     }
     const provider = new OAuthProvider('microsoft.com');
-
-    // IMPORTANT: You should replace this with your actual Microsoft tenant ID for production
-    // This restricts login to your organization only.
-    provider.setCustomParameters({ tenant: 'YOUR_TENANT_ID' }); 
     
     try {
         const result = await signInWithPopup(auth, provider);
