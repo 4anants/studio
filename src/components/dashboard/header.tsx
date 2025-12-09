@@ -20,7 +20,7 @@ import Image from 'next/image'
 import { AnnouncementBell } from './announcement-bell'
 import { ThemeToggle } from '../theme-toggle'
 import { useState, useEffect } from 'react'
-import { CompanyName, users as allUsers } from '@/lib/mock-data'
+import { CompanyName, users as allUsers, User as UserType } from '@/lib/mock-data'
 import { getAvatarSrc } from '@/lib/utils'
 import { AseLogo } from './ase-logo'
 
@@ -30,7 +30,7 @@ export function DashboardHeader() {
   const searchParams = useSearchParams()
   const role = searchParams.get('role')
   const [siteName, setSiteName] = useState(CompanyName);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
 
   useEffect(() => {
     const storedSiteName = localStorage.getItem('siteName');
@@ -52,18 +52,22 @@ export function DashboardHeader() {
     // In a real app, this would come from an auth context
     const employeeUserId = 'user-1';
     
-    let user;
-    if (role === 'admin') {
-      const sadmin = allUsers.find(u => u.email === 'sadmin@internal.local');
-      if (sadmin) {
-        user = sadmin;
-      } else {
-        user = allUsers.find(u => u.role === 'admin') || allUsers[0];
-      }
+    let user: UserType | undefined;
+    
+    const session = localStorage.getItem('session');
+
+    if (session === 'sadmin') {
+      user = allUsers.find(u => u.id === 'sadmin');
+    } else if (role === 'admin') {
+      // This logic remains for other admin users if any, but sadmin is handled separately
+      user = allUsers.find(u => u.email === 'sadmin@internal.local') || allUsers.find(u => u.role === 'admin') || allUsers[0];
     } else {
       user = allUsers.find(u => u.id === employeeUserId) || allUsers[0];
     }
-    setCurrentUser(user);
+    
+    if(user) {
+      setCurrentUser(user);
+    }
 
 
     return () => {
@@ -72,6 +76,7 @@ export function DashboardHeader() {
   }, [role]);
 
   const handleLogout = () => {
+    localStorage.removeItem('session');
     router.push('/login')
   }
 

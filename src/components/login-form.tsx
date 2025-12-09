@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useRouter } from 'next/navigation'
@@ -30,7 +31,7 @@ const MicrosoftLogo = () => (
 
 export function LoginForm() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const [microsoftIsLoading, setMicrosoftIsLoading] = useState(false)
   const [localIsLoading, setLocalIsLoading] = useState(false);
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
@@ -40,6 +41,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
 
   useEffect(() => {
+    localStorage.removeItem('session');
     const storedDomains = localStorage.getItem('allowedDomains');
     if (storedDomains) {
       setAllowedDomains(JSON.parse(storedDomains));
@@ -69,15 +71,16 @@ export function LoginForm() {
     setLocalIsLoading(true);
 
     try {
-        const sadminUser = users.find(u => u.email === 'sadmin@internal.local' || u.id === 'sadmin');
         const isSadminLogin = email.toLowerCase() === 'sadmin@internal.local' || email.toLowerCase() === 'sadmin';
 
         if (isSadminLogin) {
+            const sadminUser = users.find(u => u.id === 'sadmin');
             if (sadminUser && password === sadminUser.password) {
                 toast({
                     title: 'Login Successful',
                     description: `Welcome, Super Admin!`,
                 });
+                localStorage.setItem('session', 'sadmin');
                 router.push(`/dashboard?role=admin`);
             } else {
                 toast({
@@ -86,9 +89,10 @@ export function LoginForm() {
                     description: 'The email or password you entered is incorrect.',
                 });
             }
-            return;
+            return; // Stop execution for sadmin path
         }
-
+        
+        // --- Regular Firebase User Path ---
         if (!auth) {
             toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
             return;
@@ -131,22 +135,17 @@ export function LoginForm() {
   }
 
   async function signInWithMicrosoft() {
-    setIsLoading(true);
+    setMicrosoftIsLoading(true);
     if (!auth) {
         toast({
             variant: 'destructive',
             title: 'Microsoft Sign-In Failed',
             description: 'Authentication service is not available.',
         });
-        setIsLoading(false);
+        setMicrosoftIsLoading(false);
         return;
     }
     const provider = new OAuthProvider('microsoft.com');
-    
-    // Optional: If you want to restrict to a specific Microsoft Entra ID tenant
-    // provider.setCustomParameters({
-    //   tenant: 'YOUR_TENANT_ID',
-    // });
 
     try {
         const result = await signInWithPopup(auth, provider);
@@ -161,7 +160,7 @@ export function LoginForm() {
                 title: 'Access Denied',
                 description: 'You must use an approved company email address to sign in.',
             });
-            setIsLoading(false);
+            setMicrosoftIsLoading(false);
             return;
         }
         // --- End of Domain Validation ---
@@ -191,9 +190,11 @@ export function LoginForm() {
             description: description,
         });
     } finally {
-        setIsLoading(false);
+        setMicrosoftIsLoading(false);
     }
   }
+
+  const isLoading = microsoftIsLoading || localIsLoading;
 
   return (
     <>
@@ -205,8 +206,8 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-            <Button onClick={signInWithMicrosoft} variant="outline" className="w-full" disabled={isLoading || localIsLoading}>
-              {isLoading ? (
+            <Button onClick={signInWithMicrosoft} variant="outline" className="w-full" disabled={isLoading}>
+              {microsoftIsLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <MicrosoftLogo />
@@ -230,11 +231,11 @@ export function LoginForm() {
                         <Input
                         id="email"
                         type="email"
-                        placeholder="Email"
+                        placeholder="Email or 'sadmin'"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        disabled={isLoading || localIsLoading}
+                        disabled={isLoading}
                         />
                     </div>
                     <div className="grid gap-2">
@@ -245,10 +246,10 @@ export function LoginForm() {
                             required 
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            disabled={isLoading || localIsLoading}
+                            disabled={isLoading}
                         />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading || localIsLoading}>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                         {localIsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Sign in
                     </Button>
