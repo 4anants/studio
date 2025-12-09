@@ -206,6 +206,15 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
   const handleFinish = () => {
     const successfulUploads = uploadedFiles.filter(f => f.status === 'success' && f.result && f.selected);
 
+    if (successfulUploads.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No Documents to Add',
+            description: 'Please select at least one successfully processed document to add.'
+        });
+        return;
+    }
+
     const newDocs: Omit<Document, 'id' | 'size' | 'uploadDate' | 'fileType'>[] = successfulUploads
         .map(f => ({
             name: f.file.name,
