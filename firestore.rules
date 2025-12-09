@@ -1,0 +1,157 @@
+/**
+ * @file firestore.rules
+ * @description Security rules for the FileSafe application.
+ *
+ * ## Core Philosophy
+ * This ruleset enforces a strict user-ownership model with complete data segregation between 'employees' and 'admins'.
+ * A user's authentication ID (UID) is the sole basis for authorization. There is no concept of cross-role access;
+ * admins cannot view or manage employee data, and vice versa. This ensures a high degree of privacy and security.
+ *
+ * ## Data Structure
+ * Data is organized into two distinct top-level collections, `/employees` and `/admins`.
+ * - /employees/{employeeId}: Contains the profile document for a specific employee.
+ * - /employees/{employeeId}/documents/{documentId}: A subcollection containing all documents owned by that employee.
+ * - /admins/{adminId}: Contains the profile document for a specific admin.
+ * - /admins/{adminId}/documents/{documentId}: A subcollection containing all documents owned by that admin.
+ * This segregated structure is fundamental to the security model, making rules simple and performant.
+ *
+ * ## Key Security Decisions
+ * - **Strict Segregation**: Employee and Admin data paths are entirely separate. Rules for one path have no bearing on the other.
+ * - **No User Enumeration**: Listing the top-level `/employees` or `/admins` collections is explicitly disallowed to prevent leaking user information.
+ * - **Ownership is Path-Based**: All access control decisions for nested data (like documents) are derived from the user ID in the document path (e.g., `{employeeId}`), ensuring that users can only operate within their own data tree.
+ * - **Relational Integrity**: On creation, a document's internal owner ID (e.g., `employeeId`) must match the ID in its path. This field is then enforced as immutable to prevent documents from being "re-parented" to another user.
+ *
+ * ## Denormalization for Authorization
+ * The data structure is designed to avoid costly `get()` or `exists()` calls. By nesting documents under a path containing the owner's UID
+ * (e.g., `/employees/{employeeId}/...`), authorization becomes a direct and efficient check against the authenticated user's UID.
+ * This path-based ownership is the primary mechanism for securing all data.
+ *
+ * ## Structural Segregation
+ * The choice to use `/employees/{employeeId}/documents` and `/admins/{adminId}/documents` instead of a single top-level `/documents` collection
+ * is a deliberate security decision. This segregation simplifies rules, enhances query performance for authorized users, and makes it impossible
+ * for one user type to accidentally gain access to another's data.
+ */
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the primary function for checking document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * A stricter version of isOwner used for update and delete operations.
+     * Ensures the document exists before checking for ownership, preventing writes to non-existent paths.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates that a new document's internal ownership field matches its path parameter.
+     * For example, a document at /employees/{empId}/docs/{docId} must have an `employeeId` field equal to `empId`.
+     * @param key The name of the ownership field in the document's data (e.g., 'employeeId').
+     * @param id The expected value from the path parameter.
+     */
+    function hasCorrectPathOwnership(key, id) {
+      return request.resource.data[key] == id;
+    }
+
+    /**
+     * Ensures a critical, immutable field (like an owner ID) is not changed during an update.
+     * This prevents documents from being reassigned to different owners.
+     * @param key The name of the immutable field in the document's data.
+     */
+    function isFieldImmutable(key) {
+      return request.resource.data[key] == resource.data[key];
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Employee Data Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Rules for an employee's profile document.
+     * @path /employees/{employeeId}
+     * @allow (create) An authenticated user creating their own employee profile (e.g., auth.uid == employeeId).
+     * @deny (list) Any user attempting to list all employee profiles.
+     * @deny (get) A user trying to read another employee's profile.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /employees/{employeeId} {
+      allow get: if isOwner(employeeId);
+      allow list: if false;
+      allow create: if isOwner(employeeId);
+      allow update: if isExistingOwner(employeeId);
+      allow delete: if isExistingOwner(employeeId);
+
+      /**
+       * @description Rules for documents owned by a specific employee.
+       * @path /employees/{employeeId}/documents/{documentId}
+       * @allow (create) An employee creating a new document within their own subcollection.
+       * @deny (update) An employee trying to modify a document owned by another employee.
+       * @principle Enforces document ownership for all operations and validates relational integrity between the document and its parent employee.
+       */
+      match /documents/{documentId} {
+        allow get: if isOwner(employeeId);
+        allow list: if isOwner(employeeId);
+        allow create: if isOwner(employeeId) && hasCorrectPathOwnership('employeeId', employeeId);
+        allow update: if isExistingOwner(employeeId) && isFieldImmutable('employeeId');
+        allow delete: if isExistingOwner(employeeId);
+      }
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Admin Data Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Rules for an admin's profile document.
+     * @path /admins/{adminId}
+     * @allow (create) An authenticated user creating their own admin profile (e.g., auth.uid == adminId).
+     * @deny (list) Any user attempting to list all admin profiles.
+     * @deny (get) A user trying to read another admin's profile.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /admins/{adminId} {
+      allow get: if isOwner(adminId);
+      allow list: if false;
+      allow create: if isOwner(adminId);
+      allow update: if isExistingOwner(adminId);
+      allow delete: if isExistingOwner(adminId);
+
+      /**
+       * @description Rules for documents owned by a specific admin.
+       * @path /admins/{adminId}/documents/{documentId}
+       * @allow (create) An admin creating a new document within their own subcollection.
+       * @deny (update) An admin trying to modify a document owned by another admin.
+       * @principle Enforces document ownership for all operations and validates relational integrity between the document and its parent admin.
+       */
+      match /documents/{documentId} {
+        allow get: if isOwner(adminId);
+        allow list: if isOwner(adminId);
+        allow create: if isOwner(adminId) && hasCorrectPathOwnership('adminId', adminId);
+        allow update: if isExistingOwner(adminId) && isFieldImmutable('adminId');
+        allow delete: if isExistingOwner(adminId);
+      }
+    }
+  }
+}
