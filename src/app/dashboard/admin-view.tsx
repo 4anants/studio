@@ -76,6 +76,7 @@ import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-typ
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 import { useAuth } from '@/firebase'
 import type { Auth } from 'firebase/auth'
+import { ToastAction } from '@/components/ui/toast'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -95,7 +96,6 @@ export function AdminView() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
-  const [isBulkRoleChangeDialogOpen, setIsBulkRoleChangeDialogOpen] = useState(false)
   const [lastBulkUploadIds, setLastBulkUploadIds] = useState<string[]>([]);
   const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('file-explorer');
@@ -235,6 +235,11 @@ export function AdminView() {
     toast({
         title: 'Upload Successful!',
         description: `${newDocs.length} documents have been added.`,
+        action: (
+          <ToastAction altText="Undo" onClick={() => setIsUndoDialogOpen(true)}>
+            Undo
+          </ToastAction>
+        ),
     });
 
   }, [toast]);
@@ -852,7 +857,6 @@ const handleExportUsers = () => {
         description: `The role for ${selectedUserIds.length} employee(s) has been changed to ${newRole}.`
     });
     setSelectedUserIds([]);
-    setIsBulkRoleChangeDialogOpen(false);
   }, [selectedUserIds, toast]);
 
   const handleReassignDocument = useCallback((docId: string, newOwnerId: string) => {
@@ -986,11 +990,6 @@ const handleExportUsers = () => {
                     <Button className="w-full sm:w-auto">Add Employee</Button>
                 </EmployeeManagementDialog>
                 <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
-                {lastBulkUploadIds.length > 0 && (
-                    <Button variant="outline" className="text-destructive" onClick={() => setIsUndoDialogOpen(true)}>
-                        <Undo className="mr-2 h-4 w-4" /> Undo Last Upload
-                    </Button>
-                )}
             </div>
           )}
         </div>
@@ -1473,6 +1472,7 @@ const handleExportUsers = () => {
                       <TabsTrigger value="doc-types">Document Types</TabsTrigger>
                       <TabsTrigger value="departments">Departments</TabsTrigger>
                       <TabsTrigger value="security">Security</TabsTrigger>
+                      <TabsTrigger value="data-management">Data Management</TabsTrigger>
                     </TabsList>
                   </div>
                   <TabsContent value="companies" className="pt-6">
@@ -1786,6 +1786,32 @@ const handleExportUsers = () => {
                                         No domains have been added. The default fallback domain will be used for authentication.
                                     </p>
                                 )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="data-management" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Data Management</CardTitle>
+                            <CardDescription>Perform sensitive actions like undoing bulk uploads.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="p-4 border border-destructive/50 bg-destructive/10 rounded-lg">
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div>
+                                        <h3 className="font-semibold">Undo Last Bulk Upload</h3>
+                                        <p className="text-sm text-destructive/80">This will permanently delete the last batch of {lastBulkUploadIds.length} uploaded document(s). This action cannot be undone.</p>
+                                    </div>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => setIsUndoDialogOpen(true)}
+                                        disabled={lastBulkUploadIds.length === 0}
+                                    >
+                                        <Undo className="mr-2 h-4 w-4" />
+                                        Undo Last Upload ({lastBulkUploadIds.length})
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -2136,5 +2162,3 @@ const handleExportUsers = () => {
     </>
   )
 }
-
-    
