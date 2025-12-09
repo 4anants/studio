@@ -4,116 +4,87 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Employee",
       "type": "object",
-      "description": "Represents an employee within the FileSafe application.",
+      "description": "Represents an employee within the company.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the employee entity."
+          "description": "Unique identifier for the employee."
+        },
+        "username": {
+          "type": "string",
+          "description": "Employee's username for login."
         },
         "firstName": {
           "type": "string",
-          "description": "The first name of the employee."
+          "description": "Employee's first name."
         },
         "lastName": {
           "type": "string",
-          "description": "The last name of the employee."
+          "description": "Employee's last name."
         },
         "email": {
           "type": "string",
-          "description": "The email address of the employee.",
+          "description": "Employee's email address.",
           "format": "email"
         },
-        "department": {
-          "type": "string",
-          "description": "The department the employee belongs to."
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates if the employee has administrator privileges."
         }
       },
       "required": [
         "id",
+        "username",
         "firstName",
         "lastName",
         "email",
-        "department"
-      ]
-    },
-    "Admin": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Admin",
-      "type": "object",
-      "description": "Represents an administrator user within the FileSafe application.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the admin entity."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "The first name of the administrator."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "The last name of the administrator."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the administrator.",
-          "format": "email"
-        }
-      },
-      "required": [
-        "id",
-        "firstName",
-        "lastName",
-        "email"
+        "isAdmin"
       ]
     },
     "Document": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Document",
       "type": "object",
-      "description": "Represents a document stored in the FileSafe application.",
+      "description": "Represents a document stored in the system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the document entity."
-        },
-        "fileName": {
-          "type": "string",
-          "description": "The name of the file."
-        },
-        "fileType": {
-          "type": "string",
-          "description": "The type of the file (e.g., PDF, DOCX)."
-        },
-        "uploadDate": {
-          "type": "string",
-          "description": "The date and time the document was uploaded.",
-          "format": "date-time"
+          "description": "Unique identifier for the document."
         },
         "employeeId": {
           "type": "string",
-          "description": "Reference to Employee. (Relationship: Employee 1:N Document). Nullable if uploaded by admin."
+          "description": "Reference to the Employee who uploaded the document. (Relationship: Employee 1:N Document)"
         },
-        "adminId": {
+        "filename": {
           "type": "string",
-          "description": "Reference to Admin. (Relationship: Admin 1:N Document). Nullable if uploaded by employee."
+          "description": "Original filename of the document."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Date and time when the document was uploaded.",
+          "format": "date-time"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "Type of the file (e.g., PDF, DOC)."
         },
         "documentCategory": {
           "type": "string",
-          "description": "Category of the Document (e.g. Salary Slip, Medical Report, Appraisal Letter, Personal Document)"
+          "description": "The category of the uploaded document. (e.g. Salary Slip, Medical Reports, Appraisal Letters, Personal Document)"
         },
-        "fileSize": {
-          "type": "number",
-          "description": "Size of the uploaded file in bytes."
+        "url": {
+          "type": "string",
+          "description": "URL to where the document is stored."
         }
       },
       "required": [
         "id",
-        "fileName",
-        "fileType",
+        "employeeId",
+        "filename",
         "uploadDate",
+        "fileType",
         "documentCategory",
-        "fileSize"
+        "url"
       ]
     }
   },
@@ -126,78 +97,58 @@
   "firestore": {
     "structure": [
       {
-        "path": "/employees/{employeeId}",
+        "path": "/users/{employeeId}",
         "definition": {
           "entityName": "Employee",
           "schema": {
             "$ref": "#/backend/entities/Employee"
           },
-          "description": "Stores employee data.  Used to associate documents with employees.  Includes `employeeId` as document ID.",
+          "description": "Stores employee profiles. Includes denormalized data for potential future access control needs based on user profiles.",
           "params": [
             {
               "name": "employeeId",
-              "description": "The unique identifier for the employee."
+              "description": "The unique ID of the employee."
             }
           ]
         }
       },
       {
-        "path": "/admins/{adminId}",
-        "definition": {
-          "entityName": "Admin",
-          "schema": {
-            "$ref": "#/backend/entities/Admin"
-          },
-          "description": "Stores admin data. Used to associate documents with admins. Includes `adminId` as document ID.",
-          "params": [
-            {
-              "name": "adminId",
-              "description": "The unique identifier for the admin."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/employees/{employeeId}/documents/{documentId}",
+        "path": "/users/{employeeId}/documents/{documentId}",
         "definition": {
           "entityName": "Document",
           "schema": {
             "$ref": "#/backend/entities/Document"
           },
-          "description": "Stores documents uploaded by employees. Includes `employeeId` as document ID. Requires that the `employeeId` field in the Document be equal to the `{employeeId}` path parameter to ensure data integrity.",
+          "description": "Stores documents uploaded by employees. Access is controlled by the employeeId in the path. This enforces ownership and simplifies security rules.",
           "params": [
             {
               "name": "employeeId",
-              "description": "The unique identifier for the employee."
+              "description": "The unique ID of the employee who owns the document."
             },
             {
               "name": "documentId",
-              "description": "The unique identifier for the document."
+              "description": "The unique ID of the document."
             }
           ]
         }
       },
       {
-        "path": "/admins/{adminId}/documents/{documentId}",
+        "path": "/roles_admin/{employeeId}",
         "definition": {
-          "entityName": "Document",
+          "entityName": "Employee",
           "schema": {
-            "$ref": "#/backend/entities/Document"
+            "$ref": "#/backend/entities/Employee"
           },
-          "description": "Stores documents uploaded by admins. Includes `adminId` as document ID. Requires that the `adminId` field in the Document be equal to the `{adminId}` path parameter to ensure data integrity.",
+          "description": "Indicates admin role for an employee. The existence of a document at this path grants admin privileges. This is an existence check for roles.",
           "params": [
             {
-              "name": "adminId",
-              "description": "The unique identifier for the admin."
-            },
-            {
-              "name": "documentId",
-              "description": "The unique identifier for the document."
+              "name": "employeeId",
+              "description": "The unique ID of the employee who has admin privileges."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the FileSafe application's requirements for employee and admin document management. It prioritizes authorization independence and clear access control. The structure employs Structural Segregation, separating employee and admin documents into distinct collections. User-owned documents are stored under their respective user IDs to simplify ownership-based rules. \n\nSpecifically, Authorization Independence is achieved by storing admin uploaded documents in the `/admins/{adminId}/documents/{documentId}` and employee uploaded documents in `/employees/{employeeId}/documents/{documentId}` collections, without referencing each other. All documents uploaded by an employee will be stored at `/employees/{employeeId}/documents/{documentId}`.\n\nThe QAPs for listing documents securely are supported by the segregated structure and path-based ownership, enabling rules to easily filter based on `request.auth.uid`."
+    "reasoning": "The Firestore data structure is designed to securely manage employee documents, separating admin-related data and user-specific content. It leverages path-based ownership for user documents and a dedicated collection for admin users. This design promotes authorization independence, simplifies security rules, and enhances list operation security.\n\nAuthorization Independence:\n\n*   Employee Documents: Documents related to an employee are stored under the `/users/{employeeId}/documents/{documentId}` path. This path ensures that access to a document is solely based on the employee's ID, eliminating the need to fetch parent document data for authorization.\n\nQAPs (Rules are not Filters):\n\n*   Secure List Operations: By segregating user-specific documents under `/users/{employeeId}/documents/{documentId}` and using existence checks for admin roles in `/roles_admin/{employeeId}`, we can create security rules that do not require filtering data based on document content. List operations can be securely performed knowing that the rules will only allow access to authorized documents.\n\n*   Path-Based Ownership: Documents are stored under `/users/{employeeId}/documents/{documentId}`, making it straightforward to implement security rules based on the `employeeId`.\n\nIn summary, this structure ensures a secure, scalable, and maintainable Firestore database for the FileSafe application."
   }
 }
