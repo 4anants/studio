@@ -39,6 +39,7 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
         </div>
 
         <DialogFooter className="dialog-footer">
+            <Button variant="outline" onClick={() => window.print()}>Print</Button>
             <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Tag, Calendar, Undo } from 'lucide-react';
+import { UploadCloud, FileCheck2, Loader2, Files, X, CheckCircle, AlertCircle, Tag, Calendar } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import type { User, Document } from '@/lib/mock-data'
 import { documentTypesList } from '@/lib/mock-data';
