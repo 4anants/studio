@@ -826,7 +826,7 @@ const handleExportUsers = () => {
     ));
     toast({
         title: "Bulk Delete Successful",
-        description: `${selectedUserIds.length} employee(s) have been moved to the deleted list.`
+        description: `${selectedUserIds.length} employee(s) have been moved to the deleted users list.`
     });
     setSelectedUserIds([]);
     setIsBulkDeleteDialogOpen(false);
