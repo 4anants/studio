@@ -17,7 +17,7 @@ import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { users as initialUsers, User } from '@/lib/mock-data'
-import { signInWithPopup, OAuthProvider } from 'firebase/auth'
+import { signInWithPopup, OAuthProvider, signInWithEmailAndPassword } from 'firebase/auth'
 import { useAuth } from '@/firebase'
 
 const MicrosoftLogo = () => (
@@ -35,19 +35,17 @@ export function LoginForm() {
   const [localIsLoading, setLocalIsLoading] = useState(false);
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
-  const [auth, setAuth] = useState<any>(null);
-  const authHook = useAuth();
+  const auth = useAuth();
   const [allowedDomains, setAllowedDomains] = useState<string[]>(['yourdomain.com']);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   useEffect(() => {
-    setAuth(authHook);
     const storedDomains = localStorage.getItem('allowedDomains');
     if (storedDomains) {
       setAllowedDomains(JSON.parse(storedDomains));
     }
-  }, [authHook]);
+  }, []);
 
   const handleNewUser = (user: { uid: string, email?: string | null, displayName?: string | null }) => {
     if (user.email && !users.some(u => u.email === user.email)) {
@@ -66,29 +64,47 @@ export function LoginForm() {
 
   async function handleLocalLogin(e: React.FormEvent) {
     e.preventDefault();
-    setLocalIsLoading(true);
-
-    // Hardcoded Super Admin check
-    if (email === 'sadmin@internal.local' && password === 'Supper@321..') {
-        setTimeout(() => {
-            toast({
-                title: 'Login Successful',
-                description: `Welcome, Super Admin!`,
-            });
-            router.push(`/dashboard?role=admin`);
-            setLocalIsLoading(false);
-        }, 500);
+    if (!auth) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
         return;
     }
+    setLocalIsLoading(true);
 
-    setTimeout(() => {
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userEmail = user.email;
+
+        const appUser = users.find(u => u.email.toLowerCase() === userEmail?.toLowerCase());
+
+        toast({
+            title: 'Login Successful',
+            description: `Welcome, ${appUser?.name || userEmail}!`,
+        });
+
+        const targetRole = appUser?.role || 'employee';
+        router.push(`/dashboard?role=${targetRole}`);
+
+    } catch (error: any) {
+        let description = 'An unexpected error occurred.';
+        switch (error.code) {
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-credential':
+                description = 'The email or password you entered is incorrect.';
+                break;
+            case 'auth/invalid-email':
+                description = 'Please enter a valid email address.';
+                break;
+        }
         toast({
             variant: 'destructive',
-            title: 'Invalid Credentials',
-            description: 'The email or password you entered is incorrect.',
+            title: 'Login Failed',
+            description: description,
         });
+    } finally {
         setLocalIsLoading(false);
-    }, 500);
+    }
   }
 
   async function signInWithMicrosoft() {
