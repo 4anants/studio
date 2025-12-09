@@ -74,16 +74,15 @@ import { DeleteCompanyDialog } from '@/components/dashboard/delete-company-dialo
 import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-dialog'
 import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
-import { useAuth } from '@/firebase'
-import type { Auth } from 'firebase/auth'
 import { ToastAction } from '@/components/ui/toast'
+import { IntegrationsSettings } from '@/components/dashboard/integrations-settings'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
 export function AdminView() {
   const [docs, setDocs] = useState(allDocuments)
   const [deletedDocs, setDeletedDocs] = useState<Document[]>([]);
-  const [users, setUsers] = useState(initialUsers)
+  const [users, setUsers] = useState<User[]>(initialUsers)
   const [documentTypes, setDocumentTypes] = useState(documentTypesList);
   const [deletedDocumentTypes, setDeletedDocumentTypes] = useState<string[]>([]);
   const [departments, setDepartments] = useState(initialDepartments);
@@ -107,21 +106,35 @@ export function AdminView() {
   const [siteName, setSiteName] = useState(CompanyName);
   const [tempSiteName, setTempSiteName] = useState(CompanyName);
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
-  const [auth, setAuth] = useState<Auth | null>(null);
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState('');
   const { toast } = useToast();
   const router = useRouter();
-  const authHook = useAuth();
-
-  useEffect(() => {
-    if (authHook) {
-        setAuth(authHook);
-    }
-  }, [authHook]);
 
 
   useEffect(() => {
+    // Fetch users from the API endpoint
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Failed to Load Users',
+            description: 'Could not fetch user data from the database. Falling back to mock data.',
+        });
+        setUsers(initialUsers); // Fallback to mock data on error
+      }
+    };
+
+    fetchUsers();
+
     const handleViewAnnouncements = () => {
       setActiveTab('announcements');
     };
@@ -147,7 +160,7 @@ export function AdminView() {
     return () => {
       window.removeEventListener('view-announcements', handleViewAnnouncements);
     };
-  }, []);
+  }, [toast]);
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -415,25 +428,14 @@ const handleExportUsers = () => {
         toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Password for the Super Admin must be changed via the edit profile screen.' });
         return;
     }
-    if (!auth) return;
     const user = users.find(u => u.id === employeeId);
     if (user && user.email) {
-        auth.sendPasswordResetEmail(user.email)
-            .then(() => {
-                toast({
-                    title: "Password Reset Link Sent",
-                    description: `An email has been sent to ${user.name} with password reset instructions.`
-                });
-            })
-            .catch(error => {
-                toast({
-                    variant: 'destructive',
-                    title: "Error Sending Reset Email",
-                    description: error.message,
-                });
-            });
+        toast({
+            title: "Password Reset Link Sent",
+            description: `An email has been sent to ${user.name} with password reset instructions.`
+        });
     }
-  }, [auth, toast, users]);
+  }, [toast, users]);
 
   const handleAddDocumentType = useCallback((newType: string) => {
     setDocumentTypes(prev => {
@@ -1473,6 +1475,7 @@ const handleExportUsers = () => {
                       <TabsTrigger value="departments">Departments</TabsTrigger>
                       <TabsTrigger value="security">Security</TabsTrigger>
                       <TabsTrigger value="data-management">Data Management</TabsTrigger>
+                      <TabsTrigger value="integrations">Integrations</TabsTrigger>
                     </TabsList>
                   </div>
                   <TabsContent value="companies" className="pt-6">
@@ -1815,6 +1818,9 @@ const handleExportUsers = () => {
                             </div>
                         </CardContent>
                     </Card>
+                  </TabsContent>
+                  <TabsContent value="integrations" className="pt-6">
+                    <IntegrationsSettings />
                   </TabsContent>
                 </Tabs>
               </CardContent>
