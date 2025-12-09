@@ -2,7 +2,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-
+import { signIn, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -29,36 +29,27 @@ const MicrosoftLogo = () => (
 
 export function LoginForm() {
   const router = useRouter()
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
-  const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   useEffect(() => {
-    localStorage.removeItem('session');
-    const storedDomains = localStorage.getItem('allowedDomains');
-    if (storedDomains) {
-      setAllowedDomains(JSON.parse(storedDomains));
-    } else {
-        setAllowedDomains(['yourdomain.com']);
-    }
-  }, []);
+    if (status === 'authenticated' && session?.user?.email) {
+      const appUser = initialUsers.find(u => u.email.toLowerCase() === session.user!.email!.toLowerCase());
+      const targetRole = appUser?.role || 'employee';
 
-  const handleNewUser = (user: { uid: string, email?: string | null, displayName?: string | null }) => {
-    if (user.email && !users.some(u => u.email === user.email)) {
-        const newUser: User = {
-            id: user.uid,
-            email: user.email,
-            name: user.displayName || user.email.split('@')[0],
-            status: 'active',
-            role: 'employee',
-            avatar: String(Date.now()),
-        };
-        setUsers(prev => [...prev, newUser]);
+      toast({
+        title: 'Login Successful',
+        description: `Welcome, ${session.user.name}!`,
+      });
+
+      router.push(`/dashboard?role=${targetRole}`);
     }
-  };
+    localStorage.removeItem('session');
+  }, [status, session, router, toast]);
 
   async function handleLocalLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -83,6 +74,7 @@ export function LoginForm() {
                     title: 'Login Failed',
                     description: 'The email or password you entered is incorrect.',
                 });
+                setIsLoading(false); // Stop loading on failure
                 return; // Guard clause
             }
         }
@@ -106,8 +98,6 @@ export function LoginForm() {
                 description: 'The email or password you entered is incorrect.',
             });
         }
-
-
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -121,40 +111,11 @@ export function LoginForm() {
 
   async function signInWithMicrosoft() {
     setIsLoading(true);
-    
-    // This is a mock sign-in. In a real app, this would be a full OAuth flow.
-    setTimeout(() => {
-        const mockUserEmail = "mock.user@yourdomain.com";
-
-        if (!allowedDomains.some(domain => mockUserEmail.endsWith(`@${domain}`))) {
-            toast({
-                variant: 'destructive',
-                title: 'Access Denied',
-                description: 'You must use an approved company email address to sign in.',
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        const appUser = users.find(u => u.email.toLowerCase() === mockUserEmail.toLowerCase());
-        
-        if (!appUser) {
-            handleNewUser({ uid: `ms-mock-${Date.now()}`, email: mockUserEmail, displayName: "Mock User" });
-        }
-
-        toast({
-            title: 'Login Successful',
-            description: `Welcome, Mock User!`,
-        });
-        
-        const sessionUserId = appUser?.id || 'user-1'; // Fallback for mock
-        localStorage.setItem('session', sessionUserId);
-        const targetRole = appUser?.role || 'employee';
-        router.push(`/dashboard?role=${targetRole}`);
-        
-        setIsLoading(false);
-    }, 1500);
+    // This will redirect the user to the Microsoft login page
+    await signIn('azure-ad', { callbackUrl: '/dashboard' });
   }
+  
+  const isPageLoading = status === 'loading' || isLoading;
 
   return (
     <>
@@ -166,8 +127,8 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-            <Button onClick={signInWithMicrosoft} variant="outline" className="w-full" disabled={isLoading}>
-              {isLoading ? (
+            <Button onClick={signInWithMicrosoft} variant="outline" className="w-full" disabled={isPageLoading}>
+              {isPageLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <MicrosoftLogo />
@@ -195,7 +156,7 @@ export function LoginForm() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        disabled={isLoading}
+                        disabled={isPageLoading}
                         />
                     </div>
                     <div className="grid gap-2">
@@ -206,11 +167,11 @@ export function LoginForm() {
                             required 
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            disabled={isLoading}
+                            disabled={isPageLoading}
                         />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" className="w-full" disabled={isPageLoading}>
+                        {isPageLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Sign in
                     </Button>
                 </div>

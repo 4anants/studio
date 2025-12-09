@@ -5,7 +5,7 @@ import {
   LogOut,
   User,
 } from 'lucide-react'
-
+import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -23,12 +23,13 @@ import { useState, useEffect } from 'react'
 import { CompanyName, users as allUsers, User as UserType } from '@/lib/mock-data'
 import { getAvatarSrc } from '@/lib/utils'
 import { AseLogo } from './ase-logo'
+import { Skeleton } from '../ui/skeleton';
 
 
 export function DashboardHeader() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const role = searchParams.get('role')
+  const { data: session, status } = useSession();
   const [siteName, setSiteName] = useState(CompanyName);
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
 
@@ -48,24 +49,31 @@ export function DashboardHeader() {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
-    // In a real app, this would come from an auth context
-    const employeeUserId = 'user-1';
-    
-    let user: UserType | undefined;
-    
-    const session = localStorage.getItem('session');
 
-    if (session === 'sadmin') {
+    // Determine the current user
+    let user: UserType | undefined;
+    const localSession = localStorage.getItem('session');
+
+    if (localSession === 'sadmin') {
       user = allUsers.find(u => u.id === 'sadmin');
-    } else if (role === 'admin') {
-      // This logic remains for other admin users if any, but sadmin is handled separately
-      user = allUsers.find(u => u.email === 'sadmin@internal.local') || allUsers.find(u => u.role === 'admin') || allUsers[0];
-    } else {
-      user = allUsers.find(u => u.id === employeeUserId) || allUsers[0];
+    } else if (status === 'authenticated' && session?.user?.email) {
+      user = allUsers.find(u => u.email.toLowerCase() === session.user!.email!.toLowerCase());
+      // If user from SSO is not in our mock data, create a temporary profile
+      if (!user) {
+        user = {
+            id: session.user.email,
+            name: session.user.name || 'New User',
+            email: session.user.email,
+            avatar: session.user.image || String(Date.now()),
+            status: 'active',
+            role: 'employee',
+        }
+      }
+    } else if (localSession) {
+        user = allUsers.find(u => u.id === localSession);
     }
     
-    if(user) {
+    if (user) {
       setCurrentUser(user);
     }
 
@@ -73,26 +81,38 @@ export function DashboardHeader() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [role]);
+  }, [status, session]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem('session');
-    router.push('/login')
+    await signOut({ callbackUrl: '/login' });
   }
 
   const handleProfileClick = () => {
     if (!currentUser) return;
-    const targetUserId = currentUser.id;
-    const targetRole = role === 'admin' ? 'admin' : undefined;
-    const url = `/dashboard/employee/${targetUserId}${targetRole ? `?role=${targetRole}` : ''}`;
+
+    // Use URLSearchParams to preserve existing query params if any
+    const params = new URLSearchParams(searchParams.toString());
+    
+    const role = currentUser.role === 'admin' ? 'admin' : 'employee';
+    params.set('role', role);
+
+    const url = `/dashboard/employee/${currentUser.id}?${params.toString()}`;
     router.push(url);
   }
 
-  if (!currentUser) {
+  if (status === 'loading' || !currentUser) {
     // Render a skeleton or null while waiting for the user
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
-            {/* Can add a skeleton loader here */}
+            <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-6 w-32" />
+            </nav>
+             <div className="ml-auto flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-full" />
+             </div>
         </header>
     );
   }
@@ -102,7 +122,7 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         <Link
-          href={`/dashboard?role=${role || 'employee'}`}
+          href={`/dashboard?${searchParams.toString()}`}
           className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
         >
           <div className="h-8 w-8">
@@ -114,7 +134,7 @@ export function DashboardHeader() {
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial" />
         <ThemeToggle />
-        {role !== 'admin' && <AnnouncementBell />}
+        {currentUser.role !== 'admin' && <AnnouncementBell />}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
