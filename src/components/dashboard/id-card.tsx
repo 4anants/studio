@@ -38,8 +38,8 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User }>(({ employee
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
             <div className="absolute top-4 left-4 h-12 w-12 bg-white/80 backdrop-blur-sm rounded-full p-2 flex items-center justify-center">
-                 {logoSrc ? (
-                    <img src={logoSrc} alt="Company Logo" className="rounded-full object-contain h-full w-full" crossOrigin="anonymous" />
+                 {company?.logo ? (
+                    <img src={company.logo} alt="Company Logo" className="rounded-full object-contain h-full w-full" crossOrigin="anonymous" />
                 ) : (
                     <AseLogo />
                 )}

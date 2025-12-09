@@ -31,8 +31,7 @@ const MicrosoftLogo = () => (
 
 export function LoginForm() {
   const router = useRouter()
-  const [microsoftIsLoading, setMicrosoftIsLoading] = useState(false)
-  const [localIsLoading, setLocalIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
   const auth = useAuth();
@@ -46,7 +45,6 @@ export function LoginForm() {
     if (storedDomains) {
       setAllowedDomains(JSON.parse(storedDomains));
     } else {
-        // Fallback for initial setup
         setAllowedDomains(['yourdomain.com']);
     }
   }, []);
@@ -59,16 +57,15 @@ export function LoginForm() {
             name: user.displayName || user.email.split('@')[0],
             status: 'active',
             role: 'employee',
-            avatar: String(Date.now()), // default avatar seed
+            avatar: String(Date.now()),
         };
         setUsers(prev => [...prev, newUser]);
-        console.log('New user created:', newUser);
     }
   };
 
   async function handleLocalLogin(e: React.FormEvent) {
     e.preventDefault();
-    setLocalIsLoading(true);
+    setIsLoading(true);
 
     try {
         const isSadminLogin = email.toLowerCase() === 'sadmin@internal.local' || email.toLowerCase() === 'sadmin';
@@ -82,17 +79,17 @@ export function LoginForm() {
                 });
                 localStorage.setItem('session', 'sadmin');
                 router.push(`/dashboard?role=admin`);
+                return; // Guard clause to stop execution
             } else {
                 toast({
                     variant: 'destructive',
                     title: 'Login Failed',
                     description: 'The email or password you entered is incorrect.',
                 });
+                return; // Guard clause
             }
-            return; // Stop execution for sadmin path
         }
         
-        // --- Regular Firebase User Path ---
         if (!auth) {
             toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
             return;
@@ -101,7 +98,6 @@ export function LoginForm() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const userEmail = user.email;
-
         const appUser = users.find(u => u.email.toLowerCase() === userEmail?.toLowerCase());
 
         toast({
@@ -130,19 +126,19 @@ export function LoginForm() {
             description: description,
         });
     } finally {
-        setLocalIsLoading(false);
+        setIsLoading(false);
     }
   }
 
   async function signInWithMicrosoft() {
-    setMicrosoftIsLoading(true);
+    setIsLoading(true);
     if (!auth) {
         toast({
             variant: 'destructive',
             title: 'Microsoft Sign-In Failed',
             description: 'Authentication service is not available.',
         });
-        setMicrosoftIsLoading(false);
+        setIsLoading(false);
         return;
     }
     const provider = new OAuthProvider('microsoft.com');
@@ -152,7 +148,6 @@ export function LoginForm() {
         const user = result.user;
         const userEmail = user.email;
 
-        // --- Domain Validation ---
         if (!userEmail || !allowedDomains.some(domain => userEmail.endsWith(`@${domain}`))) {
             await auth.signOut();
             toast({
@@ -160,13 +155,11 @@ export function LoginForm() {
                 title: 'Access Denied',
                 description: 'You must use an approved company email address to sign in.',
             });
-            setMicrosoftIsLoading(false);
+            setIsLoading(false);
             return;
         }
-        // --- End of Domain Validation ---
 
         const appUser = users.find(u => u.email.toLowerCase() === userEmail.toLowerCase());
-
         handleNewUser(user);
 
         toast({
@@ -190,11 +183,9 @@ export function LoginForm() {
             description: description,
         });
     } finally {
-        setMicrosoftIsLoading(false);
+        setIsLoading(false);
     }
   }
-
-  const isLoading = microsoftIsLoading || localIsLoading;
 
   return (
     <>
@@ -207,7 +198,7 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
             <Button onClick={signInWithMicrosoft} variant="outline" className="w-full" disabled={isLoading}>
-              {microsoftIsLoading ? (
+              {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <MicrosoftLogo />
@@ -250,7 +241,7 @@ export function LoginForm() {
                         />
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                        {localIsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Sign in
                     </Button>
                 </div>
