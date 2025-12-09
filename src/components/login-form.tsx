@@ -64,11 +64,34 @@ export function LoginForm() {
 
   async function handleLocalLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!auth) {
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
+    setLocalIsLoading(true);
+
+    const sadminUser = users.find(u => u.email === 'sadmin@internal.local');
+    
+    // Special check for sadmin user
+    if (email === 'sadmin@internal.local') {
+        if (sadminUser && password === sadminUser.password) {
+            toast({
+                title: 'Login Successful',
+                description: `Welcome, Super Admin!`,
+            });
+            router.push(`/dashboard?role=admin`);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: 'The email or password you entered is incorrect.',
+            });
+        }
+        setLocalIsLoading(false);
         return;
     }
-    setLocalIsLoading(true);
+
+    if (!auth) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
+        setLocalIsLoading(false);
+        return;
+    }
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -171,7 +194,7 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
-            Use your Microsoft account to sign in.
+            Use your Microsoft account or email to sign in.
         </CardDescription>
       </CardHeader>
       <CardContent>
