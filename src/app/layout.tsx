@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { CompanyName } from '@/lib/mock-data';
 import './print.css';
-import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: CompanyName,
@@ -31,9 +30,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-            <FirebaseClientProvider>
-                {children}
-            </FirebaseClientProvider>
+            {children}
             <Toaster />
         </ThemeProvider>
       </body>

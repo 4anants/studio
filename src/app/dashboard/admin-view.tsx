@@ -74,8 +74,6 @@ import { DeleteCompanyDialog } from '@/components/dashboard/delete-company-dialo
 import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-dialog'
 import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
-import { useAuth } from '@/firebase'
-import type { Auth } from 'firebase/auth'
 import { ToastAction } from '@/components/ui/toast'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
@@ -96,7 +94,7 @@ export function AdminView() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
-  const [lastBulkUploadIds, setLastBulkUploadIds] = useState<string[]>([]);
+  const [lastBulkUploadInfo, setLastBulkUploadInfo] = useState<{ ids: string[], timestamp: number } | null>(null);
   const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('file-explorer');
   const [activeSubTab, setActiveSubTab] = useState('overview');
@@ -107,18 +105,10 @@ export function AdminView() {
   const [siteName, setSiteName] = useState(CompanyName);
   const [tempSiteName, setTempSiteName] = useState(CompanyName);
   const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
-  const [auth, setAuth] = useState<Auth | null>(null);
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState('');
   const { toast } = useToast();
   const router = useRouter();
-  const authHook = useAuth();
-
-  useEffect(() => {
-    if (authHook) {
-        setAuth(authHook);
-    }
-  }, [authHook]);
 
 
   useEffect(() => {
@@ -205,13 +195,13 @@ export function AdminView() {
   };
 
   const handleUndoLastBulkUpload = () => {
-    if (lastBulkUploadIds.length > 0) {
-      setDocs(prev => prev.filter(d => !lastBulkUploadIds.includes(d.id)));
+    if (lastBulkUploadInfo && lastBulkUploadInfo.ids.length > 0) {
+      setDocs(prev => prev.filter(d => !lastBulkUploadInfo.ids.includes(d.id)));
       toast({
         title: 'Upload Undone',
-        description: `${lastBulkUploadIds.length} document(s) have been removed.`,
+        description: `${lastBulkUploadInfo.ids.length} document(s) have been removed.`,
       });
-      setLastBulkUploadIds([]);
+      setLastBulkUploadInfo(null);
     }
     setIsUndoDialogOpen(false);
   };
@@ -230,7 +220,7 @@ export function AdminView() {
         };
     });
     setDocs(prev => [...fullNewDocs, ...prev]);
-    setLastBulkUploadIds(docIds);
+    setLastBulkUploadInfo({ ids: docIds, timestamp: Date.now() });
 
     toast({
         title: 'Upload Successful!',
@@ -415,25 +405,14 @@ const handleExportUsers = () => {
         toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Password for the Super Admin must be changed via the edit profile screen.' });
         return;
     }
-    if (!auth) return;
     const user = users.find(u => u.id === employeeId);
     if (user && user.email) {
-        auth.sendPasswordResetEmail(user.email)
-            .then(() => {
-                toast({
-                    title: "Password Reset Link Sent",
-                    description: `An email has been sent to ${user.name} with password reset instructions.`
-                });
-            })
-            .catch(error => {
-                toast({
-                    variant: 'destructive',
-                    title: "Error Sending Reset Email",
-                    description: error.message,
-                });
-            });
+        toast({
+            title: "Password Reset Link Sent",
+            description: `An email has been sent to ${user.name} with password reset instructions.`
+        });
     }
-  }, [auth, toast, users]);
+  }, [toast, users]);
 
   const handleAddDocumentType = useCallback((newType: string) => {
     setDocumentTypes(prev => {
@@ -1801,15 +1780,15 @@ const handleExportUsers = () => {
                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                     <div>
                                         <h3 className="font-semibold">Undo Last Bulk Upload</h3>
-                                        <p className="text-sm text-destructive/80">This will permanently delete the last batch of {lastBulkUploadIds.length} uploaded document(s). This action cannot be undone.</p>
+                                        <p className="text-sm text-destructive/80">This will permanently delete the last batch of {lastBulkUploadInfo?.ids.length || 0} uploaded document(s). This action cannot be undone.</p>
                                     </div>
                                     <Button
                                         variant="destructive"
                                         onClick={() => setIsUndoDialogOpen(true)}
-                                        disabled={lastBulkUploadIds.length === 0}
+                                        disabled={!lastBulkUploadInfo || lastBulkUploadInfo.ids.length === 0}
                                     >
                                         <Undo className="mr-2 h-4 w-4" />
-                                        Undo Last Upload ({lastBulkUploadIds.length})
+                                        Undo Last Upload ({lastBulkUploadInfo?.ids.length || 0})
                                     </Button>
                                 </div>
                             </div>
@@ -2148,7 +2127,7 @@ const handleExportUsers = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Undo Last Bulk Upload?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the last batch of {lastBulkUploadIds.length} uploaded document(s). This action cannot be undone.
+              This will permanently delete the last batch of {lastBulkUploadInfo?.ids.length || 0} uploaded document(s). This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

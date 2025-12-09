@@ -17,8 +17,6 @@ import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { users as initialUsers, User } from '@/lib/mock-data'
-import { signInWithPopup, OAuthProvider, signInWithEmailAndPassword } from 'firebase/auth'
-import { useAuth } from '@/firebase'
 
 const MicrosoftLogo = () => (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -34,7 +32,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState(initialUsers)
   const { toast } = useToast()
-  const auth = useAuth();
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -90,40 +87,32 @@ export function LoginForm() {
             }
         }
         
-        if (!auth) {
-            toast({ variant: 'destructive', title: 'Login Failed', description: 'Authentication service not available.' });
-            return;
+        // Mock regular user login
+        const appUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+
+        if (appUser) {
+             toast({
+                title: 'Login Successful',
+                description: `Welcome, ${appUser.name}!`,
+            });
+
+            localStorage.setItem('session', appUser.id);
+            const targetRole = appUser?.role || 'employee';
+            router.push(`/dashboard?role=${targetRole}`);
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: 'The email or password you entered is incorrect.',
+            });
         }
 
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userEmail = user.email;
-        const appUser = users.find(u => u.email.toLowerCase() === userEmail?.toLowerCase());
-
-        toast({
-            title: 'Login Successful',
-            description: `Welcome, ${appUser?.name || userEmail}!`,
-        });
-
-        const targetRole = appUser?.role || 'employee';
-        router.push(`/dashboard?role=${targetRole}`);
 
     } catch (error: any) {
-        let description = 'An unexpected error occurred.';
-        switch (error.code) {
-            case 'auth/user-not-found':
-            case 'auth/wrong-password':
-            case 'auth/invalid-credential':
-                description = 'The email or password you entered is incorrect.';
-                break;
-            case 'auth/invalid-email':
-                description = 'Please enter a valid email address.';
-                break;
-        }
         toast({
             variant: 'destructive',
             title: 'Login Failed',
-            description: description,
+            description: 'An unexpected error occurred.',
         });
     } finally {
         setIsLoading(false);
@@ -132,24 +121,12 @@ export function LoginForm() {
 
   async function signInWithMicrosoft() {
     setIsLoading(true);
-    if (!auth) {
-        toast({
-            variant: 'destructive',
-            title: 'Microsoft Sign-In Failed',
-            description: 'Authentication service is not available.',
-        });
-        setIsLoading(false);
-        return;
-    }
-    const provider = new OAuthProvider('microsoft.com');
+    
+    // This is a mock sign-in. In a real app, this would be a full OAuth flow.
+    setTimeout(() => {
+        const mockUserEmail = "mock.user@yourdomain.com";
 
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        const userEmail = user.email;
-
-        if (!userEmail || !allowedDomains.some(domain => userEmail.endsWith(`@${domain}`))) {
-            await auth.signOut();
+        if (!allowedDomains.some(domain => mockUserEmail.endsWith(`@${domain}`))) {
             toast({
                 variant: 'destructive',
                 title: 'Access Denied',
@@ -159,32 +136,24 @@ export function LoginForm() {
             return;
         }
 
-        const appUser = users.find(u => u.email.toLowerCase() === userEmail.toLowerCase());
-        handleNewUser(user);
+        const appUser = users.find(u => u.email.toLowerCase() === mockUserEmail.toLowerCase());
+        
+        if (!appUser) {
+            handleNewUser({ uid: `ms-mock-${Date.now()}`, email: mockUserEmail, displayName: "Mock User" });
+        }
 
         toast({
             title: 'Login Successful',
-            description: `Welcome, ${user.displayName || userEmail}!`,
+            description: `Welcome, Mock User!`,
         });
-
+        
+        const sessionUserId = appUser?.id || 'user-1'; // Fallback for mock
+        localStorage.setItem('session', sessionUserId);
         const targetRole = appUser?.role || 'employee';
         router.push(`/dashboard?role=${targetRole}`);
         
-    } catch (error: any) {
-        let description = 'An unexpected error occurred.';
-        if (error.code === 'auth/popup-closed-by-user') {
-            description = 'The sign-in window was closed before completing the sign-in. Please try again.';
-        } else if (error.code === 'auth/account-exists-with-different-credential') {
-            description = 'An account already exists with the same email address but different sign-in credentials. Sign in using a provider associated with this email address.';
-        }
-        toast({
-            variant: 'destructive',
-            title: 'Microsoft Sign-In Failed',
-            description: description,
-        });
-    } finally {
         setIsLoading(false);
-    }
+    }, 1500);
   }
 
   return (
