@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { users as initialUsers, documents as allDocuments, documentTypesList, User, Document, departments as initialDepartments, holidays as initialHolidays, Holiday, HolidayLocation, holidayLocations, announcements as initialAnnouncements, Announcement, CompanyName, companies as initialCompanies, Company } from '@/lib/mock-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash, ArrowLeft, Shield } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, Undo, FolderPlus, Tag, Building, CalendarPlus, Bell, Settings, UploadCloud, X, FileLock2, Users, Upload, Download, ArchiveRestore, Folder, Save, Eye, Home, Trash, ArrowLeft, Shield, Wifi } from 'lucide-react'
 import {
   Tabs,
   TabsContent,
@@ -75,6 +75,7 @@ import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-d
 import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 import { ToastAction } from '@/components/ui/toast'
+import { IntegrationsSettings } from '@/components/dashboard/integrations-settings'
 
 type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
 
@@ -1452,6 +1453,7 @@ const handleExportUsers = () => {
                       <TabsTrigger value="departments">Departments</TabsTrigger>
                       <TabsTrigger value="security">Security</TabsTrigger>
                       <TabsTrigger value="data-management">Data Management</TabsTrigger>
+                      <TabsTrigger value="integrations">Integrations</TabsTrigger>
                     </TabsList>
                   </div>
                   <TabsContent value="companies" className="pt-6">
@@ -1794,6 +1796,9 @@ const handleExportUsers = () => {
                             </div>
                         </CardContent>
                     </Card>
+                  </TabsContent>
+                  <TabsContent value="integrations" className="pt-6">
+                    <IntegrationsSettings />
                   </TabsContent>
                 </Tabs>
               </CardContent>
@@ -2141,3 +2146,5 @@ const handleExportUsers = () => {
     </>
   )
 }
+
+    
