@@ -17,15 +17,16 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from '@/components/ui/select';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { holidayLocations, type HolidayLocation } from '@/lib/mock-data';
+import { holidayLocations } from '@/lib/constants';
+import { type HolidayLocation } from '@/lib/types';
 
 interface AddHolidayDialogProps {
   onAdd: (newHoliday: { name: string; date: Date, location: HolidayLocation }) => void;
@@ -96,19 +97,19 @@ export function AddHolidayDialog({ onAdd, children }: AddHolidayDialogProps) {
               </PopoverContent>
             </Popover>
           </div>
-           <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="location" className="text-right">
               Location
             </Label>
             <Select onValueChange={(value: HolidayLocation) => setLocation(value)} defaultValue={location}>
-                <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                    {holidayLocations.map(loc => (
-                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                    ))}
-                </SelectContent>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {holidayLocations.map(loc => (
+                  <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
         </div>

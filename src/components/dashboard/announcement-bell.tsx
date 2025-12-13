@@ -1,9 +1,8 @@
-'use client'
-
 import { useState, useMemo, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { announcements as initialAnnouncements } from '@/lib/mock-data'
+import { Announcement } from '@/lib/types'
+import { useData } from '@/hooks/use-data'
 import {
   Tooltip,
   TooltipContent,
@@ -12,17 +11,25 @@ import {
 } from '@/components/ui/tooltip'
 
 export function AnnouncementBell() {
-  // This component manages its own state for simplicity.
-  // In a real app, this state might be shared via context or a global store.
-  const [announcements, setAnnouncements] = useState(initialAnnouncements.map(a => ({...a, isRead: a.isRead ?? false })))
-  
+  const { announcements: serverAnnouncements } = useData();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  useEffect(() => {
+    if (serverAnnouncements) {
+      setAnnouncements(serverAnnouncements.map(a => ({
+        ...a,
+        isRead: false // Default to false if not provided
+      })));
+    }
+  }, [serverAnnouncements]);
+
   const hasUnreadAnnouncements = useMemo(() => announcements.some(a => !a.isRead), [announcements])
 
   useEffect(() => {
     const handleStorageChange = () => {
       const allRead = localStorage.getItem('announcements_all_read');
       if (allRead === 'true') {
-        setAnnouncements(prev => prev.map(a => ({...a, isRead: true})));
+        setAnnouncements((prev: Announcement[]) => prev.map(a => ({ ...a, isRead: true })));
         localStorage.removeItem('announcements_all_read');
       }
     };
@@ -36,9 +43,9 @@ export function AnnouncementBell() {
   const handleClick = () => {
     // Dispatch a custom event that the dashboard views can listen for.
     window.dispatchEvent(new CustomEvent('view-announcements'));
-    
+
     // Also update local state immediately for the bell icon
-    setAnnouncements(prev => prev.map(a => ({...a, isRead: true})));
+    setAnnouncements((prev: Announcement[]) => prev.map(a => ({ ...a, isRead: true })));
   };
 
   return (

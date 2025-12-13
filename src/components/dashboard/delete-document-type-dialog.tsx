@@ -14,9 +14,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Terminal } from 'lucide-react';
 import { useState } from 'react';
+import type { DocumentType as AppDocumentType } from '@/lib/types';
 
 interface DeleteDocumentTypeDialogProps {
-  documentType: string;
+  documentType: AppDocumentType;
   onDelete: () => void;
   isTypeInUse: boolean;
   children: React.ReactNode;
@@ -47,7 +48,7 @@ export function DeleteDocumentTypeDialog({ documentType, onDelete, isTypeInUse, 
           ) : (
             <AlertDialogDescription>
               This action will move the document type{' '}
-              <span className="font-semibold text-foreground">{documentType}</span> to the deleted items list. You can restore it later.
+              <span className="font-semibold text-foreground">{documentType.name}</span> to the deleted items list. You can restore it later.
             </AlertDialogDescription>
           )}
         </AlertDialogHeader>

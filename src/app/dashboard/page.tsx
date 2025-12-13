@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Metadata } from 'next'
+
 import { AdminView } from '@/app/dashboard/admin-view'
 import { EmployeeView } from '@/components/dashboard/employee-view'
 import { Suspense } from 'react'
@@ -17,26 +17,26 @@ function DashboardContent({ role }: { role: string | null }) {
 }
 
 function DashboardSkeleton() {
-    return (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-64" />
-                    <Skeleton className="h-4 w-96" />
-                </div>
-                <Skeleton className="h-10 w-36" />
-            </div>
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-80" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-40 w-full" />
-                </CardContent>
-            </Card>
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
         </div>
-    )
+        <Skeleton className="h-10 w-36" />
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-80" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-40 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
 function DashboardPageContent() {
@@ -54,11 +54,10 @@ function DashboardPageContent() {
 
 
 export default function DashboardPage() {
-    return (
-        <Suspense fallback={<DashboardSkeleton />}>
-            <DashboardPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardPageContent />
+    </Suspense>
+  )
 }
 
-    

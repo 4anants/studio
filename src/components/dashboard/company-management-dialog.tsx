@@ -15,18 +15,18 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-  } from '@/components/ui/form';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Camera } from 'lucide-react';
-import type { Company } from '@/lib/mock-data';
+import type { Company } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useDropzone } from 'react-dropzone';
 import Image from 'next/image';
@@ -135,9 +135,9 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
                   ) : (
                     <span className="text-sm text-muted-foreground">Logo</span>
                   )}
-                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-opacity">
-                        <Camera className="h-8 w-8 text-white opacity-0 group-hover:opacity-100" />
-                    </div>
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-opacity">
+                    <Camera className="h-8 w-8 text-white opacity-0 group-hover:opacity-100" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -185,7 +185,7 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="address"
               render={({ field }) => (

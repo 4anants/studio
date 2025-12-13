@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import type { Company } from '@/lib/mock-data';
+import type { Company } from '@/lib/types';
 import { useState } from 'react';
 
 interface DeleteCompanyDialogProps {
@@ -37,7 +37,7 @@ export function DeleteCompanyDialog({ company, onDelete, children }: DeleteCompa
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action will permanently delete the company{' '}
-            <span className="font-semibold text-foreground">{company.name}</span>. 
+            <span className="font-semibold text-foreground">{company.name}</span>.
             This action cannot be undone and will only succeed if no employees are assigned to this company.
           </AlertDialogDescription>
         </AlertDialogHeader>

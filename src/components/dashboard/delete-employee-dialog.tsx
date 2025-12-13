@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import type { User } from '@/lib/mock-data';
+import type { User } from '@/lib/types';
 import { useState } from 'react';
 
 interface DeleteEmployeeDialogProps {

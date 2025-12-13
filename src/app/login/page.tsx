@@ -3,36 +3,36 @@
 import { useState, useEffect } from 'react';
 import { LoginForm } from '@/components/login-form';
 import Image from 'next/image';
-import { CompanyName } from '@/lib/mock-data';
+import { CompanyName } from '@/lib/constants';
 
 const AseLogo = () => (
-    <svg
-      width="64"
-      height="64"
-      viewBox="0 0 100 100"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M50 0L95.5 25.5V74.5L50 100L4.5 74.5V25.5L50 0Z"
-        fill="#004a99"
-      />
-      <path
-        d="M26 63.5L50 50L74 63.5M50 75V50"
-        stroke="#fecb00"
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M26 36.5L50 25L74 36.5"
-        stroke="#ffffff"
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  <svg
+    width="64"
+    height="64"
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M50 0L95.5 25.5V74.5L50 100L4.5 74.5V25.5L50 0Z"
+      fill="#004a99"
+    />
+    <path
+      d="M26 63.5L50 50L74 63.5M50 75V50"
+      stroke="#fecb00"
+      strokeWidth="5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M26 36.5L50 25L74 36.5"
+      stroke="#ffffff"
+      strokeWidth="5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export default function LoginPage() {
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -50,19 +50,19 @@ export default function LoginPage() {
       setSiteName(storedSiteName);
       document.title = storedSiteName;
     } else {
-        document.title = CompanyName;
+      document.title = CompanyName;
     }
 
     const handleStorageChange = () => {
-        const storedSiteName = localStorage.getItem('siteName');
-        if (storedSiteName) {
-            setSiteName(storedSiteName);
-            document.title = storedSiteName;
-        }
+      const storedSiteName = localStorage.getItem('siteName');
+      if (storedSiteName) {
+        setSiteName(storedSiteName);
+        document.title = storedSiteName;
+      }
     }
     window.addEventListener('storage', handleStorageChange);
     return () => {
-        window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storage', handleStorageChange);
     }
 
   }, []);
@@ -75,7 +75,7 @@ export default function LoginPage() {
             {isClient && logoSrc ? (
               <Image
                 src={logoSrc}
-                alt="Custom Logo"
+                alt={siteName || "Company Logo"}
                 width={80}
                 height={80}
                 className="h-full w-full rounded-lg object-cover"
@@ -98,4 +98,3 @@ export default function LoginPage() {
   );
 }
 
-    

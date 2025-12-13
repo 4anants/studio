@@ -12,14 +12,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
+import type { Department } from '@/lib/types';
 
 interface DeleteDepartmentDialogProps {
-  departmentName: string;
+  department: Department;
   onDelete: () => void;
   children: React.ReactNode;
 }
 
-export function DeleteDepartmentDialog({ departmentName, onDelete, children }: DeleteDepartmentDialogProps) {
+export function DeleteDepartmentDialog({ department, onDelete, children }: DeleteDepartmentDialogProps) {
   const [open, setOpen] = useState(false);
 
   const handleDelete = () => {
@@ -35,7 +36,7 @@ export function DeleteDepartmentDialog({ departmentName, onDelete, children }: D
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action will permanently delete the department{' '}
-            <span className="font-semibold text-foreground">{departmentName}</span>. 
+            <span className="font-semibold text-foreground">{department.name}</span>.
             This might affect users assigned to this department. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

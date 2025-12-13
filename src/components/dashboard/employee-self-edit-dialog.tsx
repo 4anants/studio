@@ -16,17 +16,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-  } from '@/components/ui/form';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Camera } from 'lucide-react';
-import type { User } from '@/lib/mock-data';
+import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
@@ -103,23 +103,23 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
         title: "Profile Updated",
         description: "Your profile information has been successfully updated.",
       });
-      
+
       setIsLoading(false);
       setOpen(false);
     }, 1000);
   };
-  
+
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-        form.reset({
-            personalEmail: employee?.personalEmail || '',
-            mobile: employee?.mobile || '',
-            emergencyContact: employee?.emergencyContact || '',
-            password: '',
-            avatar: employee?.avatar,
-            bloodGroup: employee?.bloodGroup || '',
-        });
-        setAvatarPreview(null);
+      form.reset({
+        personalEmail: employee?.personalEmail || '',
+        mobile: employee?.mobile || '',
+        emergencyContact: employee?.emergencyContact || '',
+        password: '',
+        avatar: employee?.avatar,
+        bloodGroup: employee?.bloodGroup || '',
+      });
+      setAvatarPreview(null);
     }
     setOpen(isOpen);
   }
@@ -139,28 +139,28 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-6">
             <div className="flex justify-center">
-                 <div {...getRootProps()} className="relative cursor-pointer group">
-                    <input {...getInputProps()} />
-                    <Image 
-                        src={currentAvatarSrc} 
-                        width={128} 
-                        height={128} 
-                        className="rounded-full object-cover" 
-                        alt={employee.name}
-                        data-ai-hint="person portrait" 
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-opacity">
-                        <Camera className="h-8 w-8 text-white opacity-0 group-hover:opacity-100" />
-                    </div>
+              <div {...getRootProps()} className="relative cursor-pointer group">
+                <input {...getInputProps()} />
+                <Image
+                  src={currentAvatarSrc}
+                  width={128}
+                  height={128}
+                  className="rounded-full object-cover"
+                  alt={employee.name ? employee.name : 'Profile'}
+                  data-ai-hint="person portrait"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-opacity">
+                  <Camera className="h-8 w-8 text-white opacity-0 group-hover:opacity-100" />
                 </div>
+              </div>
             </div>
-             <FormItem>
-                <FormLabel>Official Email</FormLabel>
-                <FormControl>
-                    <Input value={employee.email} disabled />
-                </FormControl>
-             </FormItem>
-             <FormField
+            <FormItem>
+              <FormLabel>Official Email</FormLabel>
+              <FormControl>
+                <Input value={employee.email} disabled />
+              </FormControl>
+            </FormItem>
+            <FormField
               control={form.control}
               name="personalEmail"
               render={({ field }) => (
@@ -181,10 +181,10 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                   <FormLabel>Mobile No.</FormLabel>
                   <FormControl>
                     <div className="relative">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">+91</span>
-                        </div>
-                        <Input placeholder="123-456-7890" {...field} className="pl-12" />
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="text-gray-500 sm:text-sm">+91</span>
+                      </div>
+                      <Input placeholder="123-456-7890" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -199,17 +199,17 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                   <FormLabel>Emergency Contact</FormLabel>
                   <FormControl>
                     <div className="relative">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">+91</span>
-                        </div>
-                        <Input placeholder="987-654-3210" {...field} className="pl-12" />
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="text-gray-500 sm:text-sm">+91</span>
+                      </div>
+                      <Input placeholder="987-654-3210" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="bloodGroup"
               render={({ field }) => (
@@ -235,11 +235,11 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                 </FormItem>
               )}
             />
-             <DialogFooter className="pt-4">
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                </Button>
+            <DialogFooter className="pt-4">
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </DialogFooter>
           </form>
         </Form>

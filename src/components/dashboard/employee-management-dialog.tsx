@@ -16,18 +16,18 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-  } from '@/components/ui/form';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-import type { User, Company } from '@/lib/mock-data';
-import { locations } from '@/lib/mock-data';
+import type { User, Company, Department } from '@/lib/types';
+import { locations } from '@/lib/constants';
 import {
   Select,
   SelectContent,
@@ -64,7 +64,7 @@ interface EmployeeManagementDialogProps {
   employee?: User;
   onSave: (employee: Partial<User> & { originalId?: string }) => void;
   children: React.ReactNode;
-  departments: string[];
+  departments: Department[];
   companies: Company[];
 }
 
@@ -75,9 +75,9 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   const isEditing = !!employee;
 
   const companyNames = companies.length > 0 ? companies.map(c => c.name) as [string, ...string[]] : [] as const;
-  
+
   const formSchema = baseFormSchema.extend({
-      company: z.enum(companyNames).optional(),
+    company: companyNames.length > 0 ? z.enum(companyNames).optional() : z.string().optional(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -102,10 +102,10 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       role: employee?.role || 'employee',
     },
   });
-  
-  const finalSchema = isEditing 
-  ? formSchema 
-  : formSchema.extend({
+
+  const finalSchema = isEditing
+    ? formSchema
+    : formSchema.extend({
       password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
     });
 
@@ -113,12 +113,12 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const validation = finalSchema.safeParse(values);
     if (!validation.success) {
-        Object.entries(validation.error.flatten().fieldErrors).forEach(([name, errors]) => {
-            if (errors) {
-                 form.setError(name as any, { type: 'manual', message: errors[0] });
-            }
-        });
-        return;
+      Object.entries(validation.error.flatten().fieldErrors).forEach(([name, errors]) => {
+        if (errors) {
+          form.setError(name as any, { type: 'manual', message: errors[0] });
+        }
+      });
+      return;
     }
 
     setIsLoading(true);
@@ -131,47 +131,47 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       if (!userData.password) {
         delete userData.password;
       }
-      
+
       onSave(userData);
 
       if (isEditing) {
         toast({
-            title: "Profile Updated",
-            description: `The profile for ${employee.name} has been successfully updated.`,
+          title: "Profile Updated",
+          description: `The profile for ${employee.name} has been successfully updated.`,
         });
       }
-      
+
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
         form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '', bloodGroup: '', role: 'employee' });
       } else {
-        form.reset({ ...values, password: '' }); 
+        form.reset({ ...values, password: '' });
       }
     }, 1000);
   };
-  
+
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-        form.reset({
-            id: employee?.id || '',
-            name: employee?.name || '',
-            email: employee?.email || '',
-            personalEmail: employee?.personalEmail || '',
-            mobile: employee?.mobile || '',
-            emergencyContact: employee?.emergencyContact || '',
-            password: '',
-            dateOfBirth: employee?.dateOfBirth || '',
-            joiningDate: employee?.joiningDate || '',
-            resignationDate: employee?.resignationDate || '',
-            designation: employee?.designation || '',
-            status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
-            department: employee?.department || '',
-            bloodGroup: employee?.bloodGroup || '',
-            company: employee?.company,
-            location: employee?.location,
-            role: employee?.role || 'employee',
-        });
+      form.reset({
+        id: employee?.id || '',
+        name: employee?.name || '',
+        email: employee?.email || '',
+        personalEmail: employee?.personalEmail || '',
+        mobile: employee?.mobile || '',
+        emergencyContact: employee?.emergencyContact || '',
+        password: '',
+        dateOfBirth: employee?.dateOfBirth || '',
+        joiningDate: employee?.joiningDate || '',
+        resignationDate: employee?.resignationDate || '',
+        designation: employee?.designation || '',
+        status: (employee?.status === 'active' || employee?.status === 'inactive' || employee?.status === 'pending') ? employee.status : 'active',
+        department: employee?.department || '',
+        bloodGroup: employee?.bloodGroup || '',
+        company: employee?.company,
+        location: employee?.location,
+        role: employee?.role || 'employee',
+      });
     }
     setOpen(isOpen);
   }
@@ -188,7 +188,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
-             <FormField
+            <FormField
               control={form.control}
               name="id"
               render={({ field }) => (
@@ -227,7 +227,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="personalEmail"
               render={({ field }) => (
@@ -248,10 +248,10 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                   <FormLabel>Mobile No.</FormLabel>
                   <FormControl>
                     <div className="relative">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">+91</span>
-                        </div>
-                        <Input placeholder="123-456-7890" {...field} className="pl-12"/>
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="text-gray-500 sm:text-sm">+91</span>
+                      </div>
+                      <Input placeholder="123-456-7890" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -264,19 +264,19 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               render={({ field }) => (
                 <FormItem className="col-span-1">
                   <FormLabel>Emergency Contact</FormLabel>
-                   <FormControl>
+                  <FormControl>
                     <div className="relative">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">+91</span>
-                        </div>
-                        <Input placeholder="987-654-3210" {...field} className="pl-12" />
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="text-gray-500 sm:text-sm">+91</span>
+                      </div>
+                      <Input placeholder="987-654-3210" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="dateOfBirth"
               render={({ field }) => (
@@ -302,7 +302,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="resignationDate"
               render={({ field }) => (
@@ -328,7 +328,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="company"
               render={({ field }) => (
@@ -372,7 +372,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="department"
               render={({ field }) => (
@@ -408,17 +408,17 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               )}
             />
             <FormField
-                control={form.control}
-                name="bloodGroup"
-                render={({ field }) => (
-                    <FormItem className="col-span-1">
-                    <FormLabel>Blood Group</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. A+" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
+              control={form.control}
+              name="bloodGroup"
+              render={({ field }) => (
+                <FormItem className="col-span-1">
+                  <FormLabel>Blood Group</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. A+" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
             <FormField
               control={form.control}
@@ -463,11 +463,11 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                 </FormItem>
               )}
             />
-             <DialogFooter className="col-span-1 sm:col-span-2 pt-4">
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isEditing ? 'Save Changes' : 'Create Employee'}
-                </Button>
+            <DialogFooter className="col-span-1 sm:col-span-2 pt-4">
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? 'Save Changes' : 'Create Employee'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
@@ -476,4 +476,3 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   );
 }
 
-    

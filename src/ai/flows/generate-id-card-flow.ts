@@ -8,23 +8,23 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { initialCompanies, locations } from '@/lib/mock-data';
+import { companies, locations } from '@/lib/constants';
 
-const companyNames = initialCompanies.map(c => c.name) as [string, ...string[]];
+const companyNames = companies.map(c => c.name) as [string, ...string[]];
 const locationKeys = Object.keys(locations) as [string, ...string[]];
 
 const IdCardInputSchema = z.object({
-    employee: z.object({
-        id: z.string(),
-        name: z.string(),
-        designation: z.string().optional(),
-        status: z.string(),
-        bloodGroup: z.string().optional(),
-        avatar: z.string().describe("A URL or a seed for a placeholder image."),
-        company: z.enum(companyNames).optional(),
-        location: z.enum(locationKeys).optional(),
-        emergencyContact: z.string().optional(),
-      })
+  employee: z.object({
+    id: z.string(),
+    name: z.string(),
+    designation: z.string().optional(),
+    status: z.string(),
+    bloodGroup: z.string().optional(),
+    avatar: z.string().describe("A URL or a seed for a placeholder image."),
+    company: z.enum(companyNames).optional(),
+    location: z.enum(locationKeys).optional(),
+    emergencyContact: z.string().optional(),
+  })
 });
 export type IdCardInput = z.infer<typeof IdCardInputSchema>;
 
@@ -40,28 +40,28 @@ export async function generateIdCardImage(input: IdCardInput): Promise<IdCardOut
 }
 
 const getCompanyDetails = (input: IdCardInput) => {
-    const company = initialCompanies.find(c => c.name === input.employee.company);
-    const address = input.employee.location ? locations[input.employee.location] : 'N/A';
-    return {
-        name: company?.name || "Company Name",
-        shortName: company?.shortName || "CN",
-        address: address,
-    };
+  const company = companies.find(c => c.name === input.employee.company);
+  const address = input.employee.location ? locations[input.employee.location as keyof typeof locations] : 'N/A';
+  return {
+    name: company?.name || "Company Name",
+    shortName: company?.shortName || "CN",
+    address: address,
+  };
 }
 
 const getAvatarUrl = (avatarSeed: string) => {
-    if (avatarSeed && avatarSeed.startsWith('data:image')) {
-        return avatarSeed;
-    }
-    return `https://picsum.photos/seed/${avatarSeed}/320/270`;
+  if (avatarSeed && avatarSeed.startsWith('data:image')) {
+    return avatarSeed;
+  }
+  return `https://picsum.photos/seed/${avatarSeed}/320/270`;
 }
 
 const promptInputSchema = z.object({
-    employee: IdCardInputSchema.shape.employee,
-    finalAvatarUrl: z.string(),
-    companyName: z.string(),
-    companyAddress: z.string(),
-    qrCodeValue: z.string().optional(),
+  employee: IdCardInputSchema.shape.employee,
+  finalAvatarUrl: z.string(),
+  companyName: z.string(),
+  companyAddress: z.string(),
+  qrCodeValue: z.string().optional(),
 });
 
 
@@ -104,7 +104,7 @@ The ID card must be vertically oriented and have a clean, modern design. It must
 *   The final output MUST be a single, complete I-Card image. Do not generate separate elements.
 *   Ensure high contrast for all text for readability.
 `,
-  });
+});
 
 const generateIdCardFlow = ai.defineFlow(
   {
@@ -121,7 +121,7 @@ const generateIdCardFlow = ai.defineFlow(
       finalAvatarUrl: finalAvatarUrl,
       companyName: companyDetails.name,
       companyAddress: companyDetails.address,
-      qrCodeValue: input.employee.emergencyContact ? `tel:${input.employee.emergencyContact}`: `Employee: ${input.employee.name}`,
+      qrCodeValue: input.employee.emergencyContact ? `tel:${input.employee.emergencyContact}` : `Employee: ${input.employee.name}`,
     };
 
     const { output } = await prompt(promptInput);
@@ -129,7 +129,7 @@ const generateIdCardFlow = ai.defineFlow(
     if (!output?.mediaUrl) {
       throw new Error("Failed to generate I-Card image. The model did not return any media.");
     }
-    
+
     return { mediaUrl: output.mediaUrl };
   }
 );

@@ -16,28 +16,28 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2, ChevronsUpDown, ArrowUp, ArrowDown, UserPlus, Send, Undo, Trash } from 'lucide-react'
-import type { Document, User } from '@/lib/mock-data'
+import type { Document, User } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '../ui/checkbox'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from '@/components/ui/select';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { PermanentDeleteDialog } from './permanent-delete-dialog'
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from '@/components/ui/alert-dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 function getFileIcon(fileType: Document['fileType']) {
   switch (fileType) {
@@ -106,14 +106,14 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [assignToUserId, setAssignToUserId] = useState<string | null>(null);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
-    
+
   const handleDownload = (docName: string) => {
     toast({
       title: "Downloading...",
       description: `${docName} is being downloaded.`,
     })
   }
-  
+
   const getOwnerName = (ownerId: string) => {
     if (!ownerId) return <span className='text-muted-foreground italic'>Unassigned</span>
     return users.find(u => u.id === ownerId)?.name || <span className='text-muted-foreground italic'>Unknown User</span>;
@@ -149,12 +149,12 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
 
   const handleConfirmBulkDelete = () => {
     if (onBulkDelete && selectedDocIds.length > 0) {
-        onBulkDelete(selectedDocIds);
+      onBulkDelete(selectedDocIds);
     }
     setSelectedDocIds([]);
     setIsBulkDeleteDialogOpen(false);
   }
-  
+
   const numSelected = selectedDocIds.length;
   const numDocuments = documents.length;
 
@@ -164,178 +164,178 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
 
   return (
     <div>
-        {(onReassign || onBulkDelete) && numSelected > 0 && (
-            <div className="flex items-center gap-2 mb-4 p-2 bg-muted rounded-lg justify-between">
-                <div className='flex items-center gap-2'>
-                    <span className="text-sm font-medium text-muted-foreground">{numSelected} selected</span>
-                    {onReassign && (
-                        <>
-                            <UserPlus className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-sm font-medium">Re-assign to:</span>
-                            <Select onValueChange={setAssignToUserId} value={assignToUserId || ''}>
-                                <SelectTrigger className="w-[200px] bg-background">
-                                    <SelectValue placeholder="Select employee" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {users.map(user => (
-                                        <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Button size="sm" onClick={handleBulkReassign} disabled={!assignToUserId}>
-                                <Send className="mr-2 h-4 w-4" />
-                                Assign
-                            </Button>
-                        </>
-                    )}
-                </div>
-                 {onBulkDelete && (
-                    <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteDialogOpen(true)}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Selected ({numSelected})
-                    </Button>
-                )}
-            </div>
-        )}
-        <Table>
-          <TableHeader>
-            <TableRow>
+      {(onReassign || onBulkDelete) && numSelected > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-2 bg-muted rounded-lg justify-between">
+          <div className='flex items-center gap-2'>
+            <span className="text-sm font-medium text-muted-foreground">{numSelected} selected</span>
+            {onReassign && (
+              <>
+                <UserPlus className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Re-assign to:</span>
+                <Select onValueChange={setAssignToUserId} value={assignToUserId || ''}>
+                  <SelectTrigger className="w-[200px] bg-background">
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map(user => (
+                      <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={handleBulkReassign} disabled={!assignToUserId}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Assign
+                </Button>
+              </>
+            )}
+          </div>
+          {onBulkDelete && (
+            <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteDialogOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Selected ({numSelected})
+            </Button>
+          )}
+        </div>
+      )}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {(onReassign || onBulkDelete) && !isDeletedList && (
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={numSelected === numDocuments && numDocuments > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all documents"
+                />
+              </TableHead>
+            )}
+            <TableHead className="w-[60px] hidden sm:table-cell"></TableHead>
+            <SortableHeader sortKey="name" onSort={onSort} sortConfig={sortConfig}>Name</SortableHeader>
+            {showOwner && <TableHead className="hidden md:table-cell">Owner</TableHead>}
+            <SortableHeader sortKey="type" onSort={onSort} sortConfig={sortConfig}>Type</SortableHeader>
+            <TableHead className="hidden md:table-cell">Size</TableHead>
+            <SortableHeader sortKey="uploadDate" onSort={onSort} sortConfig={sortConfig} className="hidden lg:table-cell">Uploaded</SortableHeader>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {documents.map((doc) => (
+            <TableRow key={doc.id} data-state={selectedDocIds.includes(doc.id) && "selected"}>
               {(onReassign || onBulkDelete) && !isDeletedList && (
-                  <TableHead className="w-[40px]">
-                    <Checkbox
-                        checked={numSelected === numDocuments && numDocuments > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Select all documents"
-                    />
-                </TableHead>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedDocIds.includes(doc.id)}
+                    onCheckedChange={(checked) => handleSelectDoc(doc.id, !!checked)}
+                    aria-label={`Select ${doc.name}`}
+                  />
+                </TableCell>
               )}
-              <TableHead className="w-[60px] hidden sm:table-cell"></TableHead>
-              <SortableHeader sortKey="name" onSort={onSort} sortConfig={sortConfig}>Name</SortableHeader>
-              {showOwner && <TableHead className="hidden md:table-cell">Owner</TableHead>}
-              <SortableHeader sortKey="type" onSort={onSort} sortConfig={sortConfig}>Type</SortableHeader>
-              <TableHead className="hidden md:table-cell">Size</TableHead>
-              <SortableHeader sortKey="uploadDate" onSort={onSort} sortConfig={sortConfig} className="hidden lg:table-cell">Uploaded</SortableHeader>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {documents.map((doc) => (
-              <TableRow key={doc.id} data-state={selectedDocIds.includes(doc.id) && "selected"}>
-                 {(onReassign || onBulkDelete) && !isDeletedList && (
-                    <TableCell>
-                        <Checkbox
-                            checked={selectedDocIds.includes(doc.id)}
-                            onCheckedChange={(checked) => handleSelectDoc(doc.id, !!checked)}
-                            aria-label={`Select ${doc.name}`}
-                        />
-                    </TableCell>
-                )}
-                <TableCell className="hidden sm:table-cell">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                    {getFileIcon(doc.fileType)}
+              <TableCell className="hidden sm:table-cell">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  {getFileIcon(doc.fileType)}
+                </div>
+              </TableCell>
+              <TableCell className="font-medium">{doc.name}</TableCell>
+              {showOwner && <TableCell className="hidden md:table-cell">{getOwnerName(doc.ownerId)}</TableCell>}
+              <TableCell>{doc.type}</TableCell>
+              <TableCell className="hidden md:table-cell">{doc.size}</TableCell>
+              <TableCell className="hidden lg:table-cell">{doc.uploadDate}</TableCell>
+              <TableCell className="text-right">
+                {isDeletedList ? (
+                  <div className="flex items-center justify-end gap-2">
+                    {onRestore &&
+                      <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)}>
+                        <Undo className="mr-2 h-4 w-4" /> Restore
+                      </Button>
+                    }
+                    {onPermanentDelete &&
+                      <PermanentDeleteDialog
+                        itemName={doc.name}
+                        itemType="document"
+                        onDelete={() => onPermanentDelete(doc.id)}
+                      >
+                        <Button variant="destructive" size="sm">
+                          <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                        </Button>
+                      </PermanentDeleteDialog>
+                    }
                   </div>
-                </TableCell>
-                <TableCell className="font-medium">{doc.name}</TableCell>
-                {showOwner && <TableCell className="hidden md:table-cell">{getOwnerName(doc.ownerId)}</TableCell>}
-                <TableCell>{doc.type}</TableCell>
-                <TableCell className="hidden md:table-cell">{doc.size}</TableCell>
-                <TableCell className="hidden lg:table-cell">{doc.uploadDate}</TableCell>
-                <TableCell className="text-right">
-                    {isDeletedList ? (
-                        <div className="flex items-center justify-end gap-2">
-                            {onRestore && 
-                                <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)}>
-                                    <Undo className="mr-2 h-4 w-4" /> Restore
-                                </Button>
-                            }
-                             {onPermanentDelete && 
-                                <PermanentDeleteDialog
-                                    itemName={doc.name}
-                                    itemType="document"
-                                    onDelete={() => onPermanentDelete(doc.id)}
-                                >
-                                    <Button variant="destructive" size="sm">
-                                        <Trash className="mr-2 h-4 w-4" /> Permanent Delete
-                                    </Button>
-                                </PermanentDeleteDialog>
-                            }
-                        </div>
-                    ) : (
-                        <div className="hidden sm:flex items-center justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
-                                <Download className="mr-2 h-4 w-4" /> Download
-                            </Button>
-                             {onDelete && (
-                                <Button variant="destructive" size="sm" onClick={() => onDelete(doc.id)}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </Button>
-                            )}
-                        </div>
+                ) : (
+                  <div className="hidden sm:flex items-center justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
+                      <Download className="mr-2 h-4 w-4" /> Download
+                    </Button>
+                    {onDelete && (
+                      <Button variant="destructive" size="sm" onClick={() => onDelete(doc.id)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </Button>
                     )}
-                    <div className="sm:hidden">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {isDeletedList ? (
-                                    <>
-                                        {onRestore && 
-                                            <DropdownMenuItem onClick={() => onRestore(doc.id)}>
-                                                <Undo className="mr-2 h-4 w-4" /> Restore
-                                            </DropdownMenuItem>
-                                        }
-                                        {onPermanentDelete && 
-                                            <PermanentDeleteDialog
-                                                itemName={doc.name}
-                                                itemType="document"
-                                                onDelete={() => onPermanentDelete(doc.id)}
-                                            >
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                    <Trash className="mr-2 h-4 w-4" /> Permanent Delete
-                                                </DropdownMenuItem>
-                                            </PermanentDeleteDialog>
-                                        }
-                                    </>
-                                ) : (
-                                    <>
-                                        <DropdownMenuItem onClick={() => handleDownload(doc.name)}>
-                                            <Download className="mr-2 h-4 w-4" /> Download
-                                        </DropdownMenuItem>
-                                        {onDelete && (
-                                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(doc.id)}>
-                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                        </DropdownMenuItem>
-                                        )}
-                                    </>
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  </div>
+                )}
+                <div className="sm:hidden">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {isDeletedList ? (
+                        <>
+                          {onRestore &&
+                            <DropdownMenuItem onClick={() => onRestore(doc.id)}>
+                              <Undo className="mr-2 h-4 w-4" /> Restore
+                            </DropdownMenuItem>
+                          }
+                          {onPermanentDelete &&
+                            <PermanentDeleteDialog
+                              itemName={doc.name}
+                              itemType="document"
+                              onDelete={() => onPermanentDelete(doc.id)}
+                            >
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                              </DropdownMenuItem>
+                            </PermanentDeleteDialog>
+                          }
+                        </>
+                      ) : (
+                        <>
+                          <DropdownMenuItem onClick={() => handleDownload(doc.name)}>
+                            <Download className="mr-2 h-4 w-4" /> Download
+                          </DropdownMenuItem>
+                          {onDelete && (
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(doc.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          )}
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
-        <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-            <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                This will move the selected {numSelected} document(s) to the deleted items list. You can restore them later.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive hover:bg-destructive/90">
-                Delete {numSelected} Document(s)
-                </AlertDialogAction>
-            </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the selected {numSelected} document(s) to the deleted items list. You can restore them later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive hover:bg-destructive/90">
+              Delete {numSelected} Document(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 });

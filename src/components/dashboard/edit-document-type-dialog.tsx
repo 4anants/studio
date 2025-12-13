@@ -13,25 +13,26 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { DocumentType as AppDocumentType } from '@/lib/types';
 
 interface EditDocumentTypeDialogProps {
-  onEdit: (oldType: string, newType: string) => void;
-  documentType: string;
+  onEdit: (oldType: AppDocumentType, newTypeName: string) => void;
+  documentType: AppDocumentType;
   children: React.ReactNode;
 }
 
 export function EditDocumentTypeDialog({ onEdit, documentType, children }: EditDocumentTypeDialogProps) {
   const [open, setOpen] = useState(false);
-  const [newType, setNewType] = useState(documentType);
+  const [newType, setNewType] = useState(documentType.name);
 
   useEffect(() => {
     if (open) {
-      setNewType(documentType);
+      setNewType(documentType.name);
     }
   }, [open, documentType]);
 
   const handleSave = () => {
-    if (newType.trim() && newType.trim() !== documentType) {
+    if (newType.trim() && newType.trim() !== documentType.name) {
       onEdit(documentType, newType.trim());
       setOpen(false);
     } else {
@@ -59,8 +60,8 @@ export function EditDocumentTypeDialog({ onEdit, documentType, children }: EditD
               className="col-span-3"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSave();
+                  e.preventDefault();
+                  handleSave();
                 }
               }}
             />

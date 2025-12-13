@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import type { Announcement } from '@/lib/mock-data';
+import type { Announcement } from '@/lib/types';
 import { useState } from 'react';
 
 interface DeleteAnnouncementDialogProps {
@@ -38,16 +38,16 @@ export function DeleteAnnouncementDialog({ announcement, onDelete, isPermanent, 
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             {isPermanent ? (
-                <>
-                    This action will <span className="font-semibold text-destructive">permanently delete</span> the announcement titled "{' '}"
-                    <span className="font-semibold text-foreground">{announcement.title}</span>. This action cannot be undone.
-                </>
+              <>
+                This action will <span className="font-semibold text-destructive">permanently delete</span> the announcement titled "{' '}"
+                <span className="font-semibold text-foreground">{announcement.title}</span>. This action cannot be undone.
+              </>
             ) : (
-                <>
-                    This action will move the announcement titled "{' '}"
-                    <span className="font-semibold text-foreground">{announcement.title}</span> to the deleted announcements list.
-                    You can restore it later.
-                </>
+              <>
+                This action will move the announcement titled "{' '}"
+                <span className="font-semibold text-foreground">{announcement.title}</span> to the deleted announcements list.
+                You can restore it later.
+              </>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
