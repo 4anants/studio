@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS announcements (
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     author VARCHAR(100),
     status ENUM('published', 'deleted') DEFAULT 'published',
-    event_date DATE
+    event_date DATE,
+    priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+    target_departments TEXT
 );
 
 -- Announcement Reads (Track which user read which announcement)

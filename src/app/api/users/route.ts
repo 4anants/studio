@@ -2,17 +2,52 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-export async function GET() {
-  // const _url = request.url;
+export async function GET(request: NextRequest) {
+  // Authentication check
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM users ORDER BY created_at DESC');
-    // Remove password_hash from response
-    const users = rows.map(u => {
+    const [rows] = await pool.query<RowDataPacket[]>(`
+      SELECT users.*, companies.name as company_name 
+      FROM users 
+      LEFT JOIN companies ON users.company_id = companies.id 
+      ORDER BY users.created_at DESC
+    `);
+
+    // Map database fields to frontend format
+    let users = rows.map(u => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password_hash, ...rest } = u;
-      return rest;
+      const { password_hash, first_name, last_name, display_name, personal_email, emergency_contact, date_of_birth, joining_date, resignation_date, blood_group, company_id, is_admin, created_at, updated_at, company_name, ...rest } = u;
+
+      return {
+        ...rest,
+        name: `${first_name || ''} ${last_name || ''}`.trim(),
+        displayName: display_name,
+        personalEmail: personal_email,
+        emergencyContact: emergency_contact,
+        dateOfBirth: date_of_birth,
+        joiningDate: joining_date,
+        resignationDate: resignation_date,
+        bloodGroup: blood_group,
+        company: company_name,
+        companyId: company_id,
+        role: is_admin ? 'admin' : 'employee',
+        avatar: u.avatar || '/placeholder-avatar.png'
+      };
     });
+
+    // Security: Non-admin users can only see their own data
+    if (session.user.role !== 'admin') {
+      users = users.filter((user: any) => user.id === session.user.id);
+    }
+
     return NextResponse.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -23,48 +58,165 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('Received user data:', body);
+
     const {
-      id, email, password, first_name, last_name, role, designation, department,
-      mobile, emergency_contact, date_of_birth, joining_date, blood_group, company_id, location, status
+      id,
+      name,
+      displayName,
+      email,
+      personalEmail,
+      password,
+      role,
+      designation,
+      department,
+      mobile,
+      emergencyContact,
+      dateOfBirth,
+      joiningDate,
+      resignationDate,
+      bloodGroup,
+      company,
+      location,
+      status
     } = body;
 
-    // TODO: Validation
+    // Split name into first_name and last_name
+    const nameParts = (name || '').trim().split(' ');
+    const first_name = nameParts[0] || '';
+    const last_name = nameParts.slice(1).join(' ') || '';
 
-    // Check if update or create
-    // If ID exists and we are updating? Usually PUT. But let's support UPSERT or just Create for now.
-    // The AdminView uses "Save" which could be either.
+    // Find company_id from company name
+    let company_id = null;
+    if (company) {
+      try {
+        const [companyRows] = await pool.query<RowDataPacket[]>(
+          'SELECT id FROM companies WHERE name = ? LIMIT 1',
+          [company]
+        );
+        if (companyRows.length > 0) {
+          company_id = companyRows[0].id;
+        }
+      } catch (err) {
+        console.error('Error finding company:', err);
+      }
+    }
 
-    // For simplicity, let's assume this is separate Create/Update logic or just Create.
-    // Let's implement CREATE for now.
-
-    const passwordHash = await bcrypt.hash(password || 'default123', 10);
     const username = email.split('@')[0];
+    const passwordHash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('default123', 10);
 
-    await pool.execute(
-      `INSERT INTO users (
-            id, username, first_name, last_name, email, password_hash, is_admin, 
+    try {
+      await pool.execute(
+        `INSERT INTO users (
+            id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
             designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
-            blood_group, company_id, location, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            resignation_date, blood_group, company_id, location, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             first_name = VALUES(first_name),
             last_name = VALUES(last_name),
+            display_name = VALUES(display_name),
+            personal_email = VALUES(personal_email),
             designation = VALUES(designation),
             department = VALUES(department),
             mobile = VALUES(mobile),
-            status = VALUES(status)
+            emergency_contact = VALUES(emergency_contact),
+            date_of_birth = VALUES(date_of_birth),
+            joining_date = VALUES(joining_date),
+            resignation_date = VALUES(resignation_date),
+            blood_group = VALUES(blood_group),
+            company_id = VALUES(company_id),
+            location = VALUES(location),
+            status = VALUES(status),
+            is_admin = VALUES(is_admin)
         `,
-      [
-        id, username, first_name, last_name, email, passwordHash, role === 'admin',
-        designation, department, mobile, emergency_contact, date_of_birth, joining_date,
-        blood_group, company_id, location, status || 'active'
-      ]
-    );
+        [
+          id,
+          username,
+          first_name,
+          last_name,
+          displayName || null,
+          email,
+          personalEmail || null,
+          passwordHash,
+          role === 'admin',
+          designation || null,
+          department || null,
+          mobile || null,
+          emergencyContact || null,
+          dateOfBirth || null,
+          joiningDate || null,
+          resignationDate || null,
+          bloodGroup || null,
+          company_id,
+          location || null,
+          status || 'active'
+        ]
+      );
+    } catch (err: any) {
+      // Check if error is due to missing 'display_name' column (Error Code: 1054)
+      if (err.code === 'ER_BAD_FIELD_ERROR' && err.sqlMessage?.includes("display_name")) {
+        console.log("Column 'display_name' missing. Attempting to add it...");
+        // Add the column
+        await pool.query(`ALTER TABLE users ADD COLUMN display_name VARCHAR(255) AFTER last_name`);
+        // Retry the insert
+        await pool.execute(
+          `INSERT INTO users (
+                    id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
+                    designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
+                    resignation_date, blood_group, company_id, location, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    first_name = VALUES(first_name),
+                    last_name = VALUES(last_name),
+                    display_name = VALUES(display_name),
+                    personal_email = VALUES(personal_email),
+                    designation = VALUES(designation),
+                    department = VALUES(department),
+                    mobile = VALUES(mobile),
+                    emergency_contact = VALUES(emergency_contact),
+                    date_of_birth = VALUES(date_of_birth),
+                    joining_date = VALUES(joining_date),
+                    resignation_date = VALUES(resignation_date),
+                    blood_group = VALUES(blood_group),
+                    company_id = VALUES(company_id),
+                    location = VALUES(location),
+                    status = VALUES(status),
+                    is_admin = VALUES(is_admin)
+                `,
+          [
+            id,
+            username,
+            first_name,
+            last_name,
+            displayName || null,
+            email,
+            personalEmail || null,
+            passwordHash,
+            role === 'admin',
+            designation || null,
+            department || null,
+            mobile || null,
+            emergencyContact || null,
+            dateOfBirth || null,
+            joiningDate || null,
+            resignationDate || null,
+            bloodGroup || null,
+            company_id,
+            location || null,
+            status || 'active'
+          ]
+        );
+      } else {
+        throw err;
+      }
+    }
 
+    console.log('User saved successfully:', id);
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to save user' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error saving user:', error);
+    return NextResponse.json({ error: error.message || 'Failed to save user' }, { status: 500 });
   }
 }
 
@@ -77,7 +229,24 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    // Delete all user's documents from DB
+    await pool.execute('DELETE FROM documents WHERE employee_id = ?', [id]);
+
+    // Delete user from DB
     await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+
+    // Delete user's physical folder
+    try {
+      const { rm } = await import('fs/promises');
+      const { join } = await import('path');
+      const userFolderPath = join(process.cwd(), 'public', 'uploads', id);
+      await rm(userFolderPath, { recursive: true, force: true });
+      console.log(`Deleted user folder: ${userFolderPath}`);
+    } catch (folderError) {
+      console.error('Error deleting user folder:', folderError);
+      // Continue even if folder deletion fails
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting user:', error);

@@ -1,4 +1,5 @@
 
+
 export type Document = {
     id: string;
     name: string;
@@ -6,7 +7,9 @@ export type Document = {
     size: string;
     uploadDate: string;
     ownerId: string;
+    employee_id?: string; // Database field
     fileType: 'pdf' | 'doc' | 'image';
+    url?: string;
 };
 
 export type Company = {
@@ -16,6 +19,7 @@ export type Company = {
     address?: string;
     phone?: string;
     email?: string;
+    location?: string;
     logo?: string; // data URI
 };
 
@@ -24,6 +28,7 @@ export type CompanyName = string; // Simplified from mapping
 export type User = {
     id: string;
     name: string;
+    displayName?: string;
     email: string; // Official Email
     personalEmail?: string;
     avatar: string;
@@ -50,6 +55,7 @@ export type Holiday = {
     date: string; // YYYY-MM-DD
     name: string;
     location: HolidayLocation;
+    status?: 'active' | 'deleted';
 };
 
 export type Announcement = {
@@ -61,6 +67,9 @@ export type Announcement = {
     isRead?: boolean;
     status: 'published' | 'deleted';
     eventDate?: string; // YYYY-MM-DD
+    priority?: 'low' | 'medium' | 'high';
+    expiresOn?: string; // YYYY-MM-DD
+    targetDepartments?: string; // Comma-separated department names
 };
 
 export type Department = {

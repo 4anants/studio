@@ -67,6 +67,10 @@ interface DocumentListProps {
   isDeletedList?: boolean;
   onRestore?: (docId: string) => void;
   onPermanentDelete?: (docId: string) => void;
+  onBulkPermanentDelete?: () => void;
+  selectedDocIds?: string[];
+  onSelectDoc?: (docId: string, checked: boolean) => void;
+  onSelectAll?: (checked: boolean) => void;
 }
 
 const SortableHeader = React.memo(({
@@ -101,17 +105,25 @@ const SortableHeader = React.memo(({
 SortableHeader.displayName = 'SortableHeader';
 
 
-export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, onBulkDelete, isDeletedList = false, onRestore, onPermanentDelete }: DocumentListProps) => {
+export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, onBulkDelete, isDeletedList = false, onRestore, onPermanentDelete, onBulkPermanentDelete, selectedDocIds: externalSelectedDocIds, onSelectDoc: externalOnSelectDoc, onSelectAll: externalOnSelectAll }: DocumentListProps) => {
   const { toast } = useToast()
-  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const [internalSelectedDocIds, setInternalSelectedDocIds] = useState<string[]>([]);
   const [assignToUserId, setAssignToUserId] = useState<string | null>(null);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
-  const handleDownload = (docName: string) => {
-    toast({
-      title: "Downloading...",
-      description: `${docName} is being downloaded.`,
-    })
+  // Use external state if provided, otherwise use internal state
+  const selectedDocIds = externalSelectedDocIds !== undefined ? externalSelectedDocIds : internalSelectedDocIds;
+
+  const handleDownload = (doc: Document) => {
+    if (doc.url) {
+      window.open(doc.url, '_blank');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: "Download failed",
+        description: "Document URL is missing."
+      });
+    }
   }
 
   const getOwnerName = (ownerId: string) => {
@@ -120,20 +132,28 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
   }
 
   const handleSelectDoc = (docId: string, checked: boolean) => {
-    setSelectedDocIds(prev => {
-      if (checked) {
-        return [...prev, docId];
-      } else {
-        return prev.filter(id => id !== docId);
-      }
-    });
+    if (externalOnSelectDoc) {
+      externalOnSelectDoc(docId, checked);
+    } else {
+      setInternalSelectedDocIds(prev => {
+        if (checked) {
+          return [...prev, docId];
+        } else {
+          return prev.filter(id => id !== docId);
+        }
+      });
+    }
   };
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
-    if (checked) {
-      setSelectedDocIds(documents.map(d => d.id));
+    if (externalOnSelectAll) {
+      externalOnSelectAll(!!checked);
     } else {
-      setSelectedDocIds([]);
+      if (checked) {
+        setInternalSelectedDocIds(documents.map(d => d.id));
+      } else {
+        setInternalSelectedDocIds([]);
+      }
     }
   };
 
@@ -142,7 +162,9 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
       selectedDocIds.forEach(docId => {
         onReassign(docId, assignToUserId);
       });
-      setSelectedDocIds([]);
+      if (!externalSelectedDocIds) {
+        setInternalSelectedDocIds([]);
+      }
       setAssignToUserId(null);
     }
   }
@@ -151,7 +173,9 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
     if (onBulkDelete && selectedDocIds.length > 0) {
       onBulkDelete(selectedDocIds);
     }
-    setSelectedDocIds([]);
+    if (!externalSelectedDocIds) {
+      setInternalSelectedDocIds([]);
+    }
     setIsBulkDeleteDialogOpen(false);
   }
 
@@ -200,7 +224,7 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
       <Table>
         <TableHeader>
           <TableRow>
-            {(onReassign || onBulkDelete) && !isDeletedList && (
+            {(onReassign || onBulkDelete || onBulkPermanentDelete) && (
               <TableHead className="w-[40px]">
                 <Checkbox
                   checked={numSelected === numDocuments && numDocuments > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
@@ -221,7 +245,7 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
         <TableBody>
           {documents.map((doc) => (
             <TableRow key={doc.id} data-state={selectedDocIds.includes(doc.id) && "selected"}>
-              {(onReassign || onBulkDelete) && !isDeletedList && (
+              {(onReassign || onBulkDelete || onBulkPermanentDelete) && (
                 <TableCell>
                   <Checkbox
                     checked={selectedDocIds.includes(doc.id)}
@@ -262,7 +286,7 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                   </div>
                 ) : (
                   <div className="hidden sm:flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(doc)}>
                       <Download className="mr-2 h-4 w-4" /> Download
                     </Button>
                     {onDelete && (
@@ -301,7 +325,7 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                         </>
                       ) : (
                         <>
-                          <DropdownMenuItem onClick={() => handleDownload(doc.name)}>
+                          <DropdownMenuItem onClick={() => handleDownload(doc)}>
                             <Download className="mr-2 h-4 w-4" /> Download
                           </DropdownMenuItem>
                           {onDelete && (

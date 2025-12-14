@@ -12,10 +12,12 @@ export function useData() {
     const { data: companies, mutate: mutateCompanies } = useSWR('/api/companies', fetcher);
     const { data: departments, mutate: mutateDepartments } = useSWR('/api/departments', fetcher);
     const { data: documentTypes, mutate: mutateDocumentTypes } = useSWR('/api/document-types', fetcher);
+    const { data: deletedDocuments, mutate: mutateDeletedDocuments } = useSWR('/api/documents?deleted=true', fetcher);
 
     return {
         users: users || EMPTY_ARRAY,
         documents: documents || EMPTY_ARRAY,
+        deletedDocuments: deletedDocuments || EMPTY_ARRAY,
         holidays: holidays || EMPTY_ARRAY,
         announcements: announcements || EMPTY_ARRAY,
         companies: companies || EMPTY_ARRAY,
@@ -28,6 +30,7 @@ export function useData() {
         mutateAnnouncements,
         mutateCompanies,
         mutateDepartments,
-        mutateDocumentTypes
+        mutateDocumentTypes,
+        mutateDeletedDocuments
     };
 }

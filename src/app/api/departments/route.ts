@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { requireAuth } from '@/lib/auth-helpers';
 
 export async function GET() {
+    const auth = await requireAuth();
+    if (!auth.authorized) return auth.response;
+
     try {
         const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM departments ORDER BY created_at DESC');
         return NextResponse.json(rows);

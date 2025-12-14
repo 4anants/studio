@@ -1,7 +1,8 @@
 
 'use client'
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { format } from 'date-fns'
 import {
     Card,
     CardContent,
@@ -14,7 +15,8 @@ import { Input } from '@/components/ui/input'
 import { documentTypesList, departments as initialDepartments, holidayLocations, CompanyName } from '@/lib/constants'
 import type { User, Document, Holiday, HolidayLocation, Announcement, Company, Department, DocumentType as AppDocumentType } from '@/lib/types'
 import { useData } from '@/hooks/use-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, FolderPlus, Tag, Building, CalendarPlus, Bell, UploadCloud, X, FileLock2, Users, Download, Home, ArrowLeft, Folder, Upload, Save, Shield, Undo, Eye, Trash, ArchiveRestore } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, FolderPlus, Tag, Building, CalendarPlus, Bell, UploadCloud, X, FileLock2, Users, Download, Home, ArrowLeft, Folder, Upload, Save, Shield, Undo, Eye, Trash, ArchiveRestore, FileText, Calendar, LayoutDashboard } from 'lucide-react'
+import Link from 'next/link'
 import {
     Tabs,
     TabsContent,
@@ -58,7 +60,9 @@ import { AddDocumentTypeDialog } from '@/components/dashboard/add-document-type-
 import { AddDepartmentDialog } from '@/components/dashboard/add-department-dialog'
 import { DeleteDepartmentDialog } from '@/components/dashboard/delete-department-dialog'
 import { AddHolidayDialog } from '@/components/dashboard/add-holiday-dialog'
+import { EditHolidayDialog } from '@/components/dashboard/edit-holiday-dialog'
 import { AddAnnouncementDialog } from '@/components/dashboard/add-announcement-dialog'
+import { EditAnnouncementDialog } from '@/components/dashboard/edit-announcement-dialog'
 import { DeleteAnnouncementDialog } from '@/components/dashboard/delete-announcement-dialog'
 import { Label } from '@/components/ui/label'
 import {
@@ -92,7 +96,15 @@ export function AdminView() {
         companies: serverCompanies,
         departments: serverDepartments,
         documentTypes: serverDocTypes,
-        mutateUsers, mutateDocuments, mutateHolidays, mutateAnnouncements, mutateCompanies, mutateDepartments, mutateDocumentTypes
+        deletedDocuments: serverDeletedDocs,
+        mutateUsers,
+        mutateDocuments,
+        mutateHolidays,
+        mutateAnnouncements,
+        mutateCompanies,
+        mutateDepartments,
+        mutateDocumentTypes,
+        mutateDeletedDocuments
     } = useData();
 
     const [docs, setDocs] = useState<Document[]>([])
@@ -136,12 +148,30 @@ export function AdminView() {
     useEffect(() => {
         if (serverDocTypes) setDocumentTypes(serverDocTypes as AppDocumentType[]);
     }, [serverDocTypes]);
+
+    useEffect(() => {
+        if (serverDeletedDocs) setDeletedDocs(serverDeletedDocs as Document[]);
+    }, [serverDeletedDocs]);
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
     const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
     const [lastBulkUploadInfo, setLastBulkUploadInfo] = useState<{ ids: string[], timestamp: number } | null>(null);
     const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
+    const [selectedDeletedAnnouncementIds, setSelectedDeletedAnnouncementIds] = useState<string[]>([]);
+    const [isBulkPermanentDeleteAnnouncementsDialogOpen, setIsBulkPermanentDeleteAnnouncementsDialogOpen] = useState(false);
+    const [selectedDeletedHolidayIds, setSelectedDeletedHolidayIds] = useState<string[]>([]);
+    const [isBulkPermanentDeleteHolidaysDialogOpen, setIsBulkPermanentDeleteHolidaysDialogOpen] = useState(false);
+    const [selectedDeletedCompanyIds, setSelectedDeletedCompanyIds] = useState<string[]>([]);
+    const [isBulkPermanentDeleteCompaniesDialogOpen, setIsBulkPermanentDeleteCompaniesDialogOpen] = useState(false);
+    const [selectedDeletedDepartmentIds, setSelectedDeletedDepartmentIds] = useState<string[]>([]);
+    const [isBulkPermanentDeleteDepartmentsDialogOpen, setIsBulkPermanentDeleteDepartmentsDialogOpen] = useState(false);
+    const [selectedDeletedDocTypeIds, setSelectedDeletedDocTypeIds] = useState<string[]>([]);
+    const [isBulkPermanentDeleteDocTypesDialogOpen, setIsBulkPermanentDeleteDocTypesDialogOpen] = useState(false);
+    const [selectedDeletedDocumentIds, setSelectedDeletedDocumentIds] = useState<string[]>([]);
+    const [isBulkPermanentDeleteDocumentsDialogOpen, setIsBulkPermanentDeleteDocumentsDialogOpen] = useState(false);
+    const [selectedDeletedUserIds, setSelectedDeletedUserIds] = useState<string[]>([]);
+    const [isBulkPermanentDeleteUsersDialogOpen, setIsBulkPermanentDeleteUsersDialogOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('file-explorer');
     const [activeSubTab, setActiveSubTab] = useState('overview');
     const [activeSettingsTab, setActiveSettingsTab] = useState('companies');
@@ -157,6 +187,7 @@ export function AdminView() {
     const [isMounted, setIsMounted] = useState(false);
     const { toast } = useToast();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
 
     useEffect(() => {
@@ -166,6 +197,11 @@ export function AdminView() {
 
         };
         window.addEventListener('view-announcements', handleViewAnnouncements);
+
+        const tabParam = searchParams.get('tab');
+        if (tabParam) {
+            setActiveTab(tabParam);
+        }
 
         const storedLogo = localStorage.getItem('companyLogo');
         if (storedLogo) setLogoSrc(storedLogo);
@@ -642,40 +678,259 @@ export function AdminView() {
         const newHolidayItem = {
             id: `h-${Date.now()}`,
             name: newHoliday.name,
-            date: newHoliday.date.toISOString().split('T')[0],
+            date: format(newHoliday.date, 'yyyy-MM-dd'),
             location: newHoliday.location,
         };
 
         try {
-            await fetch('/api/holidays', {
+            const res = await fetch('/api/holidays', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newHolidayItem)
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to add holiday');
+            }
+
             await mutateHolidays();
             toast({
                 title: 'Holiday Added',
                 description: `"${newHoliday.name}" has been added to the holiday list.`,
             });
-        } catch {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to add holiday' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to add holiday' });
+        }
+    }, [toast, mutateHolidays]);
+
+    const handleEditHoliday = useCallback(async (updatedHoliday: Holiday) => {
+        try {
+            const res = await fetch('/api/holidays', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedHoliday)
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to update holiday');
+            }
+
+            await mutateHolidays();
+            toast({
+                title: 'Holiday Updated',
+                description: `"${updatedHoliday.name}" has been updated.`,
+            });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to update holiday' });
         }
     }, [toast, mutateHolidays]);
 
     const handleDeleteHoliday = useCallback(async (holidayId: string) => {
+        const holiday = holidays.find(h => h.id === holidayId);
+        if (!holiday) return;
+
         try {
-            await fetch(`/api/holidays?id=${holidayId}`, { method: 'DELETE' });
+            const res = await fetch('/api/holidays', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...holiday,
+                    status: 'deleted'
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to delete holiday');
+            }
+
             await mutateHolidays();
             toast({
                 title: 'Holiday Deleted',
-                description: 'The holiday has been removed from the list.',
+                description: 'The holiday has been moved to the deleted list.',
             });
-        } catch {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete holiday' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete holiday' });
+        }
+    }, [holidays, toast, mutateHolidays]);
+
+    const handleRestoreHoliday = useCallback(async (holidayId: string) => {
+        const holiday = holidays.find(h => h.id === holidayId);
+        if (!holiday) return;
+
+        try {
+            const res = await fetch('/api/holidays', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...holiday,
+                    status: 'active'
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to restore holiday');
+            }
+
+            await mutateHolidays();
+            toast({
+                title: 'Holiday Restored',
+                description: 'The holiday has been restored.',
+            });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to restore holiday' });
+        }
+    }, [holidays, toast, mutateHolidays]);
+
+    const handlePermanentDeleteHoliday = useCallback(async (holidayId: string) => {
+        try {
+            const res = await fetch(`/api/holidays?id=${holidayId}`, { method: 'DELETE' });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to delete holiday');
+            }
+
+            await mutateHolidays();
+            toast({
+                variant: 'destructive',
+                title: 'Holiday Permanently Deleted',
+                description: 'The holiday has been permanently removed from the system.',
+            });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete holiday' });
         }
     }, [toast, mutateHolidays]);
 
-    const handleAddAnnouncement = useCallback(async (announcement: { title: string, message: string, eventDate?: string }) => {
+    const handleBulkPermanentDeleteHolidays = useCallback(async () => {
+        try {
+            const responses = await Promise.all(selectedDeletedHolidayIds.map(id =>
+                fetch(`/api/holidays?id=${id}`, { method: 'DELETE' })
+            ));
+
+            const failed = responses.find(r => !r.ok);
+            if (failed) {
+                const errorData = await failed.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete some holidays');
+            }
+
+            await mutateHolidays();
+            setSelectedDeletedHolidayIds([]);
+            toast({
+                title: "Holidays Deleted",
+                description: `${selectedDeletedHolidayIds.length} holiday(s) have been permanently deleted.`
+            });
+            setIsBulkPermanentDeleteHolidaysDialogOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some holidays' });
+        }
+    }, [selectedDeletedHolidayIds, mutateHolidays, toast]);
+
+    const handleBulkPermanentDeleteCompanies = useCallback(async () => {
+        try {
+            const responses = await Promise.all(selectedDeletedCompanyIds.map(id =>
+                fetch(`/api/companies?id=${id}`, { method: 'DELETE' })
+            ));
+            const failed = responses.find(r => !r.ok);
+            if (failed) {
+                const errorData = await failed.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete some companies');
+            }
+            await mutateCompanies();
+            setSelectedDeletedCompanyIds([]);
+            toast({ title: "Companies Deleted", description: `${selectedDeletedCompanyIds.length} company(ies) have been permanently deleted.` });
+            setIsBulkPermanentDeleteCompaniesDialogOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some companies' });
+        }
+    }, [selectedDeletedCompanyIds, mutateCompanies, toast]);
+
+    const handleBulkPermanentDeleteDepartments = useCallback(async () => {
+        try {
+            const responses = await Promise.all(selectedDeletedDepartmentIds.map(id =>
+                fetch(`/api/departments?id=${id}`, { method: 'DELETE' })
+            ));
+            const failed = responses.find(r => !r.ok);
+            if (failed) {
+                const errorData = await failed.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete some departments');
+            }
+            await mutateDepartments();
+            setSelectedDeletedDepartmentIds([]);
+            toast({ title: "Departments Deleted", description: `${selectedDeletedDepartmentIds.length} department(s) have been permanently deleted.` });
+            setIsBulkPermanentDeleteDepartmentsDialogOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some departments' });
+        }
+    }, [selectedDeletedDepartmentIds, mutateDepartments, toast]);
+
+    const handleBulkPermanentDeleteDocTypes = useCallback(async () => {
+        try {
+            const responses = await Promise.all(selectedDeletedDocTypeIds.map(id =>
+                fetch(`/api/document-types?id=${id}`, { method: 'DELETE' })
+            ));
+            const failed = responses.find(r => !r.ok);
+            if (failed) {
+                const errorData = await failed.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete some document types');
+            }
+            await mutateDocumentTypes();
+            setSelectedDeletedDocTypeIds([]);
+            toast({ title: "Document Types Deleted", description: `${selectedDeletedDocTypeIds.length} document type(s) have been permanently deleted.` });
+            setIsBulkPermanentDeleteDocTypesDialogOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some document types' });
+        }
+    }, [selectedDeletedDocTypeIds, mutateDocumentTypes, toast]);
+
+    const handleBulkPermanentDeleteDocuments = useCallback(async () => {
+        try {
+            const responses = await Promise.all(selectedDeletedDocumentIds.map(id =>
+                fetch(`/api/documents?id=${id}`, { method: 'DELETE' })
+            ));
+            const failed = responses.find(r => !r.ok);
+            if (failed) {
+                const errorData = await failed.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete some documents');
+            }
+            await mutateDocuments();
+            setSelectedDeletedDocumentIds([]);
+            toast({ title: "Documents Deleted", description: `${selectedDeletedDocumentIds.length} document(s) have been permanently deleted.` });
+            setIsBulkPermanentDeleteDocumentsDialogOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some documents' });
+        }
+    }, [selectedDeletedDocumentIds, mutateDocuments, toast]);
+
+    const handleBulkPermanentDeleteUsers = useCallback(async () => {
+        try {
+            const responses = await Promise.all(selectedDeletedUserIds.map(id =>
+                fetch(`/api/users?id=${id}`, { method: 'DELETE' })
+            ));
+            const failed = responses.find(r => !r.ok);
+            if (failed) {
+                const errorData = await failed.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete some users');
+            }
+            await mutateUsers();
+            setSelectedDeletedUserIds([]);
+            toast({ title: "Users Deleted", description: `${selectedDeletedUserIds.length} user(s) have been permanently deleted.` });
+            setIsBulkPermanentDeleteUsersDialogOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some users' });
+        }
+    }, [selectedDeletedUserIds, mutateUsers, toast]);
+
+    const handleAddAnnouncement = useCallback(async (announcement: {
+        title: string;
+        message: string;
+        priority: 'low' | 'medium' | 'high';
+        eventDate?: string;
+        targetDepartments: string[];
+    }) => {
         const newAnnouncement = {
             id: `anno-${Date.now()}`,
             title: announcement.title,
@@ -684,22 +939,74 @@ export function AdminView() {
             author: 'Admin',
             isRead: true,
             status: 'published',
-            eventDate: announcement.eventDate
+            priority: announcement.priority,
+            eventDate: announcement.eventDate,
+            targetDepartments: announcement.targetDepartments.join(', ')
         };
 
         try {
-            await fetch('/api/announcements', {
+            const res = await fetch('/api/announcements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newAnnouncement)
+                body: JSON.stringify({
+                    ...newAnnouncement,
+                    event_date: newAnnouncement.eventDate,
+                    target_departments: newAnnouncement.targetDepartments
+                })
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to add announcement');
+            }
+
             await mutateAnnouncements();
             toast({
                 title: 'Announcement Published',
                 description: 'A notification has been sent to all employees.',
             });
-        } catch {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to add announcement' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to add announcement' });
+        }
+    }, [toast, mutateAnnouncements]);
+
+    const handleEditAnnouncement = useCallback(async (announcement: {
+        id: string;
+        title: string;
+        message: string;
+        priority: 'low' | 'medium' | 'high';
+        eventDate?: string;
+        targetDepartments: string[];
+    }) => {
+        try {
+            const res = await fetch('/api/announcements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: announcement.id,
+                    title: announcement.title,
+                    message: announcement.message,
+                    date: new Date().toISOString(),
+                    author: 'Admin',
+                    status: 'published',
+                    priority: announcement.priority,
+                    event_date: announcement.eventDate,
+                    target_departments: announcement.targetDepartments.join(', ')
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to update announcement');
+            }
+
+            await mutateAnnouncements();
+            toast({
+                title: 'Announcement Updated',
+                description: 'The announcement has been updated successfully.',
+            });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to update announcement' });
         }
     }, [toast, mutateAnnouncements]);
 
@@ -708,19 +1015,29 @@ export function AdminView() {
         if (!announcement) return;
 
         try {
-            await fetch('/api/announcements', {
+            const res = await fetch('/api/announcements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...announcement, status: 'deleted' })
+                body: JSON.stringify({
+                    ...announcement,
+                    status: 'deleted',
+                    event_date: announcement.eventDate
+                })
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to delete');
+            }
+
             await mutateAnnouncements();
 
             toast({
                 title: 'Announcement Deleted',
                 description: 'The announcement has been moved to the deleted list.',
             });
-        } catch {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete announcement' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete announcement' });
         }
     }, [announcements, toast, mutateAnnouncements]);
 
@@ -729,52 +1046,103 @@ export function AdminView() {
         if (!announcement) return;
 
         try {
-            await fetch('/api/announcements', {
+            const res = await fetch('/api/announcements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...announcement, status: 'published' })
+                body: JSON.stringify({
+                    ...announcement,
+                    status: 'published',
+                    event_date: announcement.eventDate
+                })
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to restore');
+            }
+
             await mutateAnnouncements();
 
             toast({
                 title: 'Announcement Restored',
                 description: 'The announcement has been restored and is now visible to employees.',
             });
-        } catch {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to restore announcement' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to restore announcement' });
         }
     }, [announcements, toast, mutateAnnouncements]);
 
     const handlePermanentDeleteAnnouncement = useCallback(async (announcementId: string) => {
         try {
-            await fetch(`/api/announcements?id=${announcementId}`, { method: 'DELETE' });
+            const res = await fetch(`/api/announcements?id=${announcementId}`, { method: 'DELETE' });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to delete');
+            }
+
             await mutateAnnouncements();
             toast({
                 variant: 'destructive',
                 title: 'Announcement Permanently Deleted',
                 description: 'The announcement has been permanently removed from the system.',
             });
-        } catch {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete announcement' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete announcement' });
         }
     }, [toast, mutateAnnouncements]);
+
+    const handleBulkPermanentDeleteAnnouncements = useCallback(async () => {
+        try {
+            const responses = await Promise.all(selectedDeletedAnnouncementIds.map(id =>
+                fetch(`/api/announcements?id=${id}`, { method: 'DELETE' })
+            ));
+
+            const failed = responses.find(r => !r.ok);
+            if (failed) {
+                const errorData = await failed.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete some announcements');
+            }
+
+            await mutateAnnouncements();
+            setSelectedDeletedAnnouncementIds([]);
+            toast({
+                title: "Announcements Deleted",
+                description: `${selectedDeletedAnnouncementIds.length} announcement(s) have been permanently deleted.`
+            });
+            setIsBulkPermanentDeleteAnnouncementsDialogOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some announcements' });
+        }
+    }, [selectedDeletedAnnouncementIds, mutateAnnouncements, toast]);
 
     const handleSaveCompany = useCallback(async (companyToSave: Company) => {
         const company = { ...companyToSave, id: companyToSave.id || `comp-${Date.now()}` };
         try {
-            await fetch('/api/companies', {
+            console.log('Saving company:', company);
+            const res = await fetch('/api/companies', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(company)
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to save company');
+            }
+
+            console.log('Company saved successfully, refreshing data...');
             await mutateCompanies();
+            console.log('Data refreshed');
+
             if (companyToSave.id) {
                 toast({ title: 'Company Updated', description: `Details for ${companyToSave.name} have been updated.` });
             } else {
                 toast({ title: 'Company Added', description: `${companyToSave.name} has been added.` });
             }
-        } catch {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to save company' });
+        } catch (error: any) {
+            console.error('Error saving company:', error);
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to save company' });
         }
     }, [toast, mutateCompanies]);
 
@@ -859,6 +1227,10 @@ export function AdminView() {
     const publishedAnnouncements = useMemo(() => announcements.filter(a => a.status === 'published'), [announcements]);
     const deletedAnnouncements = useMemo(() => announcements.filter(a => a.status === 'deleted'), [announcements]);
 
+    const activeHolidays = useMemo(() => holidays.filter(h => !h.status || h.status === 'active'), [holidays]);
+    const deletedHolidays = useMemo(() => holidays.filter(h => h.status === 'deleted'), [holidays]);
+
+
 
     const filteredByDept = useMemo(() => {
         if (departmentFilter === 'all') {
@@ -918,17 +1290,47 @@ export function AdminView() {
 
 
     const filteredHolidays = useMemo(() => {
-        return holidays.filter(holiday =>
+        return activeHolidays.filter(holiday =>
             (holiday.name || '').toLowerCase().includes(searchTerm.toLowerCase()) &&
             (holidayLocationFilter === 'all' || holiday.location === holidayLocationFilter)
         ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    }, [holidays, searchTerm, holidayLocationFilter]);
+    }, [activeHolidays, searchTerm, holidayLocationFilter]);
+
+    const filteredDeletedHolidays = useMemo(() => {
+        return deletedHolidays.filter(holiday =>
+            (holiday.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+        ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    }, [deletedHolidays, searchTerm]);
 
     const filteredAnnouncements = useMemo(() => {
-        return publishedAnnouncements.filter(announcement =>
-            (announcement.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (announcement.message || '').toLowerCase().includes(searchTerm.toLowerCase())
-        ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return publishedAnnouncements.filter(announcement => {
+            const matchesSearch = (announcement.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (announcement.message || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+            // Auto-hide passed events
+            // We assume eventDate is YYYY-MM-DD. We parse it to local date to compare.
+            // If announcement.eventDate is "2024-12-13" and today is "2024-12-13", it is NOT expired.
+            // It expires when today > eventDate.
+            let isExpired = false;
+            if (announcement.eventDate) {
+                const eventDate = new Date(announcement.eventDate);
+                // Adjust for potentially different time interpretations of the YYYY-MM-DD string
+                // But generally, new Date('2024-12-13') gives UTC midnight. 
+                // Let's compare timestamps safely or use string comparison if ISO.
+                // Simple check:
+                isExpired = eventDate < today;
+            }
+
+            return matchesSearch && !isExpired;
+        }).sort((a, b) => {
+            // Sort by eventDate ASC (soonest first)
+            const dateA = a.eventDate ? new Date(a.eventDate).getTime() : Infinity;
+            const dateB = b.eventDate ? new Date(b.eventDate).getTime() : Infinity;
+            return dateA - dateB;
+        });
     }, [publishedAnnouncements, searchTerm]);
 
     const filteredDeletedAnnouncements = useMemo(() => {
@@ -1069,7 +1471,7 @@ export function AdminView() {
         try {
             // Delete sequentially or parallel? Parallel is faster.
             await Promise.all(docIds.map(id =>
-                fetch(`/api/documents?id=${id}`, { method: 'DELETE' })
+                fetch(`/api/documents?id=${id}&permanent=true`, { method: 'DELETE' })
             ));
 
             await mutateDocuments();
@@ -1087,29 +1489,52 @@ export function AdminView() {
         }
     }, [mutateDocuments, toast]);
 
-    const handleRestoreDocument = useCallback((docId: string) => {
-        const docToRestore = deletedDocs.find(d => d.id === docId);
-        if (docToRestore) {
-            setDeletedDocs(prev => prev.filter(d => d.id !== docId));
-            setDocs(prev => [...prev, docToRestore]);
+    const handleRestoreDocument = useCallback(async (docId: string) => {
+        try {
+            const response = await fetch(`/api/documents?id=${docId}`, { method: 'PATCH' });
+            if (!response.ok) throw new Error('Failed to restore');
+
+            await mutateDocuments();
+            await mutateDeletedDocuments();
+
+            const docToRestore = deletedDocs.find(d => d.id === docId);
             toast({
                 title: "Document Restored",
-                description: `"${docToRestore.name}" has been restored.`
+                description: `"${docToRestore?.name}" has been restored.`
+            });
+        } catch (error) {
+            console.error('Error restoring document:', error);
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: "Failed to restore document."
             });
         }
-    }, [deletedDocs, toast]);
+    }, [deletedDocs, mutateDocuments, mutateDeletedDocuments, toast]);
 
-    const handlePermanentDeleteDocument = useCallback((docId: string) => {
-        const docToDelete = deletedDocs.find(d => d.id === docId);
-        if (docToDelete) {
-            setDeletedDocs(prev => prev.filter(d => d.id !== docId));
+    const handlePermanentDeleteDocument = useCallback(async (docId: string) => {
+        if (!confirm('Are you absolutely sure? This action cannot be undone.')) return;
+        try {
+            const response = await fetch(`/api/documents?id=${docId}&permanent=true`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Failed to permanently delete');
+
+            await mutateDeletedDocuments();
+
+            const docToDelete = deletedDocs.find(d => d.id === docId);
             toast({
                 variant: "destructive",
                 title: "Document Permanently Deleted",
-                description: `"${docToDelete.name}" has been permanently removed.`
+                description: `"${docToDelete?.name}" has been permanently removed.`
+            });
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: "Failed to permanently delete document."
             });
         }
-    }, [deletedDocs, toast]);
+    }, [deletedDocs, mutateDeletedDocuments, toast]);
 
     const onTabChange = useCallback((value: string) => {
         setActiveTab(value);
@@ -1150,9 +1575,24 @@ export function AdminView() {
 
     return (
         <>
+            {/* Navigation Tabs */}
+            <div className="flex gap-2 border-b pb-4 mb-6">
+                <Button variant="outline" asChild className="flex items-center gap-2">
+                    <Link href="/dashboard?role=admin">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Dashboard
+                    </Link>
+                </Button>
+                <Button variant="default" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Admin Panel
+                </Button>
+            </div>
+
+            {/* Management Section Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="grid gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{siteName}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
                     <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
@@ -1211,6 +1651,7 @@ export function AdminView() {
                                 className="w-full pl-8"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                suppressHydrationWarning
                             />
                         </div>
                     </div>
@@ -1539,7 +1980,10 @@ export function AdminView() {
                                 <CardTitle>Manage Announcements</CardTitle>
                                 <CardDescription>Create and publish announcements for all employees.</CardDescription>
                             </div>
-                            <AddAnnouncementDialog onAdd={handleAddAnnouncement}>
+                            <AddAnnouncementDialog
+                                onAdd={handleAddAnnouncement}
+                                departments={Array.from(new Set(departments.map(d => d.name)))}
+                            >
                                 <Button variant="outline">
                                     <Bell className="mr-2 h-4 w-4" /> New Announcement
                                 </Button>
@@ -1549,10 +1993,10 @@ export function AdminView() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="hidden sm:table-cell">Date</TableHead>
+                                        <TableHead>Event Date</TableHead>
+                                        <TableHead>Priority</TableHead>
                                         <TableHead>Title</TableHead>
                                         <TableHead className="hidden md:table-cell">Message</TableHead>
-                                        <TableHead>Event Date</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -1561,11 +2005,6 @@ export function AdminView() {
                                         const isUpcoming = isEventUpcoming(announcement.eventDate);
                                         return (
                                             <TableRow key={announcement.id} className={cn(isMounted && isUpcoming && "bg-blue-500/10 ring-2 ring-destructive animate-pulse")}>
-                                                <TableCell className="font-medium hidden sm:table-cell">
-                                                    {new Date(announcement.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                                </TableCell>
-                                                <TableCell>{announcement.title}</TableCell>
-                                                <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
                                                 <TableCell>
                                                     {announcement.eventDate ? (
                                                         <div className="flex items-center gap-2">
@@ -1573,17 +2012,41 @@ export function AdminView() {
                                                                 'px-2 py-1 rounded-full text-xs font-medium',
                                                                 (isMounted && new Date(announcement.eventDate) > new Date()) ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                                                             )}>
-                                                                {new Date(announcement.eventDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                                                                {isMounted ? new Date(announcement.eventDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }) : null}
                                                             </span>
                                                         </div>
                                                     ) : <span className="text-muted-foreground">-</span>}
                                                 </TableCell>
+                                                <TableCell>
+                                                    <span className={cn(
+                                                        'px-2 py-1 rounded-full text-xs font-medium capitalize',
+                                                        announcement.priority === 'high' && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                                        announcement.priority === 'medium' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                                                        announcement.priority === 'low' && 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                                                        !announcement.priority && 'bg-gray-100 text-gray-800'
+                                                    )}>
+                                                        {announcement.priority || 'medium'}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="font-medium">{announcement.title}</TableCell>
+                                                <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)} isPermanent={false}>
-                                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </DeleteAnnouncementDialog>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <EditAnnouncementDialog
+                                                            announcement={announcement}
+                                                            onSave={handleEditAnnouncement}
+                                                            departments={Array.from(new Set(departments.map(d => d.name)))}
+                                                        >
+                                                            <Button variant="ghost" size="icon">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </EditAnnouncementDialog>
+                                                        <DeleteAnnouncementDialog announcement={announcement} onDelete={() => handleDeleteAnnouncement(announcement.id)} isPermanent={false}>
+                                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </DeleteAnnouncementDialog>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         )
@@ -1642,7 +2105,11 @@ export function AdminView() {
                                 <TableBody>
                                     {filteredHolidays.length > 0 ? filteredHolidays.map(holiday => (
                                         <TableRow key={holiday.id}>
-                                            <TableCell className="font-medium">{new Date(holiday.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    {isMounted ? new Date(holiday.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }) : null}
+                                                </span>
+                                            </TableCell>
                                             <TableCell>{holiday.name}</TableCell>
                                             <TableCell>
                                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
@@ -1650,9 +2117,16 @@ export function AdminView() {
                                                 </span>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteHoliday(holiday.id)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <EditHolidayDialog holiday={holiday} onSave={handleEditHoliday}>
+                                                        <Button variant="ghost" size="icon">
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </EditHolidayDialog>
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteHoliday(holiday.id)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     )) : (
@@ -1893,7 +2367,7 @@ export function AdminView() {
                                                                     </EditDocumentTypeDialog>
                                                                     <DeleteDocumentTypeDialog
                                                                         documentType={type}
-                                                                        onDelete={() => handleDeleteDocumentType(type.id)}
+                                                                        onDelete={() => handleDeleteDocumentType(type)}
                                                                         isTypeInUse={docs.some(d => d.type === type.name)}
                                                                     >
                                                                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
@@ -2059,18 +2533,38 @@ export function AdminView() {
                                         <TabsTrigger value="documents">Documents</TabsTrigger>
                                         <TabsTrigger value="users">Users</TabsTrigger>
                                         <TabsTrigger value="announcements">Announcements</TabsTrigger>
+                                        <TabsTrigger value="holidays">Holidays</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <TabsContent value="companies" className="pt-6">
                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Deleted Companies</CardTitle>
-                                            <CardDescription>A list of all deleted companies. You can restore or permanently delete them.</CardDescription>
+                                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle>Deleted Companies</CardTitle>
+                                                <CardDescription>A list of all deleted companies. You can restore or permanently delete them.</CardDescription>
+                                            </div>
+                                            {selectedDeletedCompanyIds.length > 0 && (
+                                                <Button variant="destructive" onClick={() => setIsBulkPermanentDeleteCompaniesDialogOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedDeletedCompanyIds.length})
+                                                </Button>
+                                            )}
                                         </CardHeader>
                                         <CardContent>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
+                                                        <TableHead className="w-[50px]">
+                                                            <Checkbox
+                                                                checked={filteredDeletedCompanies.length > 0 && selectedDeletedCompanyIds.length === filteredDeletedCompanies.length}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedDeletedCompanyIds(filteredDeletedCompanies.map(c => c.id));
+                                                                    } else {
+                                                                        setSelectedDeletedCompanyIds([]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </TableHead>
                                                         <TableHead>Name</TableHead>
                                                         <TableHead>Email</TableHead>
                                                         <TableHead className="text-right">Actions</TableHead>
@@ -2079,6 +2573,18 @@ export function AdminView() {
                                                 <TableBody>
                                                     {filteredDeletedCompanies.length > 0 ? filteredDeletedCompanies.map(company => (
                                                         <TableRow key={company.id}>
+                                                            <TableCell>
+                                                                <Checkbox
+                                                                    checked={selectedDeletedCompanyIds.includes(company.id)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        if (checked) {
+                                                                            setSelectedDeletedCompanyIds(prev => [...prev, company.id]);
+                                                                        } else {
+                                                                            setSelectedDeletedCompanyIds(prev => prev.filter(id => id !== company.id));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell className="font-medium">{company.name}</TableCell>
                                                             <TableCell>{company.email}</TableCell>
                                                             <TableCell className="text-right space-x-2">
@@ -2098,7 +2604,7 @@ export function AdminView() {
                                                         </TableRow>
                                                     )) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={3} className="text-center text-muted-foreground">No deleted companies found.</TableCell>
+                                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted companies found.</TableCell>
                                                         </TableRow>
                                                     )}
                                                 </TableBody>
@@ -2108,14 +2614,33 @@ export function AdminView() {
                                 </TabsContent>
                                 <TabsContent value="departments" className="pt-6">
                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Deleted Departments</CardTitle>
-                                            <CardDescription>A list of all deleted departments. You can restore or permanently delete them.</CardDescription>
+                                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle>Deleted Departments</CardTitle>
+                                                <CardDescription>A list of all deleted departments. You can restore or permanently delete them.</CardDescription>
+                                            </div>
+                                            {selectedDeletedDepartmentIds.length > 0 && (
+                                                <Button variant="destructive" onClick={() => setIsBulkPermanentDeleteDepartmentsDialogOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedDeletedDepartmentIds.length})
+                                                </Button>
+                                            )}
                                         </CardHeader>
                                         <CardContent>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
+                                                        <TableHead className="w-[50px]">
+                                                            <Checkbox
+                                                                checked={filteredDeletedDepartments.length > 0 && selectedDeletedDepartmentIds.length === filteredDeletedDepartments.length}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedDeletedDepartmentIds(filteredDeletedDepartments.map(d => d.id));
+                                                                    } else {
+                                                                        setSelectedDeletedDepartmentIds([]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </TableHead>
                                                         <TableHead>Department Name</TableHead>
                                                         <TableHead className="text-right">Actions</TableHead>
                                                     </TableRow>
@@ -2123,6 +2648,18 @@ export function AdminView() {
                                                 <TableBody>
                                                     {filteredDeletedDepartments.length > 0 ? filteredDeletedDepartments.map(dept => (
                                                         <TableRow key={dept.id}>
+                                                            <TableCell>
+                                                                <Checkbox
+                                                                    checked={selectedDeletedDepartmentIds.includes(dept.id)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        if (checked) {
+                                                                            setSelectedDeletedDepartmentIds(prev => [...prev, dept.id]);
+                                                                        } else {
+                                                                            setSelectedDeletedDepartmentIds(prev => prev.filter(id => id !== dept.id));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell className="font-medium">
                                                                 <div className="flex items-center gap-2">
                                                                     <Building className="h-4 w-4 text-muted-foreground" />
@@ -2146,7 +2683,7 @@ export function AdminView() {
                                                         </TableRow>
                                                     )) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={2} className="text-center text-muted-foreground">No deleted departments found.</TableCell>
+                                                            <TableCell colSpan={3} className="text-center text-muted-foreground">No deleted departments found.</TableCell>
                                                         </TableRow>
                                                     )}
                                                 </TableBody>
@@ -2156,14 +2693,33 @@ export function AdminView() {
                                 </TabsContent>
                                 <TabsContent value="doc-types" className="pt-6">
                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Deleted Document Types</CardTitle>
-                                            <CardDescription>A list of all deleted document types. You can restore or permanently delete them.</CardDescription>
+                                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle>Deleted Document Types</CardTitle>
+                                                <CardDescription>A list of all deleted document types. You can restore or permanently delete them.</CardDescription>
+                                            </div>
+                                            {selectedDeletedDocTypeIds.length > 0 && (
+                                                <Button variant="destructive" onClick={() => setIsBulkPermanentDeleteDocTypesDialogOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedDeletedDocTypeIds.length})
+                                                </Button>
+                                            )}
                                         </CardHeader>
                                         <CardContent>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
+                                                        <TableHead className="w-[50px]">
+                                                            <Checkbox
+                                                                checked={filteredDeletedDocTypes.length > 0 && selectedDeletedDocTypeIds.length === filteredDeletedDocTypes.length}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedDeletedDocTypeIds(filteredDeletedDocTypes.map(t => t.id));
+                                                                    } else {
+                                                                        setSelectedDeletedDocTypeIds([]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </TableHead>
                                                         <TableHead>Type Name</TableHead>
                                                         <TableHead className="text-right">Actions</TableHead>
                                                     </TableRow>
@@ -2171,6 +2727,18 @@ export function AdminView() {
                                                 <TableBody>
                                                     {filteredDeletedDocTypes.length > 0 ? filteredDeletedDocTypes.map(type => (
                                                         <TableRow key={type.id}>
+                                                            <TableCell>
+                                                                <Checkbox
+                                                                    checked={selectedDeletedDocTypeIds.includes(type.id)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        if (checked) {
+                                                                            setSelectedDeletedDocTypeIds(prev => [...prev, type.id]);
+                                                                        } else {
+                                                                            setSelectedDeletedDocTypeIds(prev => prev.filter(id => id !== type.id));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell className="font-medium">
                                                                 <div className="flex items-center gap-2">
                                                                     <Tag className="h-4 w-4 text-muted-foreground" />
@@ -2194,7 +2762,7 @@ export function AdminView() {
                                                         </TableRow>
                                                     )) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={2} className="text-center text-muted-foreground">No deleted document types found.</TableCell>
+                                                            <TableCell colSpan={3} className="text-center text-muted-foreground">No deleted document types found.</TableCell>
                                                         </TableRow>
                                                     )}
                                                 </TableBody>
@@ -2204,9 +2772,16 @@ export function AdminView() {
                                 </TabsContent>
                                 <TabsContent value="documents" className="pt-6">
                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Deleted Documents</CardTitle>
-                                            <CardDescription>A list of all deleted documents. You can restore or permanently delete them.</CardDescription>
+                                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle>Deleted Documents</CardTitle>
+                                                <CardDescription>A list of all deleted documents. You can restore or permanently delete them.</CardDescription>
+                                            </div>
+                                            {selectedDeletedDocumentIds.length > 0 && (
+                                                <Button variant="destructive" onClick={() => setIsBulkPermanentDeleteDocumentsDialogOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedDeletedDocumentIds.length})
+                                                </Button>
+                                            )}
                                         </CardHeader>
                                         <CardContent>
                                             <DocumentList
@@ -2218,20 +2793,55 @@ export function AdminView() {
                                                 isDeletedList
                                                 onRestore={handleRestoreDocument}
                                                 onPermanentDelete={handlePermanentDeleteDocument}
+                                                onBulkPermanentDelete={handleBulkPermanentDeleteDocuments}
+                                                selectedDocIds={selectedDeletedDocumentIds}
+                                                onSelectDoc={(docId: string, checked: boolean) => {
+                                                    if (checked) {
+                                                        setSelectedDeletedDocumentIds(prev => [...prev, docId]);
+                                                    } else {
+                                                        setSelectedDeletedDocumentIds(prev => prev.filter(id => id !== docId));
+                                                    }
+                                                }}
+                                                onSelectAll={(checked: boolean) => {
+                                                    if (checked) {
+                                                        setSelectedDeletedDocumentIds(filteredDeletedDocs.map(d => d.id));
+                                                    } else {
+                                                        setSelectedDeletedDocumentIds([]);
+                                                    }
+                                                }}
                                             />
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
                                 <TabsContent value="users" className="pt-6">
                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Deleted Users</CardTitle>
-                                            <CardDescription>A list of all deleted employees. You can restore or permanently delete them.</CardDescription>
+                                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle>Deleted Users</CardTitle>
+                                                <CardDescription>A list of all deleted employees. You can restore or permanently delete them.</CardDescription>
+                                            </div>
+                                            {selectedDeletedUserIds.length > 0 && (
+                                                <Button variant="destructive" onClick={() => setIsBulkPermanentDeleteUsersDialogOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedDeletedUserIds.length})
+                                                </Button>
+                                            )}
                                         </CardHeader>
                                         <CardContent>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
+                                                        <TableHead className="w-[50px]">
+                                                            <Checkbox
+                                                                checked={filteredDeletedUsers.length > 0 && selectedDeletedUserIds.length === filteredDeletedUsers.length}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedDeletedUserIds(filteredDeletedUsers.map(u => u.id));
+                                                                    } else {
+                                                                        setSelectedDeletedUserIds([]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </TableHead>
                                                         <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
                                                         <TableHead>Name</TableHead>
                                                         <TableHead>Email</TableHead>
@@ -2241,6 +2851,18 @@ export function AdminView() {
                                                 <TableBody>
                                                     {filteredDeletedUsers.length > 0 ? filteredDeletedUsers.map(user => (
                                                         <TableRow key={user.id}>
+                                                            <TableCell>
+                                                                <Checkbox
+                                                                    checked={selectedDeletedUserIds.includes(user.id)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        if (checked) {
+                                                                            setSelectedDeletedUserIds(prev => [...prev, user.id]);
+                                                                        } else {
+                                                                            setSelectedDeletedUserIds(prev => prev.filter(id => id !== user.id));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell className="hidden sm:table-cell">
                                                                 <Image src={getAvatarSrc(user)} width={40} height={40} className="rounded-full object-cover" alt={user.name ? user.name : 'User'} data-ai-hint="person portrait" />
                                                             </TableCell>
@@ -2266,7 +2888,7 @@ export function AdminView() {
                                                         </TableRow>
                                                     )) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted users found.</TableCell>
+                                                            <TableCell colSpan={5} className="text-center text-muted-foreground">No deleted users found.</TableCell>
                                                         </TableRow>
                                                     )}
                                                 </TableBody>
@@ -2276,14 +2898,33 @@ export function AdminView() {
                                 </TabsContent>
                                 <TabsContent value="announcements" className="pt-6">
                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Deleted Announcements</CardTitle>
-                                            <CardDescription>A list of all deleted announcements. You can restore or permanently delete them here.</CardDescription>
+                                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle>Deleted Announcements</CardTitle>
+                                                <CardDescription>A list of all deleted announcements. You can restore or permanently delete them here.</CardDescription>
+                                            </div>
+                                            {selectedDeletedAnnouncementIds.length > 0 && (
+                                                <Button variant="destructive" onClick={() => setIsBulkPermanentDeleteAnnouncementsDialogOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedDeletedAnnouncementIds.length})
+                                                </Button>
+                                            )}
                                         </CardHeader>
                                         <CardContent>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
+                                                        <TableHead className="w-[50px]">
+                                                            <Checkbox
+                                                                checked={filteredDeletedAnnouncements.length > 0 && selectedDeletedAnnouncementIds.length === filteredDeletedAnnouncements.length}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedDeletedAnnouncementIds(filteredDeletedAnnouncements.map(a => a.id));
+                                                                    } else {
+                                                                        setSelectedDeletedAnnouncementIds([]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </TableHead>
                                                         <TableHead>Date</TableHead>
                                                         <TableHead>Title</TableHead>
                                                         <TableHead className="hidden md:table-cell">Message</TableHead>
@@ -2293,7 +2934,19 @@ export function AdminView() {
                                                 <TableBody>
                                                     {filteredDeletedAnnouncements.length > 0 ? filteredDeletedAnnouncements.map(announcement => (
                                                         <TableRow key={announcement.id}>
-                                                            <TableCell className="font-medium hidden sm:table-cell">{new Date(announcement.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                                                            <TableCell>
+                                                                <Checkbox
+                                                                    checked={selectedDeletedAnnouncementIds.includes(announcement.id)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        if (checked) {
+                                                                            setSelectedDeletedAnnouncementIds(prev => [...prev, announcement.id]);
+                                                                        } else {
+                                                                            setSelectedDeletedAnnouncementIds(prev => prev.filter(id => id !== announcement.id));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="font-medium hidden sm:table-cell">{isMounted ? new Date(announcement.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null}</TableCell>
                                                             <TableCell>{announcement.title}</TableCell>
                                                             <TableCell className="hidden md:table-cell max-w-sm truncate">{announcement.message}</TableCell>
                                                             <TableCell className="text-right">
@@ -2315,7 +2968,91 @@ export function AdminView() {
                                                         </TableRow>
                                                     )) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No deleted announcements found.</TableCell>
+                                                            <TableCell colSpan={5} className="text-center text-muted-foreground">No deleted announcements found.</TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                                <TabsContent value="holidays" className="pt-6">
+                                    <Card>
+                                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle>Deleted Holidays</CardTitle>
+                                                <CardDescription>A list of all deleted holidays. You can restore or permanently delete them here.</CardDescription>
+                                            </div>
+                                            {selectedDeletedHolidayIds.length > 0 && (
+                                                <Button variant="destructive" onClick={() => setIsBulkPermanentDeleteHolidaysDialogOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedDeletedHolidayIds.length})
+                                                </Button>
+                                            )}
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-[50px]">
+                                                            <Checkbox
+                                                                checked={filteredDeletedHolidays.length > 0 && selectedDeletedHolidayIds.length === filteredDeletedHolidays.length}
+                                                                onCheckedChange={(checked) => {
+                                                                    if (checked) {
+                                                                        setSelectedDeletedHolidayIds(filteredDeletedHolidays.map(h => h.id));
+                                                                    } else {
+                                                                        setSelectedDeletedHolidayIds([]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </TableHead>
+                                                        <TableHead>Date</TableHead>
+                                                        <TableHead>Name</TableHead>
+                                                        <TableHead>Location</TableHead>
+                                                        <TableHead className="text-right">Actions</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {filteredDeletedHolidays.length > 0 ? filteredDeletedHolidays.map(holiday => (
+                                                        <TableRow key={holiday.id}>
+                                                            <TableCell>
+                                                                <Checkbox
+                                                                    checked={selectedDeletedHolidayIds.includes(holiday.id)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        if (checked) {
+                                                                            setSelectedDeletedHolidayIds(prev => [...prev, holiday.id]);
+                                                                        } else {
+                                                                            setSelectedDeletedHolidayIds(prev => prev.filter(id => id !== holiday.id));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="font-medium">{isMounted ? new Date(holiday.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : null}</TableCell>
+                                                            <TableCell>{holiday.name}</TableCell>
+                                                            <TableCell>
+                                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                                                                    {holiday.location}
+                                                                </span>
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <Button variant="outline" size="sm" onClick={() => handleRestoreHoliday(holiday.id)}>
+                                                                        <ArchiveRestore className="mr-2 h-4 w-4" /> Restore
+                                                                    </Button>
+                                                                    <PermanentDeleteDialog
+                                                                        itemName={holiday.name}
+                                                                        itemType='holiday'
+                                                                        onDelete={() => handlePermanentDeleteHoliday(holiday.id)}
+                                                                    >
+                                                                        <Button variant="destructive" size="sm">
+                                                                            <Trash className="mr-2 h-4 w-4" /> Delete Permanently
+                                                                        </Button>
+                                                                    </PermanentDeleteDialog>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )) : (
+                                                        <TableRow>
+                                                            <TableCell colSpan={5} className="text-center text-muted-foreground">No deleted holidays found.</TableCell>
                                                         </TableRow>
                                                     )}
                                                 </TableBody>
@@ -2327,10 +3064,136 @@ export function AdminView() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-            </Tabs>
+            </Tabs >
 
             {/* Bulk Delete Confirmation Dialog */}
-            <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+            < AlertDialog open={isBulkPermanentDeleteAnnouncementsDialogOpen} onOpenChange={setIsBulkPermanentDeleteAnnouncementsDialogOpen} >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the selected {selectedDeletedAnnouncementIds.length} announcement(s). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkPermanentDeleteAnnouncements} className="bg-destructive hover:bg-destructive/90">
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog >
+
+            {/* Bulk Delete Holidays Confirmation Dialog */}
+            < AlertDialog open={isBulkPermanentDeleteHolidaysDialogOpen} onOpenChange={setIsBulkPermanentDeleteHolidaysDialogOpen} >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the selected {selectedDeletedHolidayIds.length} holiday(s). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkPermanentDeleteHolidays} className="bg-destructive hover:bg-destructive/90">
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog >
+
+            {/* Bulk Delete Companies Confirmation Dialog */}
+            < AlertDialog open={isBulkPermanentDeleteCompaniesDialogOpen} onOpenChange={setIsBulkPermanentDeleteCompaniesDialogOpen} >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the selected {selectedDeletedCompanyIds.length} company(ies). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkPermanentDeleteCompanies} className="bg-destructive hover:bg-destructive/90">
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog >
+
+            {/* Bulk Delete Departments Confirmation Dialog */}
+            < AlertDialog open={isBulkPermanentDeleteDepartmentsDialogOpen} onOpenChange={setIsBulkPermanentDeleteDepartmentsDialogOpen} >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the selected {selectedDeletedDepartmentIds.length} department(s). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkPermanentDeleteDepartments} className="bg-destructive hover:bg-destructive/90">
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog >
+
+            {/* Bulk Delete Document Types Confirmation Dialog */}
+            < AlertDialog open={isBulkPermanentDeleteDocTypesDialogOpen} onOpenChange={setIsBulkPermanentDeleteDocTypesDialogOpen} >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the selected {selectedDeletedDocTypeIds.length} document type(s). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkPermanentDeleteDocTypes} className="bg-destructive hover:bg-destructive/90">
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog >
+
+            {/* Bulk Delete Documents Confirmation Dialog */}
+            < AlertDialog open={isBulkPermanentDeleteDocumentsDialogOpen} onOpenChange={setIsBulkPermanentDeleteDocumentsDialogOpen} >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the selected {selectedDeletedDocumentIds.length} document(s). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkPermanentDeleteDocuments} className="bg-destructive hover:bg-destructive/90">
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog >
+
+            {/* Bulk Delete Users Confirmation Dialog */}
+            < AlertDialog open={isBulkPermanentDeleteUsersDialogOpen} onOpenChange={setIsBulkPermanentDeleteUsersDialogOpen} >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will permanently delete the selected {selectedDeletedUserIds.length} user(s). This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkPermanentDeleteUsers} className="bg-destructive hover:bg-destructive/90">
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog >
+
+            {/* Bulk Delete Confirmation Dialog */}
+            < AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen} >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -2345,10 +3208,10 @@ export function AdminView() {
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
-            </AlertDialog>
+            </AlertDialog >
 
             {/* Bulk Reset Password Confirmation Dialog */}
-            <AlertDialog open={isBulkResetDialogOpen} onOpenChange={setIsBulkResetDialogOpen}>
+            < AlertDialog open={isBulkResetDialogOpen} onOpenChange={setIsBulkResetDialogOpen} >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Password Reset</AlertDialogTitle>
@@ -2363,10 +3226,10 @@ export function AdminView() {
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
-            </AlertDialog>
+            </AlertDialog >
 
             {/* Undo Last Bulk Upload Confirmation Dialog */}
-            <AlertDialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen}>
+            < AlertDialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen} >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Undo Last Bulk Upload?</AlertDialogTitle>
@@ -2381,7 +3244,7 @@ export function AdminView() {
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
-            </AlertDialog>
+            </AlertDialog >
         </>
     )
 }

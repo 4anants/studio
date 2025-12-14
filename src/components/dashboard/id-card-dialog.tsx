@@ -12,16 +12,18 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from "@/components/ui/button";
 import { IdCard } from "./id-card";
-import type { User } from "@/lib/types";
+import type { User, Company } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface IdCardDialogProps {
   employee: User;
+  company?: Company;
   children: React.ReactNode;
 }
 
-export function IdCardDialog({ employee, children }: IdCardDialogProps) {
+export function IdCardDialog({ employee, company, children }: IdCardDialogProps) {
   const [open, setOpen] = useState(false);
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -35,8 +37,10 @@ export function IdCardDialog({ employee, children }: IdCardDialogProps) {
         </DialogHeader>
 
         <div className="flex justify-center py-4">
-          <IdCard employee={employee} />
+          <IdCard employee={employee} company={company} />
         </div>
+
+
 
         <DialogFooter className="dialog-footer">
           <Button variant="outline" onClick={() => window.print()}>Print</Button>

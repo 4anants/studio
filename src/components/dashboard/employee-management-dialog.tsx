@@ -42,6 +42,7 @@ const locationKeys = Object.keys(locations) as [string, ...string[]] | [];
 const baseFormSchema = z.object({
   id: z.string().min(1, { message: 'Employee ID is required.' }),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  displayName: z.string().optional(),
   email: z.string().email({ message: 'Please enter a valid official email.' }),
   personalEmail: z.string().email({ message: 'Please enter a valid personal email.' }).optional().or(z.literal('')),
   mobile: z.string().optional(),
@@ -74,10 +75,8 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
   const { toast } = useToast();
   const isEditing = !!employee;
 
-  const companyNames = companies.length > 0 ? companies.map(c => c.name) as [string, ...string[]] : [] as const;
-
   const formSchema = baseFormSchema.extend({
-    company: companyNames.length > 0 ? z.enum(companyNames).optional() : z.string().optional(),
+    company: z.string().optional(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -85,6 +84,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
     defaultValues: {
       id: employee?.id || '',
       name: employee?.name || '',
+      displayName: employee?.displayName || '',
       email: employee?.email || '',
       personalEmail: employee?.personalEmail || '',
       mobile: employee?.mobile || '',
@@ -144,7 +144,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       setIsLoading(false);
       setOpen(false);
       if (!isEditing) {
-        form.reset({ id: '', name: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '', bloodGroup: '', role: 'employee' });
+        form.reset({ id: '', name: '', displayName: '', email: '', personalEmail: '', mobile: '', password: '', dateOfBirth: '', joiningDate: '', resignationDate: '', designation: '', status: 'active', department: '', bloodGroup: '', role: 'employee' });
       } else {
         form.reset({ ...values, password: '' });
       }
@@ -156,6 +156,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
       form.reset({
         id: employee?.id || '',
         name: employee?.name || '',
+        displayName: employee?.displayName || '',
         email: employee?.email || '',
         personalEmail: employee?.personalEmail || '',
         mobile: employee?.mobile || '',
@@ -209,6 +210,19 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="displayName"
+              render={({ field }) => (
+                <FormItem className="col-span-1">
+                  <FormLabel>Display Name (ID Card)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Short Name for ID Card" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -334,16 +348,20 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               render={({ field }) => (
                 <FormItem className="col-span-1">
                   <FormLabel>Company</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a company" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {companies.map(c => (
-                        <SelectItem key={c.id} value={c.name}>{c.shortName}</SelectItem>
-                      ))}
+                      {companies.length > 0 ? (
+                        companies.map(c => (
+                          <SelectItem key={c.id} value={c.name}>{c.shortName || c.name}</SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="_empty" disabled>No companies available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -356,7 +374,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               render={({ field }) => (
                 <FormItem className="col-span-1">
                   <FormLabel>Location</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a location" />
@@ -378,7 +396,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               render={({ field }) => (
                 <FormItem className="col-span-1">
                   <FormLabel>Department</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a department" />
@@ -386,7 +404,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
                     </FormControl>
                     <SelectContent>
                       {departments.map(dept => (
-                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -426,7 +444,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               render={({ field }) => (
                 <FormItem className="col-span-1">
                   <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a status" />
@@ -448,7 +466,7 @@ export function EmployeeManagementDialog({ employee, onSave, children, departmen
               render={({ field }) => (
                 <FormItem className="col-span-1">
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a role" />

@@ -2,8 +2,9 @@
 'use client';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { departments } from '@/lib/constants';
-import type { User as UserType, Company, Document } from '@/lib/types';
+import type { User as UserType, Company, Document, Department } from '@/lib/types';
 import { useData } from '@/hooks/use-data';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck, ShieldAlert } from 'lucide-react';
@@ -39,8 +40,12 @@ export default function EmployeeProfilePage() {
     const {
         users: serverUsers,
         companies: serverCompanies,
-        documents: serverDocuments
+        documents: serverDocuments,
+        departments: serverDepartments,
+        mutateUsers,
+        mutateDocuments
     } = useData();
+    const { toast } = useToast();
 
     // Use derived state instead of duplicating into local state where possible, 
     // but for search/sort/filter we might need local state.
@@ -51,10 +56,14 @@ export default function EmployeeProfilePage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
 
-    // Derived user
     const user = useMemo(() => {
         return (serverUsers as UserType[]).find(u => u.id === id);
     }, [serverUsers, id]);
+
+    const userCompany = useMemo(() => {
+        if (!user || !serverCompanies) return undefined;
+        return (serverCompanies as Company[]).find(c => c.name === user.company);
+    }, [user, serverCompanies]);
 
     useEffect(() => {
         setIsMounted(true);
@@ -65,45 +74,40 @@ export default function EmployeeProfilePage() {
     const isSadmin = user?.id === 'sadmin';
 
     const handleEmployeeSave = useCallback(async (employee: Partial<UserType> & { originalId?: string }) => {
-        // In a real app, this would be an API call.
-        // For now, we'll optimistically update via mutateUsers if we had a proper API.
-        // Since we are mocking the write for now (unless the user implemented a write API), 
-        // we'll simulate the update.
-        // Wait, the user DOES have a write API for users? 
-        // The API route /api/users supports GET and POST (for creating). 
-        // Updating might not be fully implemented or implies POST/PUT. 
-        // Let's assume we can POST for now or at least mutate the local cache.
+        try {
+            const res = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(employee),
+            });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                console.error("Server save error:", errorData);
+                throw new Error(errorData.error || 'Failed to save');
+            }
 
-        // Actually, looking at AdminView, handleSaveCompany uses POST. 
-        // We probably need to implement handleEmployeeSave with fetch if we want it to persist.
-        // For now, let's just use mutateUsers to update the local SWR cache if we can,
-        // or just log it since we are "transitioning".
+            await mutateUsers();
 
-        // Construct the full updated user object
-        if (!user) return;
-
-        const updatedUser = { ...user, ...employee };
-
-        // Optimistic update (optional, but good for UX)
-        // await mutateUsers(prev => prev?.map(u => u.id === (employee.originalId || id) ? updatedUser : u), false);
-
-        // TODO: Call API to update user
-        // await fetch('/api/users', { method: 'PUT', body: JSON.stringify(updatedUser) });
-        // await mutateUsers();
-
-        console.log('Would save user:', updatedUser);
-
-        if (employee.originalId && employee.id && employee.id !== employee.originalId) {
-            router.replace(`/dashboard/employee/${employee.id}?role=admin`);
+            if (employee.originalId && employee.id && employee.id !== employee.originalId) {
+                router.replace(`/dashboard/employee/${employee.id}?role=admin`);
+            }
+        } catch (error) {
+            console.error("Failed to save user", error);
         }
-    }, [user, router]);
+    }, [mutateUsers, router]);
 
-    const handleDeleteDocument = useCallback((docId: string) => {
-        // useData doesn't give us setDocs directly, we'd need to call API.
-        console.log('Would delete doc:', docId);
-        // await fetch(`/api/documents?id=${docId}`, { method: 'DELETE' });
-        // mutateDocuments();
-    }, []);
+    const handleDeleteDocument = useCallback(async (docId: string) => {
+        if (!confirm('Are you sure you want to delete this document?')) return;
+        try {
+            const res = await fetch(`/api/documents?id=${docId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete');
+            await mutateDocuments();
+            toast({ title: 'Document deleted successfully' });
+        } catch (error) {
+            console.error('Failed to delete document', error);
+            toast({ title: 'Failed to delete document', variant: 'destructive' });
+        }
+    }, [mutateDocuments, toast]);
 
     const userDocuments = useMemo(() => {
         if (!id) return [];
@@ -124,8 +128,8 @@ export default function EmployeeProfilePage() {
         const sortableItems = [...userDocuments];
         if (sortConfig !== null) {
             sortableItems.sort((a, b) => {
-                const aValue = a[sortConfig.key];
-                const bValue = b[sortConfig.key];
+                const aValue = a[sortConfig.key] || '';
+                const bValue = b[sortConfig.key] || '';
 
                 if (aValue < bValue) {
                     return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -202,7 +206,7 @@ export default function EmployeeProfilePage() {
 
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-2">
-                                    <IdCardDialog employee={user}>
+                                    <IdCardDialog employee={user} company={userCompany}>
                                         <Button variant="default" className="w-full">
                                             <BadgeCheck className="mr-2 h-4 w-4" /> ID Card
                                         </Button>
@@ -260,7 +264,7 @@ export default function EmployeeProfilePage() {
                                                 </Button>
                                             </EmployeeSelfEditDialog>
                                         ) : (
-                                            <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={serverCompanies as Company[]}>
+                                            <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={serverDepartments as Department[]} companies={serverCompanies as Company[]}>
                                                 <Button variant="outline" className="w-full">
                                                     <Edit className="mr-2 h-4 w-4" /> Edit Profile
                                                 </Button>

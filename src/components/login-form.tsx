@@ -34,6 +34,11 @@ export function LoginForm() {
   const { toast } = useToast()
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
@@ -65,11 +70,6 @@ export function LoginForm() {
           title: 'Login Failed',
           description: 'Invalid email or password.',
         });
-      } else {
-        // Successful login will trigger session update in useEffect
-        // But we can also redirect here if needed, 
-        // though session affect is cleaner.
-        // Wait, the useEffect handles redirection based on session status.
       }
     } catch (error: any) {
       toast({
@@ -84,11 +84,31 @@ export function LoginForm() {
 
   async function signInWithMicrosoft() {
     setIsLoading(true);
-    // This will redirect the user to the Microsoft login page
-    await signIn('azure-ad', { callbackUrl: '/dashboard' });
+    await signIn('azure-ad', { callbackUrl: `${window.location.origin}/dashboard` });
   }
 
   const isPageLoading = status === 'loading' || isLoading;
+
+  // Don't render form until mounted to avoid hydration issues
+  if (!mounted) {
+    return (
+      <Card className="shadow-lg w-full">
+        <CardHeader>
+          <CardTitle>Sign in</CardTitle>
+          <CardDescription>
+            Use your Microsoft account or email to sign in.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-10 bg-muted animate-pulse rounded" />
+            <div className="h-10 bg-muted animate-pulse rounded" />
+            <div className="h-10 bg-muted animate-pulse rounded" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -130,6 +150,7 @@ export function LoginForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isPageLoading}
+                  suppressHydrationWarning
                 />
               </div>
               <div className="grid gap-2">
@@ -141,6 +162,7 @@ export function LoginForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isPageLoading}
+                  suppressHydrationWarning
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isPageLoading}>

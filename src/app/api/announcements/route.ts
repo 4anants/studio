@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { requireAuth } from '@/lib/auth-helpers';
 
 export async function GET() {
+    const auth = await requireAuth();
+    if (!auth.authorized) return auth.response;
+
     try {
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM announcements ORDER BY date DESC');
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT 
+                id, 
+                title, 
+                message, 
+                date, 
+                author, 
+                status, 
+                priority, 
+                event_date as eventDate, 
+                target_departments as targetDepartments 
+            FROM announcements 
+            ORDER BY event_date ASC
+        `);
         return NextResponse.json(rows);
     } catch (error) {
         console.error('Error in GET /api/announcements:', error);
@@ -15,11 +32,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { id, title, message, date, author, event_date, status, is_read } = body;
+        const { id, title, message, date, author, event_date, status, priority, target_departments } = body;
 
         await pool.execute(
-            `INSERT INTO announcements (id, title, message, date, author, event_date, status, is_read) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO announcements (id, title, message, date, author, event_date, status, priority, target_departments) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
              title = VALUES(title),
              message = VALUES(message),
@@ -27,14 +44,35 @@ export async function POST(request: NextRequest) {
              author = VALUES(author),
              event_date = VALUES(event_date),
              status = VALUES(status),
-             is_read = VALUES(is_read)`,
-            [id, title, message, date, author, event_date, status || 'published', is_read || true]
+             priority = VALUES(priority),
+             target_departments = VALUES(target_departments)`,
+            [
+                id,
+                title,
+                message,
+                formatDateForMySQL(date),
+                author,
+                formatDateForMySQL(event_date),
+                status || 'published',
+                priority || 'medium',
+                target_departments || null
+            ]
         );
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+
+    } catch (error: any) {
         console.error('Error in POST /api/announcements:', error);
-        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+        return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 });
+    }
+}
+
+function formatDateForMySQL(dateString: string | undefined): string | null {
+    if (!dateString) return null;
+    try {
+        return new Date(dateString).toISOString().slice(0, 19).replace('T', ' ');
+    } catch (e) {
+        return null;
     }
 }
 
@@ -49,8 +87,8 @@ export async function DELETE(request: NextRequest) {
     try {
         await pool.execute('DELETE FROM announcements WHERE id = ?', [id]);
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error in DELETE /api/announcements:', error);
-        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+        return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 });
     }
 }

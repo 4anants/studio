@@ -96,7 +96,9 @@ export function DashboardHeader() {
     } else if (!dataLoading && (localSession || status === 'authenticated')) {
       // Data loaded but user not found -> Deleted.
       localStorage.removeItem('session');
-      signOut({ callbackUrl: '/login' });
+      signOut({ redirect: false }).then(() => {
+        window.location.href = `${window.location.origin}/login`;
+      });
     }
 
     return () => {
@@ -106,7 +108,9 @@ export function DashboardHeader() {
 
   const handleLogout = async () => {
     localStorage.removeItem('session');
-    await signOut({ callbackUrl: '/login' });
+    // Prevent NextAuth from handling the redirect, handle it manually to ensure correct port
+    await signOut({ redirect: false });
+    window.location.href = `${window.location.origin}/login`;
   }
 
   const handleProfileClick = () => {
@@ -153,7 +157,29 @@ export function DashboardHeader() {
       // But we can't await here.
       // Let's rely on a useEffect for the side effect, but return null here to avoid crash.
     }
-    return null;
+    return (
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
+        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+          <Link
+            href={`/dashboard?${searchParams.toString()}`}
+            className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
+          >
+            <div className="h-8 w-8">
+              <AseLogo />
+            </div>
+            <span className="font-bold">{siteName}</span>
+          </Link>
+        </nav>
+        <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+          <div className="ml-auto flex-1 sm:flex-initial" />
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+            <LogOut className="h-5 w-5" />
+            <span className="sr-only">Logout</span>
+          </Button>
+        </div>
+      </header>
+    );
   }
 
 

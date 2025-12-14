@@ -7,6 +7,7 @@ import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
 import { useData } from '@/hooks/use-data'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import { documentTypesList, holidayLocations } from '@/lib/constants'
 import type { Document, HolidayLocation, Announcement, User } from '@/lib/types'
 import { Button } from '../ui/button'
@@ -35,8 +36,8 @@ import { Calendar, Bell, MailOpen, Mail, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Label } from '../ui/label'
 
+
 // Simulate a logged-in employee user
-const currentUserId = 'user-1'
 type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
 
@@ -44,6 +45,7 @@ const monthNames = ["January", "February", "March", "April", "May", "June", "Jul
 
 export function EmployeeView() {
     const { data: session } = useSession();
+    const currentUserId = session?.user?.id;
     const { documents: serverDocuments, holidays: serverHolidays, announcements: serverAnnouncements, users: serverUsers, mutateDocuments } = useData();
 
     // Local state for documents (though we could just use serverDocuments directly if we filtered them there)
@@ -56,6 +58,14 @@ export function EmployeeView() {
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
     const [activeTab, setActiveTab] = useState('documents');
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const tabParam = searchParams.get('tab');
+        if (tabParam) {
+            setActiveTab(tabParam);
+        }
+    }, [searchParams]);
 
     // Annoucements read status is local only for now unless we add an API for it (we have /api/announcement-reads table in schema? Yes)
     // For now, let's simple-map it.

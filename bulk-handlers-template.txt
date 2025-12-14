@@ -1,0 +1,121 @@
+// Bulk delete handlers to add after handleBulkPermanentDeleteHolidays
+
+const handleBulkPermanentDeleteCompanies = useCallback(async () => {
+    try {
+        const responses = await Promise.all(selectedDeletedCompanyIds.map(id =>
+            fetch(`/api/companies?id=${id}`, { method: 'DELETE' })
+        ));
+        
+        const failed = responses.find(r => !r.ok);
+        if (failed) {
+            const errorData = await failed.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to delete some companies');
+        }
+
+        await mutateCompanies();
+        setSelectedDeletedCompanyIds([]);
+        toast({
+            title: "Companies Deleted",
+            description: `${selectedDeletedCompanyIds.length} company(ies) have been permanently deleted.`
+        });
+        setIsBulkPermanentDeleteCompaniesDialogOpen(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some companies' });
+    }
+}, [selectedDeletedCompanyIds, mutateCompanies, toast]);
+
+const handleBulkPermanentDeleteDepartments = useCallback(async () => {
+    try {
+        const responses = await Promise.all(selectedDeletedDepartmentIds.map(id =>
+            fetch(`/api/departments?id=${id}`, { method: 'DELETE' })
+        ));
+        
+        const failed = responses.find(r => !r.ok);
+        if (failed) {
+            const errorData = await failed.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to delete some departments');
+        }
+
+        await mutateDepartments();
+        setSelectedDeletedDepartmentIds([]);
+        toast({
+            title: "Departments Deleted",
+            description: `${selectedDeletedDepartmentIds.length} department(s) have been permanently deleted.`
+        });
+        setIsBulkPermanentDeleteDepartmentsDialogOpen(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some departments' });
+    }
+}, [selectedDeletedDepartmentIds, mutateDepartments, toast]);
+
+const handleBulkPermanentDeleteDocTypes = useCallback(async () => {
+    try {
+        const responses = await Promise.all(selectedDeletedDocTypeIds.map(id =>
+            fetch(`/api/document-types?id=${id}`, { method: 'DELETE' })
+        ));
+        
+        const failed = responses.find(r => !r.ok);
+        if (failed) {
+            const errorData = await failed.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to delete some document types');
+        }
+
+        await mutateDocumentTypes();
+        setSelectedDeletedDocTypeIds([]);
+        toast({
+            title: "Document Types Deleted",
+            description: `${selectedDeletedDocTypeIds.length} document type(s) have been permanently deleted.`
+        });
+        setIsBulkPermanentDeleteDocTypesDialogOpen(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some document types' });
+    }
+}, [selectedDeletedDocTypeIds, mutateDocumentTypes, toast]);
+
+const handleBulkPermanentDeleteDocuments = useCallback(async () => {
+    try {
+        const responses = await Promise.all(selectedDeletedDocumentIds.map(id =>
+            fetch(`/api/documents?id=${id}`, { method: 'DELETE' })
+        ));
+        
+        const failed = responses.find(r => !r.ok);
+        if (failed) {
+            const errorData = await failed.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to delete some documents');
+        }
+
+        await mutateDocuments();
+        setSelectedDeletedDocumentIds([]);
+        toast({
+            title: "Documents Deleted",
+            description: `${selectedDeletedDocumentIds.length} document(s) have been permanently deleted.`
+        });
+        setIsBulkPermanentDeleteDocumentsDialogOpen(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some documents' });
+    }
+}, [selectedDeletedDocumentIds, mutateDocuments, toast]);
+
+const handleBulkPermanentDeleteUsers = useCallback(async () => {
+    try {
+        const responses = await Promise.all(selectedDeletedUserIds.map(id =>
+            fetch(`/api/users?id=${id}`, { method: 'DELETE' })
+        ));
+        
+        const failed = responses.find(r => !r.ok);
+        if (failed) {
+            const errorData = await failed.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to delete some users');
+        }
+
+        await mutateUsers();
+        setSelectedDeletedUserIds([]);
+        toast({
+            title: "Users Deleted",
+            description: `${selectedDeletedUserIds.length} user(s) have been permanently deleted.`
+        });
+        setIsBulkPermanentDeleteUsersDialogOpen(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to delete some users' });
+    }
+}, [selectedDeletedUserIds, mutateUsers, toast]);

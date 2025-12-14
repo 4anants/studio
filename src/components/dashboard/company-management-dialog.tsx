@@ -37,6 +37,7 @@ const formSchema = z.object({
   email: z.string().email({ message: 'A valid email is required.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
   address: z.string().optional(),
+  location: z.string().optional(),
   logo: z.string().optional(),
 });
 
@@ -50,6 +51,9 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [locations, setLocations] = useState<Array<{ location: string; address: string }>>([
+    { location: '', address: '' }
+  ]);
   const isEditing = !!company;
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,6 +64,7 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
       email: company?.email || '',
       phone: company?.phone || '',
       address: company?.address || '',
+      location: company?.location || '',
       logo: company?.logo || '',
     },
   });
@@ -83,17 +88,40 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
     multiple: false,
   });
 
+  const addLocation = () => {
+    setLocations([...locations, { location: '', address: '' }]);
+  };
+
+  const removeLocation = (index: number) => {
+    if (locations.length > 1) {
+      setLocations(locations.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateLocation = (index: number, field: 'location' | 'address', value: string) => {
+    const newLocations = [...locations];
+    newLocations[index][field] = value;
+    setLocations(newLocations);
+  };
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setTimeout(() => {
+      // Combine locations and addresses
+      const locationString = locations.map(l => l.location).filter(l => l.trim()).join(', ');
+      const addressString = locations.map(l => l.address).filter(a => a.trim()).join(' | ');
+
       onSave({
         ...values,
+        location: locationString,
+        address: addressString,
         id: company?.id || '', // id is handled by parent
       });
       setIsLoading(false);
       setOpen(false);
       form.reset();
       setLogoPreview(null);
+      setLocations([{ location: '', address: '' }]);
     }, 500);
   };
 
@@ -105,8 +133,23 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
         email: company?.email || '',
         phone: company?.phone || '',
         address: company?.address || '',
+        location: company?.location || '',
         logo: company?.logo || '',
       });
+
+      // Parse existing locations and addresses
+      if (company?.location && company?.address) {
+        const locs = company.location.split(',').map(l => l.trim());
+        const addrs = company.address.split('|').map(a => a.trim());
+        const parsed = locs.map((loc, i) => ({
+          location: loc,
+          address: addrs[i] || ''
+        }));
+        setLocations(parsed.length > 0 ? parsed : [{ location: '', address: '' }]);
+      } else {
+        setLocations([{ location: '', address: '' }]);
+      }
+
       setLogoPreview(null);
     }
     setOpen(isOpen);
@@ -185,17 +228,46 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl><Textarea placeholder="Company's full address" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
+            {/* Dynamic Location-Address Pairs */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Locations & Addresses</label>
+                <Button type="button" variant="outline" size="sm" onClick={addLocation}>
+                  + Add Location
+                </Button>
+              </div>
+              {locations.map((loc, index) => (
+                <div key={index} className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Location {index + 1}</span>
+                    {locations.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLocation(index)}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                  <Input
+                    placeholder="Location name (e.g., New York)"
+                    value={loc.location}
+                    onChange={(e) => updateLocation(index, 'location', e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Full address for this location"
+                    value={loc.address}
+                    onChange={(e) => updateLocation(index, 'address', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              ))}
+            </div>
+
             <DialogFooter className="pt-4">
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -57,11 +57,16 @@ export async function POST(request: NextRequest) {
         const docId = uuidv4();
         const sizeString = `${(file.size / 1024).toFixed(0)} KB`;
 
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        let fileType = 'pdf';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) fileType = 'image';
+        else if (['doc', 'docx', 'xls', 'xlsx'].includes(ext)) fileType = 'doc';
+
         await pool.execute(
             `INSERT INTO documents (
             id, employee_id, filename, upload_date, file_type, category, url, size
         ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)`,
-            [docId, userId, file.name, 'pdf', docType, publicUrl, sizeString] // Assuming PDF for now or extract from extension
+            [docId, userId, file.name, fileType, docType, publicUrl, sizeString] // Assuming PDF for now or extract from extension
         );
 
         return NextResponse.json({ success: true, url: publicUrl });
