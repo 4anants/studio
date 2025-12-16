@@ -15,14 +15,14 @@ export function useData() {
     const { data: deletedDocuments, mutate: mutateDeletedDocuments } = useSWR('/api/documents?deleted=true', fetcher);
 
     return {
-        users: users || EMPTY_ARRAY,
-        documents: documents || EMPTY_ARRAY,
-        deletedDocuments: deletedDocuments || EMPTY_ARRAY,
-        holidays: holidays || EMPTY_ARRAY,
-        announcements: announcements || EMPTY_ARRAY,
-        companies: companies || EMPTY_ARRAY,
-        departments: departments || EMPTY_ARRAY,
-        documentTypes: documentTypes || EMPTY_ARRAY,
+        users: Array.isArray(users) ? users : EMPTY_ARRAY,
+        documents: Array.isArray(documents) ? documents : EMPTY_ARRAY,
+        deletedDocuments: Array.isArray(deletedDocuments) ? deletedDocuments : EMPTY_ARRAY,
+        holidays: Array.isArray(holidays) ? holidays : EMPTY_ARRAY,
+        announcements: Array.isArray(announcements) ? announcements : EMPTY_ARRAY,
+        companies: Array.isArray(companies) ? companies : EMPTY_ARRAY,
+        departments: Array.isArray(departments) ? departments : EMPTY_ARRAY,
+        documentTypes: Array.isArray(documentTypes) ? documentTypes : EMPTY_ARRAY,
         loading: !users || !documents,
         mutateUsers,
         mutateDocuments,

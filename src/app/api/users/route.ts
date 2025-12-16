@@ -24,7 +24,28 @@ export async function GET(request: NextRequest) {
     // Map database fields to frontend format
     let users = rows.map(u => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password_hash, first_name, last_name, display_name, personal_email, emergency_contact, date_of_birth, joining_date, resignation_date, blood_group, company_id, is_admin, created_at, updated_at, company_name, ...rest } = u;
+      const {
+        password_hash,
+        document_pin,
+        pin_set,
+        failed_pin_attempts,
+        pin_locked_until,
+        first_name,
+        last_name,
+        display_name,
+        personal_email,
+        emergency_contact,
+        date_of_birth,
+        joining_date,
+        resignation_date,
+        blood_group,
+        company_id,
+        is_admin,
+        created_at,
+        updated_at,
+        company_name,
+        ...rest
+      } = u;
 
       return {
         ...rest,
@@ -56,11 +77,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     console.log('Received user data:', body);
 
-    const {
+    // Authorization Check
+    // Allow if Admin OR if User is updating their own profile
+    if (session.user.role !== 'admin' && session.user.id !== body.id) {
+      return NextResponse.json({ error: 'Unauthorized: You can only edit your own profile' }, { status: 403 });
+    }
+
+    let {
       id,
       name,
       displayName,
@@ -78,8 +111,16 @@ export async function POST(request: NextRequest) {
       bloodGroup,
       company,
       location,
-      status
+      status,
+      avatar
     } = body;
+
+    // Security: Prevent privilege escalation for non-admins
+    if (session.user.role !== 'admin') {
+      role = 'employee'; // Non-admins cannot change their role
+      status = 'active'; // Non-admins cannot change their status
+      // You might want to restrict other fields too, but these are the critical ones.
+    }
 
     // Split name into first_name and last_name
     const nameParts = (name || '').trim().split(' ');
@@ -102,6 +143,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
     const username = email.split('@')[0];
     const passwordHash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('default123', 10);
 
@@ -110,8 +155,8 @@ export async function POST(request: NextRequest) {
         `INSERT INTO users (
             id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
             designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
-            resignation_date, blood_group, company_id, location, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            resignation_date, blood_group, company_id, location, status, avatar
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             first_name = VALUES(first_name),
             last_name = VALUES(last_name),
@@ -128,7 +173,8 @@ export async function POST(request: NextRequest) {
             company_id = VALUES(company_id),
             location = VALUES(location),
             status = VALUES(status),
-            is_admin = VALUES(is_admin)
+            is_admin = VALUES(is_admin),
+            avatar = VALUES(avatar)
         `,
         [
           id,
@@ -150,7 +196,8 @@ export async function POST(request: NextRequest) {
           bloodGroup || null,
           company_id,
           location || null,
-          status || 'active'
+          status || 'active',
+          avatar || null
         ]
       );
     } catch (err: any) {
@@ -207,6 +254,60 @@ export async function POST(request: NextRequest) {
             status || 'active'
           ]
         );
+      } else if (err.code === 'ER_DATA_TOO_LONG' && err.sqlMessage?.includes("'avatar'")) {
+        console.log("Column 'avatar' too small. upgrading to LONGTEXT...");
+        await pool.query(`ALTER TABLE users MODIFY COLUMN avatar LONGTEXT`);
+
+        // Retry the insert with avatar (copy of the main insert block)
+        await pool.execute(
+          `INSERT INTO users (
+              id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
+              designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
+              resignation_date, blood_group, company_id, location, status, avatar
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+              first_name = VALUES(first_name),
+              last_name = VALUES(last_name),
+              display_name = VALUES(display_name),
+              personal_email = VALUES(personal_email),
+              designation = VALUES(designation),
+              department = VALUES(department),
+              mobile = VALUES(mobile),
+              emergency_contact = VALUES(emergency_contact),
+              date_of_birth = VALUES(date_of_birth),
+              joining_date = VALUES(joining_date),
+              resignation_date = VALUES(resignation_date),
+              blood_group = VALUES(blood_group),
+              company_id = VALUES(company_id),
+              location = VALUES(location),
+              status = VALUES(status),
+              is_admin = VALUES(is_admin),
+              avatar = VALUES(avatar)
+          `,
+          [
+            id,
+            username,
+            first_name,
+            last_name,
+            displayName || null,
+            email,
+            personalEmail || null,
+            passwordHash,
+            role === 'admin',
+            designation || null,
+            department || null,
+            mobile || null,
+            emergencyContact || null,
+            dateOfBirth || null,
+            joiningDate || null,
+            resignationDate || null,
+            bloodGroup || null,
+            company_id,
+            location || null,
+            status || 'active',
+            avatar || null
+          ]
+        );
       } else {
         throw err;
       }
@@ -221,6 +322,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user?.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 

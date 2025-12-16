@@ -12,10 +12,21 @@ async function ensurePinColumns() {
     } catch (err: any) {
         if (err.code === 'ER_BAD_FIELD_ERROR') {
             console.log('Adding PIN columns to users table...');
-            await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS document_pin VARCHAR(255) NULL');
-            await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_set BOOLEAN DEFAULT 0');
-            await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_pin_attempts INT DEFAULT 0');
-            await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_locked_until TIMESTAMP NULL DEFAULT NULL');
+
+            const addColumnSafe = async (query: string) => {
+                try {
+                    await pool.query(query);
+                } catch (e: any) {
+                    if (e.code !== 'ER_DUP_FIELDNAME') {
+                        console.warn('Warning during schema update:', e.message);
+                    }
+                }
+            };
+
+            await addColumnSafe('ALTER TABLE users ADD COLUMN document_pin VARCHAR(255) NULL');
+            await addColumnSafe('ALTER TABLE users ADD COLUMN pin_set BOOLEAN DEFAULT 0');
+            await addColumnSafe('ALTER TABLE users ADD COLUMN failed_pin_attempts INT DEFAULT 0');
+            await addColumnSafe('ALTER TABLE users ADD COLUMN pin_locked_until TIMESTAMP NULL DEFAULT NULL');
             console.log('PIN columns added successfully');
         }
     }

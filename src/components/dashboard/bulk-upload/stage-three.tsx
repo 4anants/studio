@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,7 +20,12 @@ export function StageThree({ rows: initialRows, onClose, onRetry }: StageThreePr
     const [completedCount, setCompletedCount] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
 
+    const hasStartedRef = useRef(false);
+
     useEffect(() => {
+        if (hasStartedRef.current) return;
+        hasStartedRef.current = true;
+
         const uploadFiles = async () => {
             let completed = 0;
 

@@ -30,6 +30,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+    const auth = await requireAuth();
+    if (!auth.authorized || auth.session?.user?.role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
+    }
+
     try {
         const body = await request.json();
         const { id, title, message, date, author, event_date, status, priority, target_departments } = body;
@@ -77,6 +82,11 @@ function formatDateForMySQL(dateString: string | undefined): string | null {
 }
 
 export async function DELETE(request: NextRequest) {
+    const auth = await requireAuth();
+    if (!auth.authorized || auth.session?.user?.role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

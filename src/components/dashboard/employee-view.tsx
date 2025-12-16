@@ -5,9 +5,11 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { DocumentList } from './document-list'
 import { UploadDialog } from './upload-dialog'
+import { PhotoAdjustmentDialog } from './photo-adjustment-dialog'
 import { useData } from '@/hooks/use-data'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import { documentTypesList, holidayLocations } from '@/lib/constants'
 import type { Document, HolidayLocation, Announcement, User } from '@/lib/types'
 import { Button } from '../ui/button'
@@ -24,6 +26,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
 import {
     Table,
     TableBody,
@@ -32,10 +35,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { Calendar, Bell, MailOpen, Mail, AlertTriangle } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Label } from '../ui/label'
-
+import { Calendar, Bell, MailOpen, Mail, AlertTriangle, LayoutDashboard } from 'lucide-react'
+import Link from 'next/link'
 
 // Simulate a logged-in employee user
 type SortKey = keyof Document;
@@ -47,6 +48,9 @@ export function EmployeeView() {
     const { data: session } = useSession();
     const currentUserId = session?.user?.id;
     const { documents: serverDocuments, holidays: serverHolidays, announcements: serverAnnouncements, users: serverUsers, mutateDocuments } = useData();
+
+    // Find current user object to pass to dialog
+    const currentUser = Array.isArray(serverUsers) ? (serverUsers as User[]).find(u => u.id === currentUserId) : null;
 
     // Local state for documents (though we could just use serverDocuments directly if we filtered them there)
     // The API /api/documents returns filtered list for employees.
@@ -267,7 +271,10 @@ export function EmployeeView() {
                     <h1 className="text-3xl font-bold tracking-tight">Employee Dashboard</h1>
                     <p className="text-muted-foreground">Access and manage your personal and company documents.</p>
                 </div>
-                <UploadDialog onUploadComplete={handleUploadComplete} />
+                <div className="flex gap-2">
+                    {currentUser && <PhotoAdjustmentDialog user={currentUser} />}
+                    <UploadDialog onUploadComplete={handleUploadComplete} />
+                </div>
             </div>
 
             <Tabs value={activeTab} onValueChange={onTabChange} className="pt-4">
@@ -347,7 +354,7 @@ export function EmployeeView() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <DocumentList documents={sortedAndFilteredDocuments} users={serverUsers as User[]} onSort={requestSort} sortConfig={sortConfig} />
+                            <DocumentList documents={sortedAndFilteredDocuments} users={serverUsers as User[]} onSort={requestSort} sortConfig={sortConfig} requirePin={true} />
                         </CardContent>
                     </Card>
                 </TabsContent>

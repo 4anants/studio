@@ -36,14 +36,38 @@ export function IdCardDialog({ employee, company, children }: IdCardDialogProps)
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex justify-center py-4">
+        <div className="flex justify-center py-4 print-content">
           <IdCard employee={employee} company={company} />
         </div>
 
 
 
         <DialogFooter className="dialog-footer">
-          <Button variant="outline" onClick={() => window.print()}>Print</Button>
+          <Button variant="outline" onClick={() => {
+            // Find the ID card content
+            const content = document.querySelector('.print-content');
+            if (content) {
+              // Create the portal container that matches our new CSS selector
+              const portal = document.createElement('div');
+              portal.id = 'print-portal';
+
+              // Clone the content into the portal
+              // We append the child's content (IdCard)
+              const clone = content.cloneNode(true);
+              portal.appendChild(clone);
+
+              // Add to body
+              document.body.appendChild(portal);
+
+              // Print
+              window.print();
+
+              // Cleanup
+              document.body.removeChild(portal);
+            } else {
+              window.print(); // Fallback
+            }
+          }}>Print</Button>
           <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

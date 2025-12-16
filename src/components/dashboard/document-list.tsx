@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2, ChevronsUpDown, ArrowUp, ArrowDown, UserPlus, Send, Undo, Trash } from 'lucide-react'
+import { FileText, FileArchive, FileImage, Download, MoreHorizontal, Trash2, ChevronsUpDown, ArrowUp, ArrowDown, UserPlus, Send, Undo, Trash, Eye } from 'lucide-react'
 import type { Document, User } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -38,6 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PinVerifyDialog } from './pin-verify-dialog';
 
 function getFileIcon(fileType: Document['fileType']) {
   switch (fileType) {
@@ -71,6 +72,7 @@ interface DocumentListProps {
   selectedDocIds?: string[];
   onSelectDoc?: (docId: string, checked: boolean) => void;
   onSelectAll?: (checked: boolean) => void;
+  requirePin?: boolean;
 }
 
 const SortableHeader = React.memo(({
@@ -104,17 +106,21 @@ const SortableHeader = React.memo(({
 });
 SortableHeader.displayName = 'SortableHeader';
 
-
-export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, onBulkDelete, isDeletedList = false, onRestore, onPermanentDelete, onBulkPermanentDelete, selectedDocIds: externalSelectedDocIds, onSelectDoc: externalOnSelectDoc, onSelectAll: externalOnSelectAll }: DocumentListProps) => {
+export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, onBulkDelete, isDeletedList = false, onRestore, onPermanentDelete, onBulkPermanentDelete, selectedDocIds: externalSelectedDocIds, onSelectDoc: externalOnSelectDoc, onSelectAll: externalOnSelectAll, requirePin = false }: DocumentListProps) => {
   const { toast } = useToast()
   const [internalSelectedDocIds, setInternalSelectedDocIds] = useState<string[]>([]);
   const [assignToUserId, setAssignToUserId] = useState<string | null>(null);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
+  // PIN Verification State
+  const [pinVerifyOpen, setPinVerifyOpen] = useState(false);
+  const [pendingDoc, setPendingDoc] = useState<Document | null>(null);
+  const [pendingAction, setPendingAction] = useState<'view' | 'download'>('view');
+
   // Use external state if provided, otherwise use internal state
   const selectedDocIds = externalSelectedDocIds !== undefined ? externalSelectedDocIds : internalSelectedDocIds;
 
-  const handleDownload = (doc: Document) => {
+  const performDownload = (doc: Document) => {
     if (doc.url) {
       window.open(doc.url, '_blank');
     } else {
@@ -125,6 +131,37 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
       });
     }
   }
+
+  const handleDownload = (doc: Document) => {
+    if (requirePin) {
+      setPendingDoc(doc);
+      setPendingAction('download');
+      setPinVerifyOpen(true);
+    } else {
+      performDownload(doc);
+    }
+  }
+
+  const handleView = (doc: Document) => {
+    if (requirePin) {
+      setPendingDoc(doc);
+      setPendingAction('view');
+      setPinVerifyOpen(true);
+    } else {
+      if (doc.url) window.open(doc.url, '_blank');
+    }
+  }
+
+  const handlePinSuccess = () => {
+    if (pendingDoc) {
+      if (pendingAction === 'download') {
+        performDownload(pendingDoc);
+      } else {
+        if (pendingDoc.url) window.open(pendingDoc.url, '_blank');
+      }
+    }
+    setPendingDoc(null);
+  };
 
   const getOwnerName = (ownerId: string) => {
     if (!ownerId) return <span className='text-muted-foreground italic'>Unassigned</span>
@@ -286,6 +323,9 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                   </div>
                 ) : (
                   <div className="hidden sm:flex items-center justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleView(doc)}>
+                      <Eye className="mr-2 h-4 w-4" /> View
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleDownload(doc)}>
                       <Download className="mr-2 h-4 w-4" /> Download
                     </Button>
@@ -325,6 +365,9 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                         </>
                       ) : (
                         <>
+                          <DropdownMenuItem onClick={() => handleView(doc)}>
+                            <Eye className="mr-2 h-4 w-4" /> View
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDownload(doc)}>
                             <Download className="mr-2 h-4 w-4" /> Download
                           </DropdownMenuItem>
@@ -360,6 +403,14 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PinVerifyDialog
+        open={pinVerifyOpen}
+        onOpenChange={setPinVerifyOpen}
+        onSuccess={handlePinSuccess}
+        documentName={pendingDoc?.name}
+        action={pendingAction}
+      />
     </div>
   )
 });

@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { documentTypesList, departments as initialDepartments, holidayLocations, CompanyName } from '@/lib/constants'
 import type { User, Document, Holiday, HolidayLocation, Announcement, Company, Department, DocumentType as AppDocumentType } from '@/lib/types'
 import { useData } from '@/hooks/use-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, FolderPlus, Tag, Building, CalendarPlus, Bell, UploadCloud, X, FileLock2, Users, Download, Home, ArrowLeft, Folder, Upload, Save, Shield, Undo, Eye, Trash, ArchiveRestore, FileText, Calendar, LayoutDashboard } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, FolderPlus, Tag, Building, CalendarPlus, Bell, UploadCloud, X, FileLock2, Users, Download, Home, ArrowLeft, Folder, Upload, Save, Shield, Undo, Eye, Trash, ArchiveRestore, FileText, Calendar, LayoutDashboard, Printer } from 'lucide-react'
 import Link from 'next/link'
 import {
     Tabs,
@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/tabs"
 import Image from 'next/image'
 import { BulkUploadDialog } from '@/components/dashboard/bulk-upload/bulk-upload-dialog'
+import { BulkIdCardPrintDialog } from '@/components/dashboard/bulk-id-card-print-dialog'
+import { IdCardDesignerDialog } from '@/components/dashboard/id-card-designer'
 import { Button } from '@/components/ui/button'
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog'
 import { DeleteEmployeeDialog } from '@/components/dashboard/delete-employee-dialog'
@@ -154,8 +156,7 @@ export function AdminView() {
     }, [serverDeletedDocs]);
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
-    const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
-    const [isBulkResetDialogOpen, setIsBulkResetDialogOpen] = useState(false)
+
     const [lastBulkUploadInfo, setLastBulkUploadInfo] = useState<{ ids: string[], timestamp: number } | null>(null);
     const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
     const [selectedDeletedAnnouncementIds, setSelectedDeletedAnnouncementIds] = useState<string[]>([]);
@@ -471,6 +472,117 @@ export function AdminView() {
             });
         }
     }, [toast, users]);
+
+
+
+    const handleBulkRoleChange = useCallback(async (newRole: 'admin' | 'employee') => {
+        try {
+            let successCount = 0;
+            for (const id of selectedUserIds) {
+                const user = users.find(u => u.id === id);
+                if (user && user.role !== newRole) {
+                    // Update user role via API (reusing POST /api/users logic by simulating save)
+                    await fetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...user, role: newRole, originalId: user.id }),
+                    });
+                    successCount++;
+                }
+            }
+            await mutateUsers();
+            toast({ title: "Roles Updated", description: `Updated roles for ${successCount} users.` });
+            setSelectedUserIds([]);
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Failed to update roles." });
+        }
+    }, [selectedUserIds, users, mutateUsers, toast]);
+
+    const handleBulkSoftDeleteUsers = useCallback(async () => {
+        if (!confirm(`Are you sure you want to move ${selectedUserIds.length} users to the Deleted Users list?`)) return;
+        try {
+            let successCount = 0;
+            for (const id of selectedUserIds) {
+                const user = users.find(u => u.id === id);
+                // Skip if already deleted or sadmin (though sadmin usually filtered out of selection)
+                if (user && user.id !== 'sadmin') {
+                    await fetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...user, status: 'deleted' }),
+                    });
+                    successCount++;
+                }
+            }
+            await mutateUsers();
+            toast({ title: "Users Deleted", description: `${successCount} users moved to deleted list.` });
+            setSelectedUserIds([]);
+        } catch {
+            toast({ variant: 'destructive', title: "Error", description: "Failed to delete users." });
+        }
+    }, [selectedUserIds, users, mutateUsers, toast]);
+
+    const handleBulkResetPassword = useCallback(async () => {
+        if (!confirm(`Send password reset links to ${selectedUserIds.length} users?`)) return;
+        for (const id of selectedUserIds) {
+            handleResetPassword(id);
+        }
+        setSelectedUserIds([]);
+    }, [selectedUserIds, handleResetPassword]);
+
+    const handleBulkResetPins = useCallback(async () => {
+        if (!confirm(`Are you sure you want to reset the PINs for ${selectedUserIds.length} users?`)) return;
+        try {
+            const res = await fetch('/api/document-pin/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userIds: selectedUserIds }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to reset PINs');
+            }
+
+            const data = await res.json();
+            toast({
+                title: "Bulk PIN Reset Successful",
+                description: `Successfully reset PINs for ${data.count} users.`
+            });
+            setSelectedUserIds([]);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to reset PINs." });
+        }
+    }, [selectedUserIds, toast]);
+
+
+
+    const handleResetPin = useCallback(async (employeeId: string) => {
+        if (employeeId === 'sadmin') {
+            toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Super Admin PIN must be changed via profile settings.' });
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/document-pin/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: employeeId }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to reset PIN');
+            }
+
+            toast({
+                title: "PIN Reset Successful",
+                description: "The user's PIN has been cleared. They can now set a new one.",
+            });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to reset PIN." });
+        }
+    }, [toast]);
 
     const handleAddDocumentType = useCallback(async (newType: string) => {
         if (documentTypes.find(dt => dt.name.toLowerCase() === newType.toLowerCase())) {
@@ -1370,7 +1482,7 @@ export function AdminView() {
         return { unassignedDocuments: unassigned, docsByType: byType };
     }, [docs, users]);
 
-    const filteredUsersForSelection = useMemo(() => activeSubTab === 'manage' ? filteredActiveUsersForTable.filter(u => u.id !== 'sadmin') : [], [activeSubTab, filteredActiveUsersForTable]);
+    const filteredUsersForSelection = useMemo(() => (activeSubTab === 'manage' || activeTab === 'print-cards') ? filteredActiveUsersForTable.filter(u => u.id !== 'sadmin') : [], [activeSubTab, filteredActiveUsersForTable, activeTab]);
 
     const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
         if (checked === true) {
@@ -1389,39 +1501,7 @@ export function AdminView() {
         }
     }, []);
 
-    const handleBulkDelete = useCallback(() => {
-        setUsers(prevUsers => prevUsers.map(u =>
-            selectedUserIds.includes(u.id) ? { ...u, status: 'deleted' } : u
-        ));
-        toast({
-            title: "Bulk Delete Successful",
-            description: `${selectedUserIds.length} employee(s) have been moved to the deleted users list.`
-        });
-        setSelectedUserIds([]);
-        setIsBulkDeleteDialogOpen(false);
-    }, [selectedUserIds, toast]);
 
-    const handleBulkResetPassword = useCallback(() => {
-        const selectedUsers = users.filter(u => selectedUserIds.includes(u.id));
-        selectedUsers.forEach(user => handleResetPassword(user.id));
-        toast({
-            title: "Bulk Password Reset",
-            description: `Password reset links have been sent to ${selectedUserIds.length} employee(s).`
-        });
-        setSelectedUserIds([]);
-        setIsBulkResetDialogOpen(false);
-    }, [users, selectedUserIds, handleResetPassword, toast]);
-
-    const handleBulkRoleChange = useCallback((newRole: 'admin' | 'employee') => {
-        setUsers(prevUsers => prevUsers.map(u =>
-            selectedUserIds.includes(u.id) ? { ...u, role: newRole } : u
-        ));
-        toast({
-            title: "Bulk Role Change Successful",
-            description: `The role for ${selectedUserIds.length} employee(s) has been changed to ${newRole}.`
-        });
-        setSelectedUserIds([]);
-    }, [selectedUserIds, toast]);
 
     const handleReassignDocument = useCallback((docId: string, newOwnerId: string) => {
         setDocs(prevDocs => {
@@ -1596,28 +1676,40 @@ export function AdminView() {
                     <p className="text-muted-foreground">Manage all employee documents and profiles.</p>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                    {numSelected > 0 && activeTab === 'employee-management' && activeSubTab === 'manage' ? (
-                        <>
-                            <span className="text-sm text-muted-foreground">{numSelected} selected</span>
-                            <BulkRoleChangeDialog onSave={handleBulkRoleChange}>
-                                <Button variant="outline">
-                                    <Users className="mr-2 h-4 w-4" /> Change Roles
-                                </Button>
-                            </BulkRoleChangeDialog>
-                            <Button variant="outline" onClick={() => setIsBulkResetDialogOpen(true)}>
-                                <KeyRound className="mr-2 h-4 w-4" /> Reset Passwords
-                            </Button>
-                            <Button variant="destructive" onClick={() => setIsBulkDeleteDialogOpen(true)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
-                            </Button>
-                        </>
-                    ) : (
+                    {activeTab === 'file-explorer' && (
                         <div className="flex items-center gap-2 w-full">
-                            <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments} companies={companies}>
-                                <Button className="w-full sm:w-auto">Add Employee</Button>
-                            </EmployeeManagementDialog>
                             <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
                         </div>
+                    )}
+                    {activeTab === 'employee-management' && activeSubTab === 'manage' && (
+                        <>
+                            {numSelected > 0 ? (
+                                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <span className="text-sm font-medium mr-2 hidden sm:inline-block">{numSelected} selected</span>
+                                    <BulkRoleChangeDialog onSave={handleBulkRoleChange}>
+                                        <Button variant="outline" size="sm">
+                                            <Users className="mr-2 h-4 w-4" /> Change Roles
+                                        </Button>
+                                    </BulkRoleChangeDialog>
+                                    <Button variant="outline" size="sm" onClick={handleBulkResetPassword}>
+                                        <KeyRound className="mr-2 h-4 w-4" /> Reset Passwords
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={handleBulkResetPins}>
+                                        <FileLock2 className="mr-2 h-4 w-4" /> Reset PINs
+                                    </Button>
+                                    <Button variant="destructive" size="sm" onClick={handleBulkSoftDeleteUsers}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 w-full">
+                                    <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments} companies={companies}>
+                                        <Button className="w-full sm:w-auto">Add Employee</Button>
+                                    </EmployeeManagementDialog>
+                                    <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -1628,6 +1720,7 @@ export function AdminView() {
                         <TabsList className="w-max">
                             <TabsTrigger value="file-explorer">File Explorer</TabsTrigger>
                             <TabsTrigger value="employee-management">Employee Management</TabsTrigger>
+                            <TabsTrigger value="print-cards">Print Cards</TabsTrigger>
                             <TabsTrigger value="announcements">Announcements</TabsTrigger>
                             <TabsTrigger value="holidays">Holidays</TabsTrigger>
                             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -1642,11 +1735,12 @@ export function AdminView() {
                                 placeholder={
                                     activeTab === 'file-explorer' ? 'Search document types or employees...'
                                         : activeTab === 'employee-management' ? 'Search employees...'
-                                            : activeTab === 'holidays' ? 'Search holidays...'
-                                                : activeTab === 'announcements' ? 'Search announcements...'
-                                                    : activeTab === 'settings' ? 'Search settings...'
-                                                        : activeTab === 'deleted-items' ? 'Search deleted items...'
-                                                            : 'Search...'
+                                            : activeTab === 'print-cards' ? 'Search employees for printing...'
+                                                : activeTab === 'holidays' ? 'Search holidays...'
+                                                    : activeTab === 'announcements' ? 'Search announcements...'
+                                                        : activeTab === 'settings' ? 'Search settings...'
+                                                            : activeTab === 'deleted-items' ? 'Search deleted items...'
+                                                                : 'Search...'
                                 }
                                 className="w-full pl-8"
                                 value={searchTerm}
@@ -1657,7 +1751,7 @@ export function AdminView() {
                     </div>
                 </div>
 
-                {(activeTab === 'employee-management' || (activeTab === 'file-explorer' && explorerState.view !== 'docTypes')) && (
+                {(activeTab === 'employee-management' || activeTab === 'print-cards' || (activeTab === 'file-explorer' && explorerState.view !== 'docTypes')) && (
                     <div className="mb-4 flex flex-col sm:flex-row items-center gap-4">
                         <div className="flex items-center gap-2">
                             <Label className="text-sm font-medium">Department</Label>
@@ -1850,7 +1944,7 @@ export function AdminView() {
                                         <div className="flex items-center gap-2 w-full md:w-auto">
                                             <Button onClick={handleExportUsers} variant="outline" className="w-full sm:w-auto">
                                                 <Download className="mr-2 h-4 w-4" />
-                                                {numSelected > 0 ? `Export Selected (${numSelected})` : 'Export All Users'}
+                                                Export All Users
                                             </Button>
                                             <BulkUserImportDialog onImport={handleBulkUserImport}>
                                                 <Button variant="outline" className="w-full sm:w-auto">
@@ -1944,9 +2038,14 @@ export function AdminView() {
                                                                             Edit Employee
                                                                         </DropdownMenuItem>
                                                                     </EmployeeManagementDialog>
+                                                                    <DropdownMenuSeparator />
                                                                     <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
                                                                         <KeyRound className="mr-2 h-4 w-4" />
                                                                         Reset Password
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem onClick={() => handleResetPin(user.id)}>
+                                                                        <FileLock2 className="mr-2 h-4 w-4" />
+                                                                        Reset PIN
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuSeparator />
                                                                     <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
@@ -1971,6 +2070,106 @@ export function AdminView() {
                             </Card>
                         </TabsContent>
                     </Tabs>
+                </TabsContent>
+
+                <TabsContent value="print-cards">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div>
+                                    <CardTitle>Print ID Cards</CardTitle>
+                                    <CardDescription>Select employees to print their ID cards.</CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2 w-full md:w-auto">
+                                    {/* Designer Tool */}
+                                    {users.length > 0 && (
+                                        <IdCardDesignerDialog
+                                            sampleUser={users[0]}
+                                            company={companies.find(c => c.name === users[0].company) || companies[0]}
+                                        />
+                                    )}
+                                    <BulkIdCardPrintDialog
+                                        users={users.filter(u => selectedUserIds.includes(u.id))}
+                                        companies={companies}
+                                    >
+                                        <Button className="w-full sm:w-auto" disabled={numSelected === 0}>
+                                            <Printer className="mr-2 h-4 w-4" />
+                                            {numSelected > 0 ? `Print Cards (${numSelected})` : 'Print Cards'}
+                                        </Button>
+                                    </BulkIdCardPrintDialog>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[40px]">
+                                            <Checkbox
+                                                checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
+                                                onCheckedChange={handleSelectAll}
+                                                aria-label="Select all"
+                                                disabled={filteredUsersForSelection.length === 0}
+                                            />
+                                        </TableHead>
+                                        <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead className="hidden lg:table-cell">Department</TableHead>
+                                        <TableHead className="hidden md:table-cell">Role</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredActiveUsersForTable.length > 0 ? filteredActiveUsersForTable.map(user => (
+                                        <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
+                                            <TableCell>
+                                                <Checkbox
+                                                    checked={selectedUserIds.includes(user.id)}
+                                                    onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
+                                                    aria-label={`Select ${user.name}`}
+                                                    disabled={user.id === 'sadmin'}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">
+                                                <Image
+                                                    src={getAvatarSrc(user)}
+                                                    width={40}
+                                                    height={40}
+                                                    className="rounded-full object-cover"
+                                                    alt={user.name ? user.name : 'User avatar'}
+                                                    data-ai-hint="person portrait"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="font-medium">{user.name}</TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell className="hidden lg:table-cell">{user.department || 'N/A'}</TableCell>
+                                            <TableCell className="hidden md:table-cell">
+                                                <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
+                                                    user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                                )}>
+                                                    {(user.role || 'employee').charAt(0).toUpperCase() + (user.role || 'employee').slice(1)}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
+                                                    user.status === 'active' ? 'bg-green-100 text-green-800' :
+                                                        user.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                                                            'bg-yellow-100 text-yellow-800'
+                                                )}>
+                                                    {(user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1)}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center text-muted-foreground">No active users found.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="announcements">
@@ -3192,41 +3391,7 @@ export function AdminView() {
                 </AlertDialogContent>
             </AlertDialog >
 
-            {/* Bulk Delete Confirmation Dialog */}
-            < AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen} >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will move the selected {numSelected} employee(s) to the deleted users list. You can restore them later.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">
-                            Delete {numSelected} Employee(s)
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog >
 
-            {/* Bulk Reset Password Confirmation Dialog */}
-            < AlertDialog open={isBulkResetDialogOpen} onOpenChange={setIsBulkResetDialogOpen} >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Password Reset</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to send password reset links to the {numSelected} selected employee(s)?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkResetPassword}>
-                            Send Reset Links
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog >
 
             {/* Undo Last Bulk Upload Confirmation Dialog */}
             < AlertDialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen} >

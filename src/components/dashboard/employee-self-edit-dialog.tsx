@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -15,6 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -43,7 +49,7 @@ const formSchema = z.object({
 
 interface EmployeeSelfEditDialogProps {
   employee: User;
-  onSave: (employee: Partial<User> & { originalId?: string }) => void;
+  onSave: (employee: Partial<User> & { originalId?: string }) => Promise<void>;
   children: React.ReactNode;
 }
 
@@ -68,6 +74,14 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 2MB.",
+          variant: "destructive"
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUri = reader.result as string;
@@ -84,9 +98,9 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
     multiple: false,
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    setTimeout(() => {
+    try {
       const { password, ...rest } = values;
       const userData: Partial<User> & { originalId?: string } = {
         ...rest,
@@ -97,16 +111,20 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
         userData.password = password;
       }
 
-      onSave(userData);
+      await onSave(userData);
 
       toast({
         title: "Profile Updated",
         description: "Your profile information has been successfully updated.",
       });
 
-      setIsLoading(false);
       setOpen(false);
-    }, 1000);
+    } catch (error) {
+      // Error is handled by parent (toast), just stop loading
+      console.error("Self edit save failed", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -167,7 +185,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                 <FormItem>
                   <FormLabel>Personal Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="your.personal@email.com" {...field} />
+                    <Input placeholder="Enter your personal email" autoComplete="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -184,7 +202,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <span className="text-gray-500 sm:text-sm">+91</span>
                       </div>
-                      <Input placeholder="123-456-7890" {...field} className="pl-12" />
+                      <Input placeholder="Enter mobile number" autoComplete="tel" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -202,7 +220,7 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <span className="text-gray-500 sm:text-sm">+91</span>
                       </div>
-                      <Input placeholder="987-654-3210" {...field} className="pl-12" />
+                      <Input placeholder="Enter emergency contact" autoComplete="tel" {...field} className="pl-12" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -215,9 +233,20 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Blood Group</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. A+" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Blood Group" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                        <SelectItem key={bg} value={bg}>
+                          {bg}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -229,7 +258,13 @@ export function EmployeeSelfEditDialog({ employee, onSave, children }: EmployeeS
                 <FormItem>
                   <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Leave blank to keep current" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="Leave blank to keep current"
+                      autoComplete="new-password"
+                      id="new-password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

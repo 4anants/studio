@@ -56,18 +56,18 @@ export function AdminDashboard() {
 
     return (
         <div className="space-y-8">
-            {/* Navigation Tabs */}
             <div className="flex gap-2 border-b pb-4">
                 <Button variant="default" className="flex items-center gap-2">
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
                 </Button>
-                <Button variant="outline" asChild className="flex items-center gap-2">
-                    <Link href="/dashboard?role=admin&view=panel">
-                        <Shield className="h-4 w-4" />
-                        Admin Panel
-                    </Link>
-                </Button>
+                <Link
+                    href="/dashboard?role=admin&view=panel"
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
+                    <Shield className="h-4 w-4" />
+                    Admin Panel
+                </Link>
             </div>
 
             {/* Welcome Header */}

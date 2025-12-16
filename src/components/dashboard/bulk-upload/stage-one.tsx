@@ -20,7 +20,16 @@ export function StageOne({ defaultConfig, onNext }: StageOneProps) {
     const [files, setFiles] = useState<File[]>([]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        setFiles(prev => [...prev, ...acceptedFiles]);
+        setFiles(prev => {
+            const newFiles = acceptedFiles.filter(newFile =>
+                !prev.some(existing =>
+                    existing.name === newFile.name &&
+                    existing.size === newFile.size &&
+                    existing.lastModified === newFile.lastModified
+                )
+            );
+            return [...prev, ...newFiles];
+        });
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });

@@ -26,51 +26,72 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
 
   const handleUpload = async () => {
     if (!fileName) return;
+    const fileInput = document.getElementById('document') as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+    if (!file) return;
+
     setIsUploading(true)
     setIsComplete(false)
     setUploadProgress(0)
 
-    // Simulate upload progress
+    // Simulate upload progress for UX
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval)
+        if (prev >= 90) {
           return prev
         }
         return prev + 10
       })
     }, 200)
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 2500))
-    clearInterval(interval)
-    setUploadProgress(100)
-    setIsUploading(false)
-    setIsComplete(true)
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'Personal');
 
-    // Wait a bit on the success screen
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+      const response = await fetch('/api/documents', {
+        method: 'POST',
+        body: formData,
+      });
 
-    startTransition(() => {
-      onUploadComplete() // This could be a server action to revalidate data
-    })
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
 
-    setOpen(false)
-    // Reset state for next time
-    setTimeout(() => {
+      clearInterval(interval)
+      setUploadProgress(100)
+      setIsUploading(false)
+      setIsComplete(true)
+
+      // Wait a bit on the success screen
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      startTransition(() => {
+        onUploadComplete()
+      })
+
+      setOpen(false)
+      // Reset state for next time
+      setTimeout(() => {
         setIsComplete(false)
         setUploadProgress(0)
         setFileName('')
-    }, 500)
+      }, 500)
+    } catch (error) {
+      console.error("Upload error:", error);
+      clearInterval(interval);
+      setIsUploading(false);
+      alert("Upload failed. Please try again.");
+    }
   }
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
-        // Reset state when closing
-        setIsUploading(false);
-        setIsComplete(false);
-        setUploadProgress(0);
-        setFileName('');
+      // Reset state when closing
+      setIsUploading(false);
+      setIsComplete(false);
+      setUploadProgress(0);
+      setFileName('');
     }
     setOpen(isOpen);
   }

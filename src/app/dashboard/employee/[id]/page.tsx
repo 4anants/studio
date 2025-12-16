@@ -73,7 +73,12 @@ export default function EmployeeProfilePage() {
     const isSelfView = role !== 'admin';
     const isSadmin = user?.id === 'sadmin';
 
-    const handleEmployeeSave = useCallback(async (employee: Partial<UserType> & { originalId?: string }) => {
+    const handleEmployeeSave = useCallback(async (employeeUpdate: Partial<UserType> & { originalId?: string }) => {
+        if (!user) return; // Should not happen if mounted
+
+        // Merge current user data with updates to ensure all required fields (like email) are present for the API
+        const employee = { ...user, ...employeeUpdate };
+
         try {
             const res = await fetch('/api/users', {
                 method: 'POST',
@@ -81,20 +86,32 @@ export default function EmployeeProfilePage() {
                 body: JSON.stringify(employee),
             });
             if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
+                const errorText = await res.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { error: errorText };
+                }
                 console.error("Server save error:", errorData);
                 throw new Error(errorData.error || 'Failed to save');
             }
 
             await mutateUsers();
 
-            if (employee.originalId && employee.id && employee.id !== employee.originalId) {
+            if (employeeUpdate.originalId && employee.id && employee.id !== employeeUpdate.originalId) {
                 router.replace(`/dashboard/employee/${employee.id}?role=admin`);
             }
         } catch (error) {
             console.error("Failed to save user", error);
+            toast({
+                title: "Error saving profile",
+                description: error instanceof Error ? error.message : "Unknown error occurred",
+                variant: "destructive"
+            });
+            throw error;
         }
-    }, [mutateUsers, router]);
+    }, [user, mutateUsers, router, toast]);
 
     const handleDeleteDocument = useCallback(async (docId: string) => {
         if (!confirm('Are you sure you want to delete this document?')) return;
@@ -145,8 +162,13 @@ export default function EmployeeProfilePage() {
 
     if (!user) {
         return (
-            <div className="flex min-h-screen w-full flex-col bg-muted/40 items-center justify-center">
-                <p>Loading user or user not found...</p>
+            <div className="flex min-h-screen w-full flex-col bg-muted/40 items-center justify-center gap-4">
+                <h2 className="text-xl font-semibold">User Not Found</h2>
+                <p className="text-muted-foreground">The user profile could not be found. If your ID was recently updated, please log in again.</p>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
+                    <Button onClick={() => window.location.href = '/api/auth/signout'}>Logout</Button>
+                </div>
             </div>
         );
     }
@@ -201,7 +223,7 @@ export default function EmployeeProfilePage() {
                                             data-ai-hint="person portrait"
                                         />
                                         <CardTitle className="text-2xl">{user.name}</CardTitle>
-                                        <CardDescription>Employee ID: {user.id}</CardDescription>
+                                        <CardDescription>Employee ID: {user.id.substring(0, 8).toUpperCase()}</CardDescription>
                                     </div>
 
                                 </CardHeader>
@@ -341,7 +363,7 @@ export default function EmployeeProfilePage() {
                                 <CardDescription>All documents uploaded for {user.name}.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <DocumentList documents={sortedDocuments} users={serverUsers as UserType[]} onSort={requestSort} sortConfig={sortConfig} onDelete={handleDeleteDocument} />
+                                <DocumentList documents={sortedDocuments} users={serverUsers as UserType[]} onSort={requestSort} sortConfig={sortConfig} onDelete={handleDeleteDocument} requirePin={isSelfView} />
                             </CardContent>
                         </Card>
                     )}

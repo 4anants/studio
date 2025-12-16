@@ -3,8 +3,9 @@ import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { unlink } from 'fs/promises';
+import { unlink, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 async function ensureDeletedAtColumn() {
     try {
@@ -59,6 +60,64 @@ async function deletePhysicalFile(url: string) {
             path: error.path
         });
         // Don't throw - we still want to delete from DB even if file deletion fails
+    }
+}
+
+export async function POST(request: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const formData = await request.formData();
+        const file: File | null = formData.get('file') as unknown as File;
+        const category = formData.get('category') as string || 'Personal';
+
+        if (!file) {
+            return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+        }
+
+        const userId = session.user.id;
+        const year = new Date().getFullYear().toString();
+        const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+
+        // Sanitize category folder
+        const safeCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+        // Directory Structure: public/uploads/{userId}/{category}/{year}/{month}/
+        const uploadDir = join(process.cwd(), 'public', 'uploads', userId, safeCategory, year, month);
+        await mkdir(uploadDir, { recursive: true });
+
+        // Unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const sanitizedFilename = file.name.replace(/[^a-z0-9.]/gi, '_');
+        const finalFilename = `${uniqueSuffix}-${sanitizedFilename}`;
+        const filePath = join(uploadDir, finalFilename);
+
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(filePath, buffer);
+
+        const publicUrl = `/uploads/${userId}/${safeCategory}/${year}/${month}/${finalFilename}`;
+        const sizeString = `${(file.size / 1024).toFixed(0)} KB`;
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        let fileType = 'pdf';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) fileType = 'image';
+        else if (['doc', 'docx', 'xls', 'xlsx'].includes(ext)) fileType = 'doc';
+
+        const docId = uuidv4();
+
+        await pool.execute(
+            `INSERT INTO documents (
+            id, employee_id, filename, upload_date, file_type, category, url, size
+        ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)`,
+            [docId, userId, file.name, fileType, category, publicUrl, sizeString]
+        );
+
+        return NextResponse.json({ success: true, id: docId, url: publicUrl });
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 

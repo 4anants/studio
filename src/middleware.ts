@@ -21,10 +21,12 @@ export default withAuth(
             // Check if trying to access admin routes
             const isAdminRoute =
                 path.includes("/admin") ||
-                req.nextUrl.searchParams.get("role") === "admin" ||
-                req.nextUrl.searchParams.get("view") === "panel";
+                req.nextUrl.searchParams.get("role") === "admin";
+            // view=panel is used by both admin and employee now
+            // Fix: Check token.userRole instead of token.role (matches auth.ts)
+            const role = (token.userRole || token.role) as string;
 
-            if (isAdminRoute && token.role !== "admin") {
+            if (isAdminRoute && role !== "admin") {
                 // Not an admin trying to access admin routes - redirect to employee dashboard
                 return NextResponse.redirect(new URL("/dashboard", req.url));
             }

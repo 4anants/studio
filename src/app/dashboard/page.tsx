@@ -11,9 +11,16 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 function DashboardContent({ role, view }: { role: string | null, view: string | null }) {
+  console.log('[DashboardContent] Rendering with role:', role, 'view:', view);
+
   if (role === 'admin') {
+    const component = view === 'panel' ? 'AdminView' : 'AdminDashboard';
+    console.log('[DashboardContent] Admin role detected, rendering:', component);
     return view === 'panel' ? <AdminView /> : <AdminDashboard />
   }
+
+  const component = view === 'panel' ? 'EmployeeView' : 'EmployeeDashboard';
+  console.log('[DashboardContent] Employee role (or no role), rendering:', component);
   return view === 'panel' ? <EmployeeView /> : <EmployeeDashboard />
 }
 
@@ -45,24 +52,51 @@ function DashboardPageContent() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  const role = searchParams.get('role');
-  const view = searchParams.get('view');
+  const roleFromUrl = searchParams.get('role');
+  const viewFromUrl = searchParams.get('view');
+
+  // Use session role as default if URL param is missing
+  const effectiveRole = roleFromUrl || (session?.user?.role === 'admin' ? 'admin' : null);
 
   useEffect(() => {
+    // Debug logging
+    console.log('[Dashboard] Status:', status);
+    console.log('[Dashboard] Session role:', session?.user?.role);
+    console.log('[Dashboard] URL role param:', roleFromUrl);
+    console.log('[Dashboard] Effective role:', effectiveRole);
+
     // Redirect to login if not authenticated
     if (status === 'unauthenticated') {
+      console.log('[Dashboard] Not authenticated, redirecting to login');
       router.push('/login');
+      return;
     }
 
-    // Security: Prevent role escalation via URL
+    // Wait for session to load
+    if (status === 'loading') {
+      return;
+    }
+
+    // Security and role routing
     if (status === 'authenticated' && session?.user) {
       const userRole = session.user.role;
-      if (role === 'admin' && userRole !== 'admin') {
-        // Non-admin trying to access admin view
+      console.log('[Dashboard] User authenticated with role:', userRole);
+
+      // Security: Prevent role escalation via URL
+      if (roleFromUrl === 'admin' && userRole !== 'admin') {
+        console.log('[Dashboard] Non-admin trying to access admin view, redirecting');
         router.replace('/dashboard');
+        return;
+      }
+
+      // Automatically redirect admins to admin view if no role specified
+      if (!roleFromUrl && userRole === 'admin') {
+        console.log('[Dashboard] Admin user without role param, redirecting to admin view');
+        router.replace('/dashboard?role=admin');
+        return;
       }
     }
-  }, [status, session, role, router]);
+  }, [status, session, roleFromUrl, router, effectiveRole]);
 
   // Show loading while checking authentication
   if (status === 'loading') {
@@ -77,7 +111,7 @@ function DashboardPageContent() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardContent role={role} view={view} />
+        <DashboardContent role={effectiveRole} view={viewFromUrl} />
       </Suspense>
     </main>
   );

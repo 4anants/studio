@@ -4,7 +4,11 @@ import Link from 'next/link'
 import {
   LogOut,
   User,
+  LayoutDashboard,
 } from 'lucide-react'
+// ... imports
+
+
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button'
 import {
@@ -194,6 +198,13 @@ export function DashboardHeader() {
             <AseLogo />
           </div>
           <span className="font-bold">{siteName}</span>
+        </Link>
+        <Link
+          href={`/dashboard?role=${searchParams.get('role') || 'employee'}`}
+          className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Dashboard
         </Link>
       </nav>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">

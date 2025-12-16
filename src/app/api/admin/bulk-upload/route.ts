@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import pool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
@@ -53,21 +53,59 @@ export async function POST(request: NextRequest) {
         // Format Upload Date (approximate to 1st of that month/year for record? or Current Time?)
         // Usually 'upload_date' is NOW.
 
-        // DB Insert
-        const docId = uuidv4();
-        const sizeString = `${(file.size / 1024).toFixed(0)} KB`;
+        // DB Check for collision based on rules
+        // For 'Salary Slip', we only allow one per month.
+        let existingDocs: any[] = [];
+        const targetFolderStr = `/${year}/${monthFolder}/`;
 
+        if (docType === 'Salary Slip') {
+            // Find any salary slip for this user in this month
+            const folderPrefix = `/uploads/${userId}/${safeDocType}/${year}/${monthFolder}/`;
+            const [rows] = await pool.query<any[]>(
+                `SELECT id, url FROM documents WHERE employee_id = ? AND category = ? AND is_deleted = 0 AND url LIKE ?`,
+                [userId, docType, `${folderPrefix}%`]
+            );
+            existingDocs = rows;
+        } else {
+            const [rows] = await pool.query<any[]>(
+                `SELECT id, url FROM documents WHERE employee_id = ? AND filename = ? AND category = ? AND is_deleted = 0`,
+                [userId, file.name, docType]
+            );
+            existingDocs = rows;
+        }
+
+        const duplicateDoc = existingDocs.find((d: any) => d.url.includes(targetFolderStr));
+
+        const sizeString = `${(file.size / 1024).toFixed(0)} KB`;
         const ext = file.name.split('.').pop()?.toLowerCase() || '';
         let fileType = 'pdf';
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) fileType = 'image';
         else if (['doc', 'docx', 'xls', 'xlsx'].includes(ext)) fileType = 'doc';
 
-        await pool.execute(
-            `INSERT INTO documents (
-            id, employee_id, filename, upload_date, file_type, category, url, size
-        ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)`,
-            [docId, userId, file.name, fileType, docType, publicUrl, sizeString] // Assuming PDF for now or extract from extension
-        );
+        if (duplicateDoc) {
+            // Update existing
+            // Try to delete old file
+            try {
+                const oldFilePath = join(process.cwd(), 'public', duplicateDoc.url);
+                await unlink(oldFilePath);
+            } catch (e) {
+                console.warn('Failed to delete old file:', e);
+            }
+
+            await pool.execute(
+                `UPDATE documents SET url = ?, size = ?, upload_date = NOW(), file_type = ? WHERE id = ?`,
+                [publicUrl, sizeString, fileType, duplicateDoc.id]
+            );
+        } else {
+            // Insert new
+            const docId = uuidv4();
+            await pool.execute(
+                `INSERT INTO documents (
+                id, employee_id, filename, upload_date, file_type, category, url, size
+            ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)`,
+                [docId, userId, file.name, fileType, docType, publicUrl, sizeString]
+            );
+        }
 
         return NextResponse.json({ success: true, url: publicUrl });
     } catch (error) {

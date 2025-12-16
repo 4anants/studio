@@ -43,8 +43,12 @@ export type User = {
     department?: string;
     bloodGroup?: string;
     company?: string;
+    companyId?: string;
     location?: string;
     role: 'admin' | 'employee';
+    photo_x_offset?: number;
+    photo_y_offset?: number;
+    photo_scale?: number;
 };
 
 export const holidayLocations = ['ALL', 'AMD', 'HYD', 'US'] as const;

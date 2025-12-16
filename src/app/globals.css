@@ -63,7 +63,84 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  @keyframes gradient-xy {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animate-gradient-xy {
+    background-size: 200% 200%;
+    animation: gradient-xy 6s ease infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+}
+
+@media print {
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+
+  /* Hide all top-level elements by default */
+  body>* {
+    display: none !important;
+  }
+
+  /* Display ONLY our print portal */
+  body>#print-portal {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    z-index: 99999;
+  }
+
+  /* Be sure content inside portal is visible */
+  #print-portal * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Reset shadows if needed */
+  #print-portal .shadow-lg {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
   }
 }
