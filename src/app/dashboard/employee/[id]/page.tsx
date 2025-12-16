@@ -7,12 +7,13 @@ import { useData } from '@/hooks/use-data';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Briefcase, Award, User, Edit, Building, LogOut, Droplet, MapPin, Shield, BadgeCheck, ShieldAlert, Lock } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog';
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
+import { PinSetupDialog } from '@/components/dashboard/pin-setup-dialog';
 import { cn, getAvatarSrc } from '@/lib/utils';
 import { DocumentList } from '@/components/dashboard/document-list';
 import { IdCardDialog } from '@/components/dashboard/id-card-dialog';
@@ -55,6 +56,8 @@ export default function EmployeeProfilePage() {
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
     const [isMounted, setIsMounted] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
+    const [pinSetupOpen, setPinSetupOpen] = useState(false);
+    const [hasPin, setHasPin] = useState(false);
 
     const user = useMemo(() => {
         return (serverUsers as UserType[]).find(u => u.id === id);
@@ -65,12 +68,28 @@ export default function EmployeeProfilePage() {
         return (serverCompanies as Company[]).find(c => c.name === user.company);
     }, [user, serverCompanies]);
 
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
     const role = searchParams.get('role');
     const isSelfView = role !== 'admin';
+
+    useEffect(() => {
+        setIsMounted(true);
+
+        if (isSelfView) {
+            fetch('/api/document-pin')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && typeof data.pinSet === 'boolean') {
+                        setHasPin(data.pinSet);
+                    }
+                })
+                .catch(err => console.error('Failed to check PIN status', err));
+        }
+    }, [isSelfView]);
+
+    const handlePinSuccess = useCallback(() => {
+        setHasPin(true);
+        toast({ title: 'Document PIN updated successfully' });
+    }, [toast]);
     const isSadmin = user?.id === 'sadmin';
 
     const handleEmployeeSave = useCallback(async (employeeUpdate: Partial<UserType> & { originalId?: string }) => {
@@ -228,6 +247,12 @@ export default function EmployeeProfilePage() {
 
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-2">
+                                    {isSelfView && (
+                                        <Button variant="outline" className="w-full" onClick={() => setPinSetupOpen(true)}>
+                                            <Lock className="mr-2 h-4 w-4" />
+                                            {hasPin ? 'Change Document PIN' : 'Set Document PIN'}
+                                        </Button>
+                                    )}
                                     <IdCardDialog employee={user} company={userCompany}>
                                         <Button variant="default" className="w-full">
                                             <BadgeCheck className="mr-2 h-4 w-4" /> ID Card
@@ -369,6 +394,12 @@ export default function EmployeeProfilePage() {
                     )}
                 </div>
             </main>
+            <PinSetupDialog
+                open={pinSetupOpen}
+                onOpenChange={setPinSetupOpen}
+                onSuccess={handlePinSuccess}
+                isChanging={hasPin}
+            />
         </div>
     )
 }

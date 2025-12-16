@@ -4,6 +4,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { DocumentList } from './document-list'
+import { BirthdayList } from './birthday-list'
 import { UploadDialog } from './upload-dialog'
 import { PhotoAdjustmentDialog } from './photo-adjustment-dialog'
 import { useData } from '@/hooks/use-data'
@@ -47,7 +48,7 @@ const monthNames = ["January", "February", "March", "April", "May", "June", "Jul
 export function EmployeeView() {
     const { data: session } = useSession();
     const currentUserId = session?.user?.id;
-    const { documents: serverDocuments, holidays: serverHolidays, announcements: serverAnnouncements, users: serverUsers, mutateDocuments } = useData();
+    const { documents: serverDocuments, holidays: serverHolidays, announcements: serverAnnouncements, users: serverUsers, birthdays, mutateDocuments } = useData();
 
     // Find current user object to pass to dialog
     const currentUser = Array.isArray(serverUsers) ? (serverUsers as User[]).find(u => u.id === currentUserId) : null;
@@ -165,8 +166,8 @@ export function EmployeeView() {
         let sortableItems = [...filteredDocuments];
         if (sortConfig !== null) {
             sortableItems.sort((a, b) => {
-                const aValue = a[sortConfig.key];
-                const bValue = b[sortConfig.key];
+                const aValue = a[sortConfig.key] || '';
+                const bValue = b[sortConfig.key] || '';
 
                 if (aValue < bValue) {
                     return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -288,6 +289,7 @@ export function EmployeeView() {
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                         </span>}
                     </TabsTrigger>
+                    <TabsTrigger value="birthdays">Birthdays</TabsTrigger>
                 </TabsList>
                 <TabsContent value="documents">
                     <Card className="mb-4">
@@ -534,6 +536,9 @@ export function EmployeeView() {
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+                <TabsContent value="birthdays">
+                    <BirthdayList users={birthdays as User[]} />
                 </TabsContent>
             </Tabs>
         </>

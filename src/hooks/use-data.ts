@@ -13,6 +13,7 @@ export function useData() {
     const { data: departments, mutate: mutateDepartments } = useSWR('/api/departments', fetcher);
     const { data: documentTypes, mutate: mutateDocumentTypes } = useSWR('/api/document-types', fetcher);
     const { data: deletedDocuments, mutate: mutateDeletedDocuments } = useSWR('/api/documents?deleted=true', fetcher);
+    const { data: birthdays } = useSWR('/api/birthdays', fetcher);
 
     return {
         users: Array.isArray(users) ? users : EMPTY_ARRAY,
@@ -23,6 +24,7 @@ export function useData() {
         companies: Array.isArray(companies) ? companies : EMPTY_ARRAY,
         departments: Array.isArray(departments) ? departments : EMPTY_ARRAY,
         documentTypes: Array.isArray(documentTypes) ? documentTypes : EMPTY_ARRAY,
+        birthdays: Array.isArray(birthdays) ? birthdays : EMPTY_ARRAY,
         loading: !users || !documents,
         mutateUsers,
         mutateDocuments,

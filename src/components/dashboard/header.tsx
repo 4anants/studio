@@ -1,5 +1,6 @@
 
 'use client'
+import { UpcomingBirthdaysPopup } from './upcoming-birthdays-popup'
 import Link from 'next/link'
 import {
   LogOut,
@@ -36,7 +37,7 @@ export function DashboardHeader() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession();
-  const { users: allUsers, loading: dataLoading } = useData();
+  const { users: allUsers, birthdays, loading: dataLoading } = useData();
   const [siteName, setSiteName] = useState(CompanyName);
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
 
@@ -233,6 +234,7 @@ export function DashboardHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      {currentUser && <UpcomingBirthdaysPopup users={birthdays as UserType[]} currentUserId={currentUser.id} />}
     </header>
   )
 }
