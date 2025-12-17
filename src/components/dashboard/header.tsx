@@ -40,6 +40,7 @@ export function DashboardHeader() {
   const { data: session, status } = useSession();
   const { users: allUsers, birthdays, loading: dataLoading } = useData();
   const [siteName, setSiteName] = useState(CompanyName);
+  const [siteNameFontSize, setSiteNameFontSize] = useState('text-xl');
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
 
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -49,6 +50,11 @@ export function DashboardHeader() {
     if (storedSiteName) {
       setSiteName(storedSiteName);
       document.title = storedSiteName;
+    }
+
+    const storedFontSize = localStorage.getItem('siteNameFontSize');
+    if (storedFontSize) {
+      setSiteNameFontSize(storedFontSize);
     }
 
     const storedLogo = localStorage.getItem('companyLogo');
@@ -61,6 +67,11 @@ export function DashboardHeader() {
       if (storedSiteName) {
         setSiteName(storedSiteName);
         document.title = storedSiteName;
+      }
+
+      const storedFontSize = localStorage.getItem('siteNameFontSize');
+      if (storedFontSize) {
+        setSiteNameFontSize(storedFontSize);
       }
 
       const storedLogo = localStorage.getItem('companyLogo');
@@ -232,14 +243,16 @@ export function DashboardHeader() {
           href={`/dashboard?${searchParams.toString()}`}
           className="flex items-center gap-3 text-lg font-semibold md:text-base"
         >
-          <div className="h-10 w-10 relative bg-white rounded-full overflow-hidden shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800">
-            {logoSrc ? (
-              <img src={logoSrc} alt="Logo" className="h-full w-full object-cover" />
-            ) : (
-              <AseLogo />
-            )}
+          <div className="h-10 w-10 relative rounded-full overflow-hidden shadow-sm flex items-center justify-center p-[2px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy bg-[length:200%_200%]">
+            <div className="h-full w-full bg-background rounded-full overflow-hidden flex items-center justify-center">
+              {logoSrc ? (
+                <img src={logoSrc} alt="Logo" className="h-full w-full object-cover" />
+              ) : (
+                <AseLogo />
+              )}
+            </div>
           </div>
-          <span className="font-bold whitespace-nowrap text-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text animate-gradient-xy bg-[length:200%_200%]">{siteName}</span>
+          <span className={`font-bold whitespace-nowrap bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text animate-gradient-xy bg-[length:200%_200%] ${siteNameFontSize}`}>{siteName}</span>
         </Link>
       </div>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
@@ -248,8 +261,10 @@ export function DashboardHeader() {
         {currentUser.role !== 'admin' && <AnnouncementBell />}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="rounded-full">
-              <Image src={getAvatarSrc(currentUser)} width={40} height={40} className="rounded-full object-cover" alt="User avatar" data-ai-hint="person portrait" />
+            <Button variant="ghost" size="icon" className="rounded-full p-[2px] h-11 w-11 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy bg-[length:200%_200%] hover:scale-105 transition-transform duration-300">
+              <div className="h-full w-full rounded-full bg-background p-[2px] overflow-hidden">
+                <Image src={getAvatarSrc(currentUser)} width={40} height={40} className="rounded-full object-cover h-full w-full" alt="User avatar" data-ai-hint="person portrait" />
+              </div>
               <span className="sr-only">Toggle user menu</span>
             </Button>
           </DropdownMenuTrigger>

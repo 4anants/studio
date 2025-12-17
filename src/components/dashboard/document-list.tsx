@@ -73,6 +73,7 @@ interface DocumentListProps {
   onSelectDoc?: (docId: string, checked: boolean) => void;
   onSelectAll?: (checked: boolean) => void;
   requirePin?: boolean;
+  checkActionPermission?: (doc: Document, action: 'view' | 'download') => boolean;
 }
 
 const SortableHeader = React.memo(({
@@ -106,7 +107,7 @@ const SortableHeader = React.memo(({
 });
 SortableHeader.displayName = 'SortableHeader';
 
-export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, onBulkDelete, isDeletedList = false, onRestore, onPermanentDelete, onBulkPermanentDelete, selectedDocIds: externalSelectedDocIds, onSelectDoc: externalOnSelectDoc, onSelectAll: externalOnSelectAll, requirePin = false }: DocumentListProps) => {
+export const DocumentList = React.memo(({ documents, users, showOwner = false, onSort, sortConfig, onReassign, onDelete, onBulkDelete, isDeletedList = false, onRestore, onPermanentDelete, onBulkPermanentDelete, selectedDocIds: externalSelectedDocIds, onSelectDoc: externalOnSelectDoc, onSelectAll: externalOnSelectAll, requirePin = false, checkActionPermission }: DocumentListProps) => {
   const { toast } = useToast()
   const [internalSelectedDocIds, setInternalSelectedDocIds] = useState<string[]>([]);
   const [assignToUserId, setAssignToUserId] = useState<string | null>(null);
@@ -133,6 +134,8 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
   }
 
   const handleDownload = (doc: Document) => {
+    if (checkActionPermission && !checkActionPermission(doc, 'download')) return;
+
     if (requirePin) {
       setPendingDoc(doc);
       setPendingAction('download');
@@ -143,6 +146,8 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
   }
 
   const handleView = (doc: Document) => {
+    if (checkActionPermission && !checkActionPermission(doc, 'view')) return;
+
     if (requirePin) {
       setPendingDoc(doc);
       setPendingAction('view');
@@ -323,12 +328,16 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                   </div>
                 ) : (
                   <div className="hidden sm:flex items-center justify-end gap-2">
-                    <Button size="sm" onClick={() => handleView(doc)} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
-                      <Eye className="mr-2 h-4 w-4" /> View
-                    </Button>
-                    <Button size="sm" onClick={() => handleDownload(doc)} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
-                      <Download className="mr-2 h-4 w-4" /> Download
-                    </Button>
+                    {(!checkActionPermission || checkActionPermission(doc, 'view')) && (
+                      <Button size="sm" onClick={() => handleView(doc)} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
+                        <Eye className="mr-2 h-4 w-4" /> View
+                      </Button>
+                    )}
+                    {(!checkActionPermission || checkActionPermission(doc, 'download')) && (
+                      <Button size="sm" onClick={() => handleDownload(doc)} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
+                        <Download className="mr-2 h-4 w-4" /> Download
+                      </Button>
+                    )}
                     {onDelete && (
                       <Button variant="destructive" size="sm" onClick={() => onDelete(doc.id)}>
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -365,12 +374,16 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                         </>
                       ) : (
                         <>
-                          <DropdownMenuItem onClick={() => handleView(doc)}>
-                            <Eye className="mr-2 h-4 w-4" /> View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDownload(doc)}>
-                            <Download className="mr-2 h-4 w-4" /> Download
-                          </DropdownMenuItem>
+                          {(!checkActionPermission || checkActionPermission(doc, 'view')) && (
+                            <DropdownMenuItem onClick={() => handleView(doc)}>
+                              <Eye className="mr-2 h-4 w-4" /> View
+                            </DropdownMenuItem>
+                          )}
+                          {(!checkActionPermission || checkActionPermission(doc, 'download')) && (
+                            <DropdownMenuItem onClick={() => handleDownload(doc)}>
+                              <Download className="mr-2 h-4 w-4" /> Download
+                            </DropdownMenuItem>
+                          )}
                           {onDelete && (
                             <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(doc.id)}>
                               <Trash2 className="mr-2 h-4 w-4" /> Delete

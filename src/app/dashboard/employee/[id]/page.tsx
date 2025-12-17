@@ -15,7 +15,7 @@ import { EmployeeManagementDialog } from '@/components/dashboard/employee-manage
 import { EmployeeSelfEditDialog } from '@/components/dashboard/employee-self-edit-dialog';
 import { PinSetupDialog } from '@/components/dashboard/pin-setup-dialog';
 import { cn, getAvatarSrc } from '@/lib/utils';
-import { DocumentList } from '@/components/dashboard/document-list';
+import { EmployeeFileExplorer } from '@/components/dashboard/employee-file-explorer';
 import { IdCardDialog } from '@/components/dashboard/id-card-dialog';
 import {
     AlertDialog,
@@ -134,61 +134,12 @@ export default function EmployeeProfilePage() {
         }
     }, [user, mutateUsers, router, toast]);
 
-    const handleDeleteDocument = useCallback(async (docId: string) => {
-        if (!confirm('Are you sure you want to delete this document?')) return;
-        try {
-            const res = await fetch(`/api/documents?id=${docId}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Failed to delete');
-            await mutateDocuments();
-            toast({ title: 'Document deleted successfully' });
-        } catch (error) {
-            console.error('Failed to delete document', error);
-            toast({ title: 'Failed to delete document', variant: 'destructive' });
-        }
-    }, [mutateDocuments, toast]);
+
 
     const userDocuments = useMemo(() => {
         if (!id) return [];
-        return (serverDocuments as Document[]).filter(doc => {
-            const isOwner = doc.ownerId === id;
-            if (!isOwner) return false;
-
-            // If viewing own documents, show all.
-            if (isSelfView) return true;
-
-            // If Admin viewing others, ONLY show 'Personal' documents.
-            return doc.type === 'Personal';
-        });
-    }, [id, serverDocuments, isSelfView]);
-
-    const requestSort = useCallback((key: SortKey) => {
-        setSortConfig(currentSortConfig => {
-            let direction: SortDirection = 'ascending';
-            if (currentSortConfig && currentSortConfig.key === key && currentSortConfig.direction === 'ascending') {
-                direction = 'descending';
-            }
-            return { key, direction };
-        });
-    }, []);
-
-    const sortedDocuments = useMemo(() => {
-        const sortableItems = [...userDocuments];
-        if (sortConfig !== null) {
-            sortableItems.sort((a, b) => {
-                const aValue = a[sortConfig.key] || '';
-                const bValue = b[sortConfig.key] || '';
-
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
-                return 0;
-            });
-        }
-        return sortableItems;
-    }, [userDocuments, sortConfig]);
+        return (serverDocuments as Document[]).filter(doc => doc.ownerId === id);
+    }, [id, serverDocuments]);
 
     if (!user) {
         return (
@@ -399,7 +350,23 @@ export default function EmployeeProfilePage() {
                                 <CardDescription>All documents uploaded for {user.name}.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <DocumentList documents={sortedDocuments} users={serverUsers as UserType[]} onSort={requestSort} sortConfig={sortConfig} onDelete={handleDeleteDocument} requirePin={true} />
+                                <EmployeeFileExplorer
+                                    documents={userDocuments}
+                                    currentUser={user}
+                                    checkPermission={(doc, action) => {
+                                        if (isSelfView) { // Employee Viewing Self
+                                            if (action === 'delete') return doc.type === 'Personal';
+                                            return true; // view/download all
+                                        } else { // Admin Viewing Employee
+                                            if (action === 'delete') return true; // Admin can delete all
+                                            // Admin can view/download ONLY Personal? (Matching legacy behavior)
+                                            // Or true? A lot of admins would expect to see Salary Slips.
+                                            // Legacy was "return doc.type === 'Personal'".
+                                            // I will maintain legacy for safety, but it's weird.
+                                            return doc.type === 'Personal';
+                                        }
+                                    }}
+                                />
                             </CardContent>
                         </Card>
                     )}

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { LayoutDashboard, Shield } from 'lucide-react'
+import { LayoutDashboard, Shield, FileIcon } from 'lucide-react'
 import {
     Carousel,
     CarouselContent,
@@ -19,6 +19,14 @@ import {
 } from "@/components/ui/carousel"
 import Autoplay from "embla-carousel-autoplay"
 import { PinVerifyDialog } from './pin-verify-dialog'
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table'
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -134,67 +142,75 @@ export function EmployeeDashboard() {
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {/* My Documents */}
-                <Link href="/dashboard?role=employee&view=panel&tab=documents" className="block h-full relative z-10">
-                    <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-l-4 border-l-blue-600">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">My Documents</CardTitle>
-                            <FileText className="h-4 w-4 text-blue-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{myDocuments.length}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Total documents assigned to you
-                            </p>
-                        </CardContent>
-                    </Card>
+                <Link href="/dashboard?role=employee&view=panel&tab=documents" className="block h-full relative z-10 group">
+                    <div className="p-1 rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy h-full">
+                        <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-0">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">My Documents</CardTitle>
+                                <FileText className="h-4 w-4 text-blue-600" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{myDocuments.length}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    Total documents assigned to you
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </Link>
 
                 {/* Announcements */}
-                <Link href="/dashboard?role=employee&view=panel&tab=announcements" className="block h-full relative z-10">
-                    <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-l-4 border-l-green-600">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Announcements</CardTitle>
-                            <Bell className="h-4 w-4 text-green-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{activeAnnouncements.length}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Active announcements
-                            </p>
-                        </CardContent>
-                    </Card>
+                <Link href="/dashboard?role=employee&view=panel&tab=announcements" className="block h-full relative z-10 group">
+                    <div className="p-1 rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy h-full">
+                        <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-0">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Announcements</CardTitle>
+                                <Bell className="h-4 w-4 text-green-600" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{activeAnnouncements.length}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    Active announcements
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </Link>
 
                 {/* Upcoming Holidays */}
-                <Link href="/dashboard?role=employee&view=panel&tab=holidays" className="block h-full relative z-10">
-                    <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-l-4 border-l-purple-600">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Upcoming Holidays</CardTitle>
-                            <Calendar className="h-4 w-4 text-purple-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{upcomingHolidays.length}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Holidays this year
-                            </p>
-                        </CardContent>
-                    </Card>
+                <Link href="/dashboard?role=employee&view=panel&tab=holidays" className="block h-full relative z-10 group">
+                    <div className="p-1 rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy h-full">
+                        <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-0">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Upcoming Holidays</CardTitle>
+                                <Calendar className="h-4 w-4 text-purple-600" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{upcomingHolidays.length}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    Holidays this year
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </Link>
 
                 {/* Birthdays */}
-                <Link href="/dashboard?role=employee&view=panel&tab=birthdays" className="block h-full relative z-10">
-                    <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-l-4 border-l-pink-600">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Birthdays</CardTitle>
-                            <Cake className="h-4 w-4 text-pink-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{upcomingBirthdaysCount}</div>
-                            <p className="text-xs text-muted-foreground">
-                                In the next 7 days
-                            </p>
-                        </CardContent>
-                    </Card>
+                <Link href="/dashboard?role=employee&view=panel&tab=birthdays" className="block h-full relative z-10 group">
+                    <div className="p-1 rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy h-full">
+                        <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full border-0">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Birthdays</CardTitle>
+                                <Cake className="h-4 w-4 text-pink-600" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{upcomingBirthdaysCount}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    In the next 7 days
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </Link>
             </div>
 
@@ -317,41 +333,68 @@ export function EmployeeDashboard() {
             </div>
 
             {/* My Documents Section */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        <CardTitle>My Documents</CardTitle>
-                    </div>
-                    <CardDescription>Recent documents assigned to you</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {myDocuments.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            No documents found
+            <div className="p-1 rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy">
+                <Card className="border-0">
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            <CardTitle>My Documents</CardTitle>
                         </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {myDocuments.slice(0, 5).map(doc => (
-                                <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium truncate">{doc.name}</p>
-                                        <p className="text-sm text-muted-foreground">{doc.type}</p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-sm text-muted-foreground">
-                                            {doc.uploadDate}
-                                        </div>
-                                        <Button variant="ghost" size="icon" onClick={() => handleView(doc)} title="View Document">
-                                            <Eye className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                        <CardDescription>Recent documents assigned to you</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {myDocuments.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                No documents found
+                            </div>
+                        ) : (
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-[40%]">Name</TableHead>
+                                            <TableHead className="w-[20%]">Type</TableHead>
+                                            <TableHead className="w-[10%]">Size</TableHead>
+                                            <TableHead className="w-[20%]">Uploaded</TableHead>
+                                            <TableHead className="w-[10%] text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {myDocuments.slice(0, 5).map(doc => (
+                                            <TableRow key={doc.id}>
+                                                <TableCell className="font-medium">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border/50">
+                                                            {doc.fileType === 'pdf' ? <FileText className="h-5 w-5 text-red-500" /> : <FileIcon className="h-5 w-5 text-blue-500" />}
+                                                        </div>
+                                                        <span className="truncate font-semibold">{doc.name}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-0">
+                                                        {doc.type}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm font-mono">
+                                                    {doc.size || '357 KB'}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm">
+                                                    {doc.uploadDate}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleView(doc)} title="View Document">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
             <PinVerifyDialog
                 open={pinVerifyOpen}
                 onOpenChange={setPinVerifyOpen}

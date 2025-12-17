@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { documentTypesList, departments as initialDepartments, holidayLocations, CompanyName } from '@/lib/constants'
 import type { User, Document, Holiday, HolidayLocation, Announcement, Company, Department, DocumentType as AppDocumentType } from '@/lib/types'
 import { useData } from '@/hooks/use-data'
-import { Search, MoreVertical, Edit, Trash2, KeyRound, FolderPlus, Tag, Building, CalendarPlus, Bell, UploadCloud, X, FileLock2, Users, Download, Home, ArrowLeft, Folder, Upload, Save, Shield, Undo, Eye, Trash, ArchiveRestore, FileText, Calendar, LayoutDashboard, Printer } from 'lucide-react'
+import { Search, MoreVertical, Edit, Trash2, KeyRound, FolderPlus, Tag, Building, CalendarPlus, Bell, UploadCloud, X, FileLock2, Users, Download, Home, ArrowLeft, Folder, Upload, Save, Undo, Eye, Trash, ArchiveRestore, FileText, Calendar, LayoutDashboard, Printer } from 'lucide-react'
 import Link from 'next/link'
 import {
     Tabs,
@@ -28,6 +28,9 @@ import { BulkUploadDialog } from '@/components/dashboard/bulk-upload/bulk-upload
 import { BulkIdCardPrintDialog } from '@/components/dashboard/bulk-id-card-print-dialog'
 import { IdCardDesignerDialog } from '@/components/dashboard/id-card-designer'
 import { Button } from '@/components/ui/button'
+import FileExplorerPage from './files/page'
+import EmployeeExplorerPage from './employees/page'
+import PrintCardsExplorerPage from './print-cards/page'
 import { EmployeeManagementDialog } from '@/components/dashboard/employee-management-dialog'
 import { DeleteEmployeeDialog } from '@/components/dashboard/delete-employee-dialog'
 import {
@@ -84,9 +87,9 @@ import { PermanentDeleteDialog } from '@/components/dashboard/permanent-delete-d
 import { EditDocumentTypeDialog } from '@/components/dashboard/edit-document-type-dialog'
 import { DeleteDocumentTypeDialog } from '@/components/dashboard/delete-document-type-dialog'
 // import { ToastAction } from '@/components/ui/toast'
-import { IntegrationsSettings } from '@/components/dashboard/integrations-settings'
 
-type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string }
+
+type ExplorerState = { view: 'docTypes' } | { view: 'usersInDocType', docType: string } | { view: 'userDocs', docType: string, userId: string }
 
 
 export function AdminView() {
@@ -182,6 +185,8 @@ export function AdminView() {
     const [logoSrc, setLogoSrc] = useState<string | null>(null);
     const [siteName, setSiteName] = useState(CompanyName);
     const [tempSiteName, setTempSiteName] = useState(CompanyName);
+    const [siteNameFontSize, setSiteNameFontSize] = useState('text-xl');
+    const [tempSiteNameFontSize, setTempSiteNameFontSize] = useState('text-xl');
     const [explorerState, setExplorerState] = useState<ExplorerState>({ view: 'docTypes' });
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
     const [newDomain, setNewDomain] = useState('');
@@ -242,6 +247,12 @@ export function AdminView() {
                         setSiteName(data.siteName);
                         setTempSiteName(data.siteName);
                         localStorage.setItem('siteName', data.siteName);
+                        window.dispatchEvent(new Event('storage'));
+                    }
+                    if (data.siteNameFontSize) {
+                        setSiteNameFontSize(data.siteNameFontSize);
+                        setTempSiteNameFontSize(data.siteNameFontSize);
+                        localStorage.setItem('siteNameFontSize', data.siteNameFontSize);
                         window.dispatchEvent(new Event('storage'));
                     }
                     if (data.allowedDomains) {
@@ -306,12 +317,15 @@ export function AdminView() {
 
     const handleSiteNameSave = () => {
         setSiteName(tempSiteName);
+        setSiteNameFontSize(tempSiteNameFontSize);
         localStorage.setItem('siteName', tempSiteName);
+        localStorage.setItem('siteNameFontSize', tempSiteNameFontSize);
         saveSystemSetting('siteName', tempSiteName);
+        saveSystemSetting('siteNameFontSize', tempSiteNameFontSize);
         window.dispatchEvent(new Event('storage')); // Notify other tabs/components
         toast({
-            title: 'Site Name Updated',
-            description: 'The site name has been changed successfully.',
+            title: 'Branding Updated',
+            description: 'Site name and font size updated successfully.',
         });
     };
 
@@ -1881,430 +1895,20 @@ export function AdminView() {
                     </div>
                 </div>
 
-                {(activeTab === 'employee-management' || activeTab === 'print-cards' || (activeTab === 'file-explorer' && explorerState.view !== 'docTypes')) && (
-                    <div className="mb-4 flex flex-col sm:flex-row items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium">Department</Label>
-                            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                                <SelectTrigger className="w-full sm:w-[220px]">
-                                    <SelectValue placeholder="Select Department" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Departments</SelectItem>
-                                    {filteredDepartments.map((dept) => (
-                                        <SelectItem key={dept.id} value={dept.name}>
-                                            {dept.name}
-                                        </SelectItem>
-                                    ))}
-                                    {activeTab === 'file-explorer' && <SelectItem value="unassigned">Unassigned Documents</SelectItem>}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium">Role</Label>
-                            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as 'all' | 'admin' | 'employee')}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Select Role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Roles</SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                    <SelectItem value="employee">Employee</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                )}
+
 
                 <TabsContent value="file-explorer">
-                    <Card>
-                        {departmentFilter === 'unassigned' ? (
-                            <CardHeader>
-                                <CardTitle>Unassigned Documents</CardTitle>
-                                <CardDescription>
-                                    These documents could not be automatically assigned. Please assign them to an employee.
-                                </CardDescription>
-                            </CardHeader>
-                        ) : explorerState.view === 'usersInDocType' ? (
-                            <CardHeader>
-                                <div className="flex items-center gap-4">
-                                    <Button variant="outline" size="icon" onClick={() => setExplorerState({ view: 'docTypes' })}>
-                                        <ArrowLeft className="h-4 w-4" />
-                                    </Button>
-                                    <div>
-                                        <CardTitle>Employees with &quot;{explorerState.docType}&quot;</CardTitle>
-                                        <CardDescription>Select an employee to view their documents of this type.</CardDescription>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                        ) : null}
-
-                        <CardContent>
-                            {explorerState.view === 'docTypes' && departmentFilter !== 'unassigned' && (
-                                <CardHeader>
-                                    <CardTitle>Browse Documents</CardTitle>
-                                    <CardDescription>Select a document type to see all related employees.</CardDescription>
-                                </CardHeader>
-                            )}
-                            {departmentFilter === 'unassigned' ? (
-                                unassignedDocuments.length > 0 ? (
-                                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                        <h3 className="flex items-center gap-2 font-semibold text-red-800 dark:text-red-300">
-                                            <FileLock2 className="h-5 w-5" />
-                                            Action Required
-                                        </h3>
-                                        <p className="text-sm text-red-700 dark:text-red-400 mt-1 mb-4">
-                                            These documents could not be automatically assigned. Please select them and assign them to an employee.
-                                        </p>
-                                        <DocumentList
-                                            documents={unassignedDocuments}
-                                            users={users}
-                                            onSort={() => { }}
-                                            sortConfig={null}
-                                            showOwner={true}
-                                            onReassign={handleReassignDocument}
-                                            onDelete={handleDeleteDocument}
-                                            onBulkDelete={handleBulkDeleteDocuments}
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-muted-foreground py-8">
-                                        <p>No unassigned documents found.</p>
-                                    </div>
-                                )
-                            ) : explorerState.view === 'docTypes' ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                    {documentTypes.filter(dt => dt.name.toLowerCase().includes(searchTerm.toLowerCase())).map(docType => (
-                                        <Card
-                                            key={docType.id}
-                                            className="cursor-pointer hover:border-purple-500 hover:shadow-lg hover:bg-purple-50/10 transition-all group border-muted relative overflow-hidden"
-                                            onClick={() => setExplorerState({ view: 'usersInDocType', docType: docType.name })}
-                                        >
-                                            <CardContent className="flex flex-col items-center justify-center p-6 gap-4">
-                                                <Folder
-                                                    className="h-16 w-16 group-hover:scale-110 transition-transform duration-300"
-                                                    strokeWidth={1.5}
-                                                    style={{ stroke: 'url(#folder-gradient)' }}
-                                                />
-                                                <p className="font-semibold text-center truncate w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{docType.name}</p>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-                                        {usersByDocType.map(user => (
-                                            <Card
-                                                key={user.id}
-                                                className="cursor-pointer hover:border-primary transition-all"
-                                                onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
-                                            >
-                                                <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                                    <Image
-                                                        src={getAvatarSrc(user)}
-                                                        width={64}
-                                                        height={64}
-                                                        className="rounded-full object-cover"
-                                                        alt={user.name ? user.name : 'Employee avatar'} // FIXED: Robust fallback
-                                                        data-ai-hint="person portrait"
-                                                    />
-                                                    <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                    {usersByDocType.length === 0 && (
-                                        <div className="text-center text-muted-foreground py-8">
-                                            <p>No employees found with this document type.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                    <FileExplorerPage />
                 </TabsContent>
 
                 <TabsContent value="employee-management">
-                    <Tabs defaultValue="overview" value={activeSubTab} onValueChange={setActiveSubTab}>
-                        <TabsList className="bg-transparent p-0 gap-2 h-auto">
-                            <TabsTrigger value="overview" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Employee Overview</TabsTrigger>
-                            <TabsTrigger value="manage" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Manage Employees</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="overview" className="mt-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Employee Overview</CardTitle>
-                                    <CardDescription>Select an employee to view their detailed profile and documents.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-                                        {filteredActiveUsersForGrid.map(user => (
-                                            <Card
-                                                key={user.id}
-                                                className="cursor-pointer hover:border-primary transition-all"
-                                                onClick={() => router.push(`/dashboard/employee/${user.id}?role=admin`)}
-                                            >
-                                                <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                                    <Image
-                                                        src={getAvatarSrc(user)}
-                                                        width={64}
-                                                        height={64}
-                                                        className="rounded-full object-cover"
-                                                        alt={user.name ? user.name : 'Employee avatar'} // FIXED: Robust fallback
-                                                        data-ai-hint="person portrait"
-                                                    />
-                                                    <p className="text-sm font-medium text-center truncate w-full">{user.name}</p>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                    {filteredActiveUsersForGrid.length === 0 && (
-                                        <div className="text-center text-muted-foreground py-8">
-                                            <p>No employees found.</p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                        <TabsContent value="manage" className="mt-4">
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                                        <div>
-                                            <CardTitle>Manage Employees</CardTitle>
-                                            <CardDescription>A list of all active employees in the system.</CardDescription>
-                                        </div>
-                                        <div className="flex items-center gap-2 w-full md:w-auto">
-                                            <Button onClick={handleExportUsers} className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Export All Users
-                                            </Button>
-                                            <BulkUserImportDialog onImport={handleBulkUserImport}>
-                                                <Button className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
-                                                    <Upload className="mr-2 h-4 w-4" /> Import Users
-                                                </Button>
-                                            </BulkUserImportDialog>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-[40px]">
-                                                    <Checkbox
-                                                        checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
-                                                        onCheckedChange={handleSelectAll}
-                                                        aria-label="Select all"
-                                                        disabled={filteredUsersForSelection.length === 0}
-                                                    />
-                                                </TableHead>
-                                                <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
-                                                <TableHead>Name</TableHead>
-                                                <TableHead>Email</TableHead>
-                                                <TableHead className="hidden lg:table-cell">Department</TableHead>
-                                                <TableHead className="hidden md:table-cell">Role</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredActiveUsersForTable.length > 0 ? filteredActiveUsersForTable.map(user => (
-                                                <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
-                                                    <TableCell>
-                                                        <Checkbox
-                                                            checked={selectedUserIds.includes(user.id)}
-                                                            onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
-                                                            aria-label={`Select ${user.name}`}
-                                                            disabled={user.id === 'sadmin'}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="hidden sm:table-cell">
-                                                        <Image
-                                                            src={getAvatarSrc(user)}
-                                                            width={40}
-                                                            height={40}
-                                                            className="rounded-full object-cover"
-                                                            alt={user.name ? user.name : 'User avatar'} // FIXED: Robust fallback
-                                                            data-ai-hint="person portrait"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                                    <TableCell>{user.email}</TableCell>
-                                                    <TableCell className="hidden lg:table-cell">{user.department || 'N/A'}</TableCell>
-                                                    <TableCell className="hidden md:table-cell">
-                                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
-                                                            user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                                                        )}>
-                                                            {(user.role || 'employee').charAt(0).toUpperCase() + (user.role || 'employee').slice(1)}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
-                                                            user.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                                user.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                                                                    'bg-yellow-100 text-yellow-800'
-                                                        )}>
-                                                            {(user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1)}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {user.id === 'sadmin' ? (
-                                                            <div className="flex items-center justify-end">
-                                                                <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
-                                                                    <Button variant="ghost" size="sm">
-                                                                        <Edit className="mr-2 h-4 w-4" /> Edit
-                                                                    </Button>
-                                                                </EmployeeManagementDialog>
-                                                            </div>
-                                                        ) : (
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="icon">
-                                                                        <MoreVertical className="h-5 w-5" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end">
-                                                                    <EmployeeManagementDialog employee={user} onSave={handleEmployeeSave} departments={departments} companies={companies}>
-                                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                                            <Edit className="mr-2 h-4 w-4" />
-                                                                            Edit Employee
-                                                                        </DropdownMenuItem>
-                                                                    </EmployeeManagementDialog>
-                                                                    <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
-                                                                        <KeyRound className="mr-2 h-4 w-4" />
-                                                                        Reset Password
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem onClick={() => handleResetPin(user.id)}>
-                                                                        <FileLock2 className="mr-2 h-4 w-4" />
-                                                                        Reset PIN
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuSeparator />
-                                                                    <DeleteEmployeeDialog employee={user} onDelete={() => handleEmployeeDelete(user.id)}>
-                                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                                            Delete Employee
-                                                                        </DropdownMenuItem>
-                                                                    </DeleteEmployeeDialog>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={8} className="text-center text-muted-foreground">No active users found.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
+                    <EmployeeExplorerPage />
                 </TabsContent>
 
                 <TabsContent value="print-cards">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                                <div>
-                                    <CardTitle>Print ID Cards</CardTitle>
-                                    <CardDescription>Select employees to print their ID cards.</CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2 w-full md:w-auto">
-                                    {/* Designer Tool */}
-                                    {users.length > 0 && (
-                                        <IdCardDesignerDialog
-                                            sampleUser={users[0]}
-                                            company={companies.find(c => c.name === users[0].company) || companies[0]}
-                                        />
-                                    )}
-                                    <BulkIdCardPrintDialog
-                                        users={users.filter(u => selectedUserIds.includes(u.id))}
-                                        companies={companies}
-                                    >
-                                        <Button className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0" disabled={numSelected === 0}>
-                                            <Printer className="mr-2 h-4 w-4" />
-                                            {numSelected > 0 ? `Print Cards (${numSelected})` : 'Print Cards'}
-                                        </Button>
-                                    </BulkIdCardPrintDialog>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[40px]">
-                                            <Checkbox
-                                                checked={numSelected === numFiltered && numFiltered > 0 ? true : numSelected > 0 ? 'indeterminate' : false}
-                                                onCheckedChange={handleSelectAll}
-                                                aria-label="Select all"
-                                                disabled={filteredUsersForSelection.length === 0}
-                                            />
-                                        </TableHead>
-                                        <TableHead className="w-[80px] hidden sm:table-cell"></TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead className="hidden lg:table-cell">Department</TableHead>
-                                        <TableHead className="hidden md:table-cell">Role</TableHead>
-                                        <TableHead>Status</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredActiveUsersForTable.length > 0 ? filteredActiveUsersForTable.map(user => (
-                                        <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) && "selected"}>
-                                            <TableCell>
-                                                <Checkbox
-                                                    checked={selectedUserIds.includes(user.id)}
-                                                    onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
-                                                    aria-label={`Select ${user.name}`}
-                                                    disabled={user.id === 'sadmin'}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="hidden sm:table-cell">
-                                                <Image
-                                                    src={getAvatarSrc(user)}
-                                                    width={40}
-                                                    height={40}
-                                                    className="rounded-full object-cover"
-                                                    alt={user.name ? user.name : 'User avatar'}
-                                                    data-ai-hint="person portrait"
-                                                />
-                                            </TableCell>
-                                            <TableCell className="font-medium">{user.name}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
-                                            <TableCell className="hidden lg:table-cell">{user.department || 'N/A'}</TableCell>
-                                            <TableCell className="hidden md:table-cell">
-                                                <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
-                                                    user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                                                )}>
-                                                    {(user.role || 'employee').charAt(0).toUpperCase() + (user.role || 'employee').slice(1)}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
-                                                    user.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                        user.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                                                            'bg-yellow-100 text-yellow-800'
-                                                )}>
-                                                    {(user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1)}
-                                                </span>
-                                            </TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={7} className="text-center text-muted-foreground">No active users found.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                    <PrintCardsExplorerPage />
                 </TabsContent>
+
 
                 <TabsContent value="announcements">
                     <Card>
@@ -2477,7 +2081,6 @@ export function AdminView() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Settings</CardTitle>
-                            <CardDescription>Manage global application settings and configurations.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
@@ -2487,9 +2090,7 @@ export function AdminView() {
                                         <TabsTrigger value="branding" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Branding</TabsTrigger>
                                         <TabsTrigger value="doc-types" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Document Types</TabsTrigger>
                                         <TabsTrigger value="departments" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Departments</TabsTrigger>
-                                        <TabsTrigger value="security" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Security</TabsTrigger>
                                         <TabsTrigger value="data-management" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Data Management</TabsTrigger>
-                                        <TabsTrigger value="integrations" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Integrations</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <TabsContent value="companies" className="pt-6">
@@ -2647,6 +2248,20 @@ export function AdminView() {
                                                 </div>
                                                 <p className="text-sm text-muted-foreground">This name will appear on the login page and in the header.</p>
                                             </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="site-name-size">Site Name Size</Label>
+                                                <Select value={tempSiteNameFontSize} onValueChange={setTempSiteNameFontSize}>
+                                                    <SelectTrigger className="w-[180px]">
+                                                        <SelectValue placeholder="Select Size" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="text-lg">Small</SelectItem>
+                                                        <SelectItem value="text-xl">Medium</SelectItem>
+                                                        <SelectItem value="text-2xl">Large</SelectItem>
+                                                        <SelectItem value="text-3xl">Extra Large</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
@@ -2771,52 +2386,7 @@ export function AdminView() {
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
-                                <TabsContent value="security" className="pt-6">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Authentication Security</CardTitle>
-                                            <CardDescription>Manage which email domains are allowed to sign in.</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-6">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="new-domain">Add New Domain</Label>
-                                                <div className="flex items-center gap-2">
-                                                    <Input
-                                                        id="new-domain"
-                                                        value={newDomain}
-                                                        onChange={(e) => setNewDomain(e.target.value)}
-                                                        placeholder="e.g., example.com"
-                                                        className="max-w-xs"
-                                                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddDomain(); }}
-                                                    />
-                                                    <Button onClick={handleAddDomain}>Add Domain</Button>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">Enter a domain that is allowed to sign in.</p>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Allowed Domains</Label>
-                                                {allowedDomains.length > 0 ? (
-                                                    <div className="border rounded-md p-4 space-y-2 max-w-md">
-                                                        {allowedDomains.map(domain => (
-                                                            <div key={domain} className="flex items-center justify-between">
-                                                                <span className="flex items-center gap-2 text-sm">
-                                                                    <Shield className="h-4 w-4 text-green-500" /> {domain}
-                                                                </span>
-                                                                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleRemoveDomain(domain)}>
-                                                                    <X className="mr-2 h-4 w-4" /> Remove
-                                                                </Button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <p className="text-sm text-muted-foreground max-w-md">
-                                                        No domains have been added. The default fallback domain will be used for authentication.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
+
                                 <TabsContent value="data-management" className="pt-6">
                                     <Card>
                                         <CardHeader>
@@ -2843,9 +2413,7 @@ export function AdminView() {
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
-                                <TabsContent value="integrations" className="pt-6">
-                                    <IntegrationsSettings />
-                                </TabsContent>
+
                             </Tabs>
                         </CardContent>
                     </Card>

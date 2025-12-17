@@ -83,8 +83,15 @@ export async function POST(request: NextRequest) {
         // Sanitize category folder
         const safeCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        // Directory Structure: public/uploads/{userId}/{category}/{year}/{month}/
-        const uploadDir = join(process.cwd(), 'public', 'uploads', userId, safeCategory, year, month);
+
+        // Generate ID early to use in URL
+        const docId = uuidv4();
+
+        // Updated Directory Structure: storage_vault/{userId}/{category}/{year}/{month}/
+        const vaultDir = 'storage_vault';
+        const relativeStoragePath = join(vaultDir, userId, safeCategory, year, month);
+        const uploadDir = join(process.cwd(), relativeStoragePath);
+
         await mkdir(uploadDir, { recursive: true });
 
         // Unique filename
@@ -92,25 +99,29 @@ export async function POST(request: NextRequest) {
         const sanitizedFilename = file.name.replace(/[^a-z0-9.]/gi, '_');
         const finalFilename = `${uniqueSuffix}-${sanitizedFilename}`;
         const filePath = join(uploadDir, finalFilename);
+        const finalStoragePath = join(relativeStoragePath, finalFilename);
 
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        await writeFile(filePath, buffer);
 
-        const publicUrl = `/uploads/${userId}/${safeCategory}/${year}/${month}/${finalFilename}`;
+        // Encrypt and Save
+        const { encryptBuffer } = await import('@/lib/encryption');
+        const encryptedBuffer = encryptBuffer(buffer);
+        await writeFile(filePath, encryptedBuffer);
+
+        // URL points to the secure gatekeeper
+        const publicUrl = `/api/file?id=${docId}`;
         const sizeString = `${(file.size / 1024).toFixed(0)} KB`;
         const ext = file.name.split('.').pop()?.toLowerCase() || '';
         let fileType = 'pdf';
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) fileType = 'image';
         else if (['doc', 'docx', 'xls', 'xlsx'].includes(ext)) fileType = 'doc';
 
-        const docId = uuidv4();
-
         await pool.execute(
             `INSERT INTO documents (
-            id, employee_id, filename, upload_date, file_type, category, url, size
-        ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)`,
-            [docId, userId, file.name, fileType, category, publicUrl, sizeString]
+            id, employee_id, filename, upload_date, file_type, category, url, size, storage_path, is_encrypted
+        ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)`,
+            [docId, userId, file.name, fileType, category, publicUrl, sizeString, finalStoragePath, 1]
         );
 
         return NextResponse.json({ success: true, id: docId, url: publicUrl });
@@ -199,8 +210,8 @@ export async function DELETE(request: NextRequest) {
         if (permanent) {
             console.log('🗑️ Permanent delete requested for document ID:', id);
 
-            // Get file URL before deleting from DB
-            const [rows] = await pool.execute<RowDataPacket[]>('SELECT url, filename FROM documents WHERE id = ?', [id]);
+            // Get file details before deleting from DB
+            const [rows] = await pool.execute<RowDataPacket[]>('SELECT url, filename, storage_path FROM documents WHERE id = ?', [id]);
 
             if (rows.length === 0) {
                 console.warn('⚠️ Document not found in database:', id);
@@ -211,14 +222,27 @@ export async function DELETE(request: NextRequest) {
             console.log('📄 Document details:', {
                 id,
                 filename: document.filename,
-                url: document.url
+                url: document.url,
+                storage_path: document.storage_path
             });
 
-            if (document.url) {
-                console.log('🔄 Attempting to delete physical file...');
+            if (document.storage_path) {
+                console.log('🔒 Encrypted file detected. Deleting from vault...');
+                try {
+                    const filePath = join(process.cwd(), document.storage_path);
+                    await unlink(filePath);
+                    console.log('✅ Successfully deleted from vault:', filePath);
+                } catch (err: any) {
+                    console.error('❌ Error deleting from vault:', err);
+                    if (err.code !== 'ENOENT') {
+                        // Log but continue to delete DB record? Yes, otherwise we get stuck.
+                    }
+                }
+            } else if (document.url) {
+                console.log('🔄 Legacy file detected. Attempting to delete physical file...');
                 await deletePhysicalFile(document.url);
             } else {
-                console.warn('⚠️ No URL found for document, skipping physical file deletion');
+                console.warn('⚠️ No URL or storage_path found for document, skipping physical file deletion');
             }
 
             // Hard Delete from DB

@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { DocumentList } from './document-list'
+import { EmployeeFileExplorer } from './employee-file-explorer'
 import { BirthdayList } from './birthday-list'
 import { UploadDialog } from './upload-dialog'
 import { PhotoAdjustmentDialog } from './photo-adjustment-dialog'
@@ -57,8 +57,7 @@ export function EmployeeView() {
     // The API /api/documents returns filtered list for employees.
     // So 'serverDocuments' IS 'userDocuments'.
 
-    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>({ key: 'uploadDate', direction: 'descending' });
-    const [selectedTypes, setSelectedTypes] = useState<string[]>(['All']);
+
     const [selectedYear, setSelectedYear] = useState<string>('all');
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
@@ -103,83 +102,7 @@ export function EmployeeView() {
         mutateDocuments();
     }, [mutateDocuments])
 
-    const requestSort = useCallback((key: SortKey) => {
-        setSortConfig(currentSortConfig => {
-            let direction: SortDirection = 'ascending';
-            if (currentSortConfig && currentSortConfig.key === key && currentSortConfig.direction === 'ascending') {
-                direction = 'descending';
-            }
-            return { key, direction };
-        });
-    }, []);
 
-    const handleTypeSelection = useCallback((type: string) => {
-        setSelectedTypes(prevTypes => {
-            if (type === 'All') {
-                return ['All'];
-            }
-
-            const newTypes = prevTypes.filter(t => t !== 'All');
-
-            if (newTypes.includes(type)) {
-                const filteredTypes = newTypes.filter(t => t !== type);
-                return filteredTypes.length === 0 ? ['All'] : filteredTypes;
-            } else {
-                return [...newTypes, type];
-            }
-        });
-    }, []);
-
-    const { docYears, docMonths } = useMemo(() => {
-        const years = new Set<string>();
-        const months = new Set<number>();
-
-
-
-        (serverDocuments as Document[])
-            .filter(doc => selectedTypes.includes('All') || selectedTypes.includes(doc.type))
-            .forEach(doc => {
-                const date = new Date(doc.uploadDate);
-                years.add(date.getFullYear().toString());
-                if (selectedYear === 'all' || date.getFullYear().toString() === selectedYear) {
-                    months.add(date.getMonth());
-                }
-            });
-
-        return {
-            docYears: Array.from(years).sort((a, b) => Number(b) - Number(a)),
-            docMonths: Array.from(months).sort((a, b) => a - b)
-        };
-    }, [serverDocuments, selectedTypes, selectedYear]);
-
-    const filteredDocuments = useMemo(() => {
-        return (serverDocuments as Document[]).filter(doc => {
-            const date = new Date(doc.uploadDate);
-            const typeMatch = selectedTypes.includes('All') || selectedTypes.includes(doc.type);
-            const yearMatch = selectedYear === 'all' || date.getFullYear().toString() === selectedYear;
-            const monthMatch = selectedMonth === 'all' || date.getMonth().toString() === selectedMonth;
-            return typeMatch && yearMatch && monthMatch;
-        });
-    }, [serverDocuments, selectedTypes, selectedYear, selectedMonth]);
-
-    const sortedAndFilteredDocuments = useMemo(() => {
-        let sortableItems = [...filteredDocuments];
-        if (sortConfig !== null) {
-            sortableItems.sort((a, b) => {
-                const aValue = a[sortConfig.key] || '';
-                const bValue = b[sortConfig.key] || '';
-
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
-                return 0;
-            });
-        }
-        return sortableItems;
-    }, [filteredDocuments, sortConfig]);
 
     const { holidayYears, holidayMonths } = useMemo(() => {
         const years = new Set<string>();
@@ -293,85 +216,7 @@ export function EmployeeView() {
                     <TabsTrigger value="birthdays" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Birthdays</TabsTrigger>
                 </TabsList>
                 <TabsContent value="documents">
-                    <Card className="mb-4">
-                        <CardHeader>
-                            <CardTitle>Filter by</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label className="text-sm font-medium">Document Type</Label>
-                                <div className="flex flex-wrap items-center gap-2 pt-2">
-                                    <Button
-                                        variant={selectedTypes.includes('All') ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => handleTypeSelection('All')}
-                                        className={cn(
-                                            "rounded-full transition-all",
-                                            selectedTypes.includes('All')
-                                                ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
-                                                : "hover:bg-accent"
-                                        )}
-                                    >
-                                        All
-                                    </Button>
-                                    {documentTypesList.map(type => (
-                                        <Button
-                                            key={type}
-                                            variant={selectedTypes.includes(type) ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => handleTypeSelection(type)}
-                                            className={cn(
-                                                "rounded-full transition-all",
-                                                selectedTypes.includes(type)
-                                                    ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
-                                                    : "hover:bg-accent"
-                                            )}
-                                        >
-                                            {type}
-                                        </Button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-4 w-full">
-                                <div className="flex items-center gap-2">
-                                    <Label className="text-sm font-medium">Year</Label>
-                                    <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select Year" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Years</SelectItem>
-                                            {docYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Label className="text-sm font-medium">Month</Label>
-                                    <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={selectedYear === 'all'}>
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select Month" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Months</SelectItem>
-                                            {docMonths.map(month => <SelectItem key={month} value={String(month)}>{monthNames[month]}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Your Files</CardTitle>
-                            <CardDescription>
-                                Here are all documents associated with your account.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <DocumentList documents={sortedAndFilteredDocuments} users={serverUsers as User[]} onSort={requestSort} sortConfig={sortConfig} requirePin={true} />
-                        </CardContent>
-                    </Card>
+                    <EmployeeFileExplorer documents={serverDocuments as Document[]} currentUser={currentUser as User} />
                 </TabsContent>
                 <TabsContent value="holidays">
                     <Card>

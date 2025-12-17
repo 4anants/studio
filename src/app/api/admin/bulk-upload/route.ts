@@ -18,63 +18,32 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing file or userId' }, { status: 400 });
         }
 
+
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Directory Structure: public/uploads/{userId}/{docType}/{year}/{month}/
-        // Sanitizing inputs to prevent directory traversal is handled by not letting user define structure openly,
-        // but we should still be careful with filenames.
-
-        // Fix: Month is 0-11 index, usually we want 01-12 for folders
+        // Updated Directory Structure: storage_vault/{userId}/{docType}/{year}/{month}/
         const monthFolder = (parseInt(month) + 1).toString().padStart(2, '0');
-
-        // Sanitize doc type for folder name
         const safeDocType = docType.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        const uploadDir = join(process.cwd(), 'public', 'uploads', userId, safeDocType, year, monthFolder);
+        const vaultDir = 'storage_vault';
+        const relativeStoragePath = join(vaultDir, userId, safeDocType, year, monthFolder);
+        const uploadDir = join(process.cwd(), relativeStoragePath);
 
         // Create directory
         await mkdir(uploadDir, { recursive: true });
 
-        // Filename: Using original or customized?
-        // Let's keep original but ensure unique or timestamped?
-        // For now, overwrite if exists or just save.
+        // Filename
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const sanitizedFilename = file.name.replace(/[^a-z0-9.]/gi, '_');
         const finalFilename = `${uniqueSuffix}-${sanitizedFilename}`;
         const filePath = join(uploadDir, finalFilename);
+        const finalStoragePath = join(relativeStoragePath, finalFilename);
 
-        // Save File
-        await writeFile(filePath, buffer);
-
-        // Public URL (relative)
-        const publicUrl = `/uploads/${userId}/${safeDocType}/${year}/${monthFolder}/${finalFilename}`;
-
-        // Format Upload Date (approximate to 1st of that month/year for record? or Current Time?)
-        // Usually 'upload_date' is NOW.
-
-        // DB Check for collision based on rules
-        // For 'Salary Slip', we only allow one per month.
-        let existingDocs: any[] = [];
-        const targetFolderStr = `/${year}/${monthFolder}/`;
-
-        if (docType === 'Salary Slip') {
-            // Find any salary slip for this user in this month
-            const folderPrefix = `/uploads/${userId}/${safeDocType}/${year}/${monthFolder}/`;
-            const [rows] = await pool.query<any[]>(
-                `SELECT id, url FROM documents WHERE employee_id = ? AND category = ? AND is_deleted = 0 AND url LIKE ?`,
-                [userId, docType, `${folderPrefix}%`]
-            );
-            existingDocs = rows;
-        } else {
-            const [rows] = await pool.query<any[]>(
-                `SELECT id, url FROM documents WHERE employee_id = ? AND filename = ? AND category = ? AND is_deleted = 0`,
-                [userId, file.name, docType]
-            );
-            existingDocs = rows;
-        }
-
-        const duplicateDoc = existingDocs.find((d: any) => d.url.includes(targetFolderStr));
+        // Encrypt and Save
+        const { encryptBuffer } = await import('@/lib/encryption');
+        const encryptedBuffer = encryptBuffer(buffer);
+        await writeFile(filePath, encryptedBuffer);
 
         const sizeString = `${(file.size / 1024).toFixed(0)} KB`;
         const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -82,32 +51,77 @@ export async function POST(request: NextRequest) {
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) fileType = 'image';
         else if (['doc', 'docx', 'xls', 'xlsx'].includes(ext)) fileType = 'doc';
 
+        // Check for existing document
+        let duplicateDoc: any = null;
+
+        if (docType === 'Salary Slip') {
+            // Check by Month/Year
+            const targetMonth = parseInt(month) + 1;
+            const [rows] = await pool.query<any[]>(
+                `SELECT id, url, storage_path FROM documents 
+                WHERE employee_id = ? 
+                AND category = ? 
+                AND is_deleted = 0 
+                AND YEAR(upload_date) = ? 
+                AND MONTH(upload_date) = ?`,
+                [userId, docType, year, targetMonth]
+            );
+            if (rows.length > 0) duplicateDoc = rows[0];
+        } else {
+            // Check by filename
+            const [rows] = await pool.query<any[]>(
+                `SELECT id, url, storage_path FROM documents 
+                 WHERE employee_id = ? 
+                 AND filename = ? 
+                 AND category = ? 
+                 AND is_deleted = 0`,
+                [userId, file.name, docType]
+            );
+            if (rows.length > 0) duplicateDoc = rows[0];
+        }
+
         if (duplicateDoc) {
             // Update existing
-            // Try to delete old file
+            // Delete old file
             try {
-                const oldFilePath = join(process.cwd(), 'public', duplicateDoc.url);
-                await unlink(oldFilePath);
+                if (duplicateDoc.storage_path) {
+                    const oldFilePath = join(process.cwd(), duplicateDoc.storage_path);
+                    await unlink(oldFilePath);
+                } else if (duplicateDoc.url && duplicateDoc.url.startsWith('/uploads')) {
+                    const cleanUrl = duplicateDoc.url.startsWith('/') ? duplicateDoc.url.substring(1) : duplicateDoc.url;
+                    const oldFilePath = join(process.cwd(), 'public', cleanUrl);
+                    await unlink(oldFilePath);
+                }
             } catch (e) {
                 console.warn('Failed to delete old file:', e);
             }
 
+            // Update DB
+            // If we update, the URL should theoretically stay same if we want to preserve links,
+            // BUT if we are migrating to secure URLs, we should update the URL to the API format.
+            // AND we must ensure the ID is preserved.
+
+            const newUrl = `/api/file?id=${duplicateDoc.id}`;
+
             await pool.execute(
-                `UPDATE documents SET url = ?, size = ?, upload_date = NOW(), file_type = ? WHERE id = ?`,
-                [publicUrl, sizeString, fileType, duplicateDoc.id]
+                `UPDATE documents SET url = ?, size = ?, upload_date = NOW(), file_type = ?, storage_path = ?, is_encrypted = 1 WHERE id = ?`,
+                [newUrl, sizeString, fileType, finalStoragePath, duplicateDoc.id]
             );
-            return NextResponse.json({ success: true, url: publicUrl, id: duplicateDoc.id });
+            return NextResponse.json({ success: true, url: newUrl, id: duplicateDoc.id });
         } else {
             // Insert new
             const docId = uuidv4();
+            const publicUrl = `/api/file?id=${docId}`;
+
             await pool.execute(
                 `INSERT INTO documents (
-                id, employee_id, filename, upload_date, file_type, category, url, size
-            ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)`,
-                [docId, userId, file.name, fileType, docType, publicUrl, sizeString]
+                id, employee_id, filename, upload_date, file_type, category, url, size, storage_path, is_encrypted
+            ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)`,
+                [docId, userId, file.name, fileType, docType, publicUrl, sizeString, finalStoragePath, 1]
             );
             return NextResponse.json({ success: true, url: publicUrl, id: docId });
         }
+
     } catch (error) {
         console.error('Upload error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
