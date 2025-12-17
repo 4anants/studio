@@ -136,7 +136,7 @@ export function BirthdayCelebration({ user }: BirthdayCelebrationProps) {
 
                 <DialogFooter className="sm:justify-center">
                     <Button
-                        className="w-full sm:w-auto bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600 border-0 text-white font-bold"
+                        className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0 font-bold"
                         onClick={handleClose}
                     >
                         Thank You! 🎉

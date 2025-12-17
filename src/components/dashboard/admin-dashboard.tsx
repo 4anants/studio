@@ -57,7 +57,7 @@ export function AdminDashboard() {
     return (
         <div className="space-y-8">
             <div className="flex gap-2 border-b pb-4">
-                <Button variant="default" className="flex items-center gap-2">
+                <Button className="flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
                 </Button>

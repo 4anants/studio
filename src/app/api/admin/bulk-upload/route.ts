@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
                 `UPDATE documents SET url = ?, size = ?, upload_date = NOW(), file_type = ? WHERE id = ?`,
                 [publicUrl, sizeString, fileType, duplicateDoc.id]
             );
+            return NextResponse.json({ success: true, url: publicUrl, id: duplicateDoc.id });
         } else {
             // Insert new
             const docId = uuidv4();
@@ -105,9 +106,8 @@ export async function POST(request: NextRequest) {
             ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)`,
                 [docId, userId, file.name, fileType, docType, publicUrl, sizeString]
             );
+            return NextResponse.json({ success: true, url: publicUrl, id: docId });
         }
-
-        return NextResponse.json({ success: true, url: publicUrl });
     } catch (error) {
         console.error('Upload error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -114,7 +114,7 @@ export function AddHolidayDialog({ onAdd, children }: AddHolidayDialogProps) {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleAdd}>Add Holiday</Button>
+          <Button onClick={handleAdd} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">Add Holiday</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

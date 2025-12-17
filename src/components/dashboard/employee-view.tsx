@@ -36,7 +36,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { Calendar, Bell, MailOpen, Mail, AlertTriangle, LayoutDashboard } from 'lucide-react'
+import { Calendar, Bell, MailOpen, Mail, AlertTriangle, LayoutDashboard, Shield } from 'lucide-react'
 import Link from 'next/link'
 
 // Simulate a logged-in employee user
@@ -267,6 +267,7 @@ export function EmployeeView() {
 
     return (
         <>
+
             <div className="flex items-center justify-between">
                 <div className="grid gap-2">
                     <h1 className="text-3xl font-bold tracking-tight">Employee Dashboard</h1>
@@ -279,17 +280,17 @@ export function EmployeeView() {
             </div>
 
             <Tabs value={activeTab} onValueChange={onTabChange} className="pt-4">
-                <TabsList>
-                    <TabsTrigger value="documents">My Documents</TabsTrigger>
-                    <TabsTrigger value="holidays">Holiday List</TabsTrigger>
-                    <TabsTrigger value="announcements" className="relative">
+                <TabsList className="bg-transparent p-0 gap-2 h-auto flex-wrap">
+                    <TabsTrigger value="documents" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">My Documents</TabsTrigger>
+                    <TabsTrigger value="holidays" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Holiday List</TabsTrigger>
+                    <TabsTrigger value="announcements" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all relative data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">
                         Announcements
                         {hasUnreadAnnouncements && <span className="relative flex h-3 w-3 ml-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                         </span>}
                     </TabsTrigger>
-                    <TabsTrigger value="birthdays">Birthdays</TabsTrigger>
+                    <TabsTrigger value="birthdays" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Birthdays</TabsTrigger>
                 </TabsList>
                 <TabsContent value="documents">
                     <Card className="mb-4">
@@ -304,6 +305,12 @@ export function EmployeeView() {
                                         variant={selectedTypes.includes('All') ? 'default' : 'outline'}
                                         size="sm"
                                         onClick={() => handleTypeSelection('All')}
+                                        className={cn(
+                                            "rounded-full transition-all",
+                                            selectedTypes.includes('All')
+                                                ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                                                : "hover:bg-accent"
+                                        )}
                                     >
                                         All
                                     </Button>
@@ -313,6 +320,12 @@ export function EmployeeView() {
                                             variant={selectedTypes.includes(type) ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => handleTypeSelection(type)}
+                                            className={cn(
+                                                "rounded-full transition-all",
+                                                selectedTypes.includes(type)
+                                                    ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                                                    : "hover:bg-accent"
+                                            )}
                                         >
                                             {type}
                                         </Button>
@@ -375,6 +388,12 @@ export function EmployeeView() {
                                             variant={holidayLocationFilter === 'all' ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => setHolidayLocationFilter('all')}
+                                            className={cn(
+                                                "rounded-full transition-all",
+                                                holidayLocationFilter === 'all'
+                                                    ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                                                    : "hover:bg-accent"
+                                            )}
                                         >
                                             All
                                         </Button>
@@ -384,6 +403,12 @@ export function EmployeeView() {
                                                 variant={holidayLocationFilter === loc ? 'default' : 'outline'}
                                                 size="sm"
                                                 onClick={() => setHolidayLocationFilter(loc)}
+                                                className={cn(
+                                                    "rounded-full transition-all",
+                                                    holidayLocationFilter === loc
+                                                        ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                                                        : "hover:bg-accent"
+                                                )}
                                             >
                                                 {loc}
                                             </Button>

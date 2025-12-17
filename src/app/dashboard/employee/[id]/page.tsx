@@ -1,6 +1,6 @@
-
 'use client';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { departments } from '@/lib/constants';
 import type { User as UserType, Company, Document, Department } from '@/lib/types';
 import { useData } from '@/hooks/use-data';
@@ -33,7 +33,9 @@ import { Input } from "@/components/ui/input"
 type SortKey = keyof Document;
 type SortDirection = 'ascending' | 'descending';
 
+
 export default function EmployeeProfilePage() {
+    const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
     const params = useParams<{ id: string }>();
@@ -70,25 +72,25 @@ export default function EmployeeProfilePage() {
 
     const role = searchParams.get('role');
     const isSelfView = role !== 'admin';
+    const isOwnProfile = session?.user?.id === user?.id;
 
     useEffect(() => {
         setIsMounted(true);
 
-        if (isSelfView) {
-            fetch('/api/document-pin')
-                .then(res => res.json())
-                .then(data => {
-                    if (data && typeof data.pinSet === 'boolean') {
-                        setHasPin(data.pinSet);
-                    }
-                })
-                .catch(err => console.error('Failed to check PIN status', err));
-        }
-    }, [isSelfView]);
+        // Check PIN status for the current logged-in user (whether Admin or Employee)
+        fetch('/api/document-pin')
+            .then(res => res.json())
+            .then(data => {
+                if (data && typeof data.pinSet === 'boolean') {
+                    setHasPin(data.pinSet);
+                }
+            })
+            .catch(err => console.error('Failed to check PIN status', err));
+    }, []);
 
     const handlePinSuccess = useCallback(() => {
         setHasPin(true);
-        toast({ title: 'Document PIN updated successfully' });
+        toast({ title: 'Document PIN verified/updated successfully' });
     }, [toast]);
     const isSadmin = user?.id === 'sadmin';
 
@@ -147,8 +149,17 @@ export default function EmployeeProfilePage() {
 
     const userDocuments = useMemo(() => {
         if (!id) return [];
-        return (serverDocuments as Document[]).filter(doc => doc.ownerId === id);
-    }, [id, serverDocuments]);
+        return (serverDocuments as Document[]).filter(doc => {
+            const isOwner = doc.ownerId === id;
+            if (!isOwner) return false;
+
+            // If viewing own documents, show all.
+            if (isSelfView) return true;
+
+            // If Admin viewing others, ONLY show 'Personal' documents.
+            return doc.type === 'Personal';
+        });
+    }, [id, serverDocuments, isSelfView]);
 
     const requestSort = useCallback((key: SortKey) => {
         setSortConfig(currentSortConfig => {
@@ -247,8 +258,8 @@ export default function EmployeeProfilePage() {
 
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-2">
-                                    {isSelfView && (
-                                        <Button variant="outline" className="w-full" onClick={() => setPinSetupOpen(true)}>
+                                    {(isSelfView || isOwnProfile) && (
+                                        <Button variant="outline" className="w-full rounded-full shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setPinSetupOpen(true)}>
                                             <Lock className="mr-2 h-4 w-4" />
                                             {hasPin ? 'Change Document PIN' : 'Set Document PIN'}
                                         </Button>
@@ -388,7 +399,7 @@ export default function EmployeeProfilePage() {
                                 <CardDescription>All documents uploaded for {user.name}.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <DocumentList documents={sortedDocuments} users={serverUsers as UserType[]} onSort={requestSort} sortConfig={sortConfig} onDelete={handleDeleteDocument} requirePin={isSelfView} />
+                                <DocumentList documents={sortedDocuments} users={serverUsers as UserType[]} onSort={requestSort} sortConfig={sortConfig} onDelete={handleDeleteDocument} requirePin={true} />
                             </CardContent>
                         </Card>
                     )}

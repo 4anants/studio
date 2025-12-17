@@ -1,7 +1,7 @@
 'use client';
 
 import { AdminView } from '@/app/dashboard/admin-view'
-import { AdminDashboard } from '@/components/dashboard/admin-dashboard'
+
 import { EmployeeDashboard } from '@/components/dashboard/employee-dashboard'
 import { EmployeeView } from '@/components/dashboard/employee-view'
 import { Suspense, useEffect } from 'react'
@@ -14,9 +14,9 @@ function DashboardContent({ role, view }: { role: string | null, view: string | 
   console.log('[DashboardContent] Rendering with role:', role, 'view:', view);
 
   if (role === 'admin') {
-    const component = view === 'panel' ? 'AdminView' : 'AdminDashboard';
+    const component = view === 'panel' ? 'AdminView' : 'EmployeeDashboard (Admin Mode)';
     console.log('[DashboardContent] Admin role detected, rendering:', component);
-    return view === 'panel' ? <AdminView /> : <AdminDashboard />
+    return view === 'panel' ? <AdminView /> : <EmployeeDashboard />
   }
 
   const component = view === 'panel' ? 'EmployeeView' : 'EmployeeDashboard';

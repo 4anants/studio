@@ -87,233 +87,141 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Received user data:', body);
 
-    // Authorization Check
-    // Allow if Admin OR if User is updating their own profile
+    // Authorization limits
     if (session.user.role !== 'admin' && session.user.id !== body.id) {
       return NextResponse.json({ error: 'Unauthorized: You can only edit your own profile' }, { status: 403 });
     }
 
-    let {
-      id,
-      name,
-      displayName,
-      email,
-      personalEmail,
-      password,
-      role,
-      designation,
-      department,
-      mobile,
-      emergencyContact,
-      dateOfBirth,
-      joiningDate,
-      resignationDate,
-      bloodGroup,
-      company,
-      location,
-      status,
-      avatar
-    } = body;
+    // Clone body to mutable object
+    const userData = { ...body };
 
     // Security: Prevent privilege escalation for non-admins
     if (session.user.role !== 'admin') {
-      role = 'employee'; // Non-admins cannot change their role
-      status = 'active'; // Non-admins cannot change their status
-      // You might want to restrict other fields too, but these are the critical ones.
+      userData.role = 'employee';
+      userData.status = 'active';
     }
 
-    // Split name into first_name and last_name
-    const nameParts = (name || '').trim().split(' ');
-    const first_name = nameParts[0] || '';
-    const last_name = nameParts.slice(1).join(' ') || '';
+    if (!userData.email) {
+      // If it's an update, email might be missing if we are just updating status? 
+      // But usually we need ID.
+      if (!userData.id) return NextResponse.json({ error: 'Email or ID is required' }, { status: 400 });
+    }
 
-    // Find company_id from company name
-    let company_id = null;
-    if (company) {
-      try {
-        const [companyRows] = await pool.query<RowDataPacket[]>(
-          'SELECT id FROM companies WHERE name = ? LIMIT 1',
-          [company]
-        );
-        if (companyRows.length > 0) {
-          company_id = companyRows[0].id;
-        }
-      } catch (err) {
-        console.error('Error finding company:', err);
+    // Determine if insert or update
+    let isUpdate = false;
+    let existingUser: any = null;
+
+    if (userData.id) {
+      const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userData.id]);
+      if (rows.length > 0) {
+        isUpdate = true;
+        existingUser = rows[0];
       }
     }
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    // Fields processing
+    const nameParts = (userData.name || '').trim().split(' ');
+    const first_name = nameParts[0] || '';
+    const last_name = nameParts.slice(1).join(' ') || '';
+    const username = userData.email ? userData.email.split('@')[0] : (existingUser?.username || '');
+
+    // Company ID lookup
+    let company_id = existingUser?.company_id || null;
+    if (userData.company) {
+      try {
+        const [companyRows] = await pool.query<RowDataPacket[]>('SELECT id FROM companies WHERE name = ? LIMIT 1', [userData.company]);
+        if (companyRows.length > 0) company_id = companyRows[0].id;
+      } catch (err) { console.error(err); }
+    } else if (userData.companyId) {
+      company_id = userData.companyId;
     }
 
-    const username = email.split('@')[0];
-    const passwordHash = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('default123', 10);
+    // Password handling
+    let passwordHash = existingUser?.password_hash;
+    if (userData.password) {
+      passwordHash = await bcrypt.hash(userData.password, 10);
+    } else if (!isUpdate) {
+      // New user default password
+      passwordHash = await bcrypt.hash('default123', 10);
+    }
 
-    try {
-      await pool.execute(
-        `INSERT INTO users (
-            id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
-            designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
-            resignation_date, blood_group, company_id, location, status, avatar
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-            first_name = VALUES(first_name),
-            last_name = VALUES(last_name),
-            display_name = VALUES(display_name),
-            personal_email = VALUES(personal_email),
-            designation = VALUES(designation),
-            department = VALUES(department),
-            mobile = VALUES(mobile),
-            emergency_contact = VALUES(emergency_contact),
-            date_of_birth = VALUES(date_of_birth),
-            joining_date = VALUES(joining_date),
-            resignation_date = VALUES(resignation_date),
-            blood_group = VALUES(blood_group),
-            company_id = VALUES(company_id),
-            location = VALUES(location),
-            status = VALUES(status),
-            is_admin = VALUES(is_admin),
-            avatar = VALUES(avatar)
-        `,
+    if (isUpdate) {
+      // UPDATE
+      // We only update fields that are present in userData or derived.
+      // But for simplicity/consistency with "Save" form, we update everything provided.
+      // For "Soft Delete" (only status provided), we need to be careful not to nullify others if payload is partial.
+      // The admin-view often sends full object, BUT `handleBulkSoftDeleteUsers` sends `{ ...user, status: 'deleted' }`.
+      // So it sends full object.
+      // EXCEPT `password` is usually missing in frontend object.
+
+      await pool.query(
+        `UPDATE users SET 
+                first_name = ?, last_name = ?, display_name = ?, personal_email = ?, 
+                designation = ?, department = ?, mobile = ?, emergency_contact = ?, 
+                date_of_birth = ?, joining_date = ?, resignation_date = ?, blood_group = ?, 
+                company_id = ?, location = ?, status = ?, is_admin = ?, avatar = ?, 
+                password_hash = ?
+             WHERE id = ?`,
         [
-          id,
+          first_name || existingUser.first_name,
+          last_name || existingUser.last_name,
+          userData.displayName || existingUser.display_name,
+          userData.personalEmail || existingUser.personal_email,
+          userData.designation || existingUser.designation,
+          userData.department || existingUser.department,
+          userData.mobile || existingUser.mobile,
+          userData.emergencyContact || existingUser.emergency_contact,
+          userData.dateOfBirth || existingUser.date_of_birth,
+          userData.joiningDate || existingUser.joining_date,
+          userData.resignationDate || existingUser.resignation_date,
+          userData.bloodGroup || existingUser.blood_group,
+          company_id,
+          userData.location || existingUser.location,
+          userData.status || existingUser.status,
+          (userData.role === 'admin'),
+          userData.avatar || existingUser.avatar, // keep existing avatar if not sent? Or if sent as null? 
+          // Admin view sends avatar string.
+          passwordHash,
+          userData.id
+        ]
+      );
+    } else {
+      // INSERT
+      // Needs all required fields.
+      if (!userData.email) return NextResponse.json({ error: 'Email is required for new user' }, { status: 400 });
+
+      await pool.query(
+        `INSERT INTO users (
+                id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
+                designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
+                resignation_date, blood_group, company_id, location, status, avatar
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userData.id,
           username,
           first_name,
           last_name,
-          displayName || null,
-          email,
-          personalEmail || null,
+          userData.displayName || null,
+          userData.email,
+          userData.personalEmail || null,
           passwordHash,
-          role === 'admin',
-          designation || null,
-          department || null,
-          mobile || null,
-          emergencyContact || null,
-          dateOfBirth || null,
-          joiningDate || null,
-          resignationDate || null,
-          bloodGroup || null,
+          userData.role === 'admin',
+          userData.designation || null,
+          userData.department || null,
+          userData.mobile || null,
+          userData.emergencyContact || null,
+          userData.dateOfBirth || null,
+          userData.joiningDate || null,
+          userData.resignationDate || null,
+          userData.bloodGroup || null,
           company_id,
-          location || null,
-          status || 'active',
-          avatar || null
+          userData.location || null,
+          userData.status || 'active',
+          userData.avatar || null
         ]
       );
-    } catch (err: any) {
-      // Check if error is due to missing 'display_name' column (Error Code: 1054)
-      if (err.code === 'ER_BAD_FIELD_ERROR' && err.sqlMessage?.includes("display_name")) {
-        console.log("Column 'display_name' missing. Attempting to add it...");
-        // Add the column
-        await pool.query(`ALTER TABLE users ADD COLUMN display_name VARCHAR(255) AFTER last_name`);
-        // Retry the insert
-        await pool.execute(
-          `INSERT INTO users (
-                    id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
-                    designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
-                    resignation_date, blood_group, company_id, location, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    first_name = VALUES(first_name),
-                    last_name = VALUES(last_name),
-                    display_name = VALUES(display_name),
-                    personal_email = VALUES(personal_email),
-                    designation = VALUES(designation),
-                    department = VALUES(department),
-                    mobile = VALUES(mobile),
-                    emergency_contact = VALUES(emergency_contact),
-                    date_of_birth = VALUES(date_of_birth),
-                    joining_date = VALUES(joining_date),
-                    resignation_date = VALUES(resignation_date),
-                    blood_group = VALUES(blood_group),
-                    company_id = VALUES(company_id),
-                    location = VALUES(location),
-                    status = VALUES(status),
-                    is_admin = VALUES(is_admin)
-                `,
-          [
-            id,
-            username,
-            first_name,
-            last_name,
-            displayName || null,
-            email,
-            personalEmail || null,
-            passwordHash,
-            role === 'admin',
-            designation || null,
-            department || null,
-            mobile || null,
-            emergencyContact || null,
-            dateOfBirth || null,
-            joiningDate || null,
-            resignationDate || null,
-            bloodGroup || null,
-            company_id,
-            location || null,
-            status || 'active'
-          ]
-        );
-      } else if (err.code === 'ER_DATA_TOO_LONG' && err.sqlMessage?.includes("'avatar'")) {
-        console.log("Column 'avatar' too small. upgrading to LONGTEXT...");
-        await pool.query(`ALTER TABLE users MODIFY COLUMN avatar LONGTEXT`);
-
-        // Retry the insert with avatar (copy of the main insert block)
-        await pool.execute(
-          `INSERT INTO users (
-              id, username, first_name, last_name, display_name, email, personal_email, password_hash, is_admin, 
-              designation, department, mobile, emergency_contact, date_of_birth, joining_date, 
-              resignation_date, blood_group, company_id, location, status, avatar
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE
-              first_name = VALUES(first_name),
-              last_name = VALUES(last_name),
-              display_name = VALUES(display_name),
-              personal_email = VALUES(personal_email),
-              designation = VALUES(designation),
-              department = VALUES(department),
-              mobile = VALUES(mobile),
-              emergency_contact = VALUES(emergency_contact),
-              date_of_birth = VALUES(date_of_birth),
-              joining_date = VALUES(joining_date),
-              resignation_date = VALUES(resignation_date),
-              blood_group = VALUES(blood_group),
-              company_id = VALUES(company_id),
-              location = VALUES(location),
-              status = VALUES(status),
-              is_admin = VALUES(is_admin),
-              avatar = VALUES(avatar)
-          `,
-          [
-            id,
-            username,
-            first_name,
-            last_name,
-            displayName || null,
-            email,
-            personalEmail || null,
-            passwordHash,
-            role === 'admin',
-            designation || null,
-            department || null,
-            mobile || null,
-            emergencyContact || null,
-            dateOfBirth || null,
-            joiningDate || null,
-            resignationDate || null,
-            bloodGroup || null,
-            company_id,
-            location || null,
-            status || 'active',
-            avatar || null
-          ]
-        );
-      } else {
-        throw err;
-      }
     }
 
-    console.log('User saved successfully:', id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error saving user:', error);

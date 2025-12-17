@@ -10,7 +10,7 @@ import { StageThree } from './stage-three';
 import { FileRow } from './types';
 
 interface BulkUploadDialogProps {
-    onBulkUploadComplete?: (count: number) => void;
+    onBulkUploadComplete?: (count: number, ids?: string[]) => void;
     users?: any[]; // Allow passing users even if we don't use them strictly in StageTwo yet (it fetches)
 }
 
@@ -68,9 +68,11 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
             // But actually, onBulkUploadComplete should probably be triggered explicitly when user clicks 'Done'.
             // However, if they close the dialog, we might want to refresh anyway if we are in Stage 3.
             if (stage === 3) {
-                const successCount = fileRows.filter(r => r.status === 'success').length;
+                const successRows = fileRows.filter(r => r.status === 'success');
+                const successCount = successRows.length;
                 if (successCount > 0 && onBulkUploadComplete) {
-                    onBulkUploadComplete(successCount);
+                    const ids = successRows.map(r => r.createdDocumentId).filter((id): id is string => !!id);
+                    onBulkUploadComplete(successCount, ids);
                 }
             }
 
@@ -86,7 +88,7 @@ export function BulkUploadDialog({ onBulkUploadComplete, users }: BulkUploadDial
     return (
         <Dialog open={open} onOpenChange={handleClose}>
             <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                     <Upload className="mr-2 h-4 w-4" />
                     Bulk Upload
                 </Button>

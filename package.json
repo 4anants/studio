@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS='--max-http-header-size=128000' next dev -H 127.0.0.1 -p 9003",
+    "dev": "cross-env NODE_OPTIONS='--max-http-header-size=128000' next dev -H localhost -p 9003",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

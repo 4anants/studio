@@ -127,7 +127,7 @@ export function IdCardDesignerDialog({ sampleUser, company }: IdCardDesignerDial
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                     <Settings2 className="mr-2 h-4 w-4" />
                     Design Card
                 </Button>
@@ -146,7 +146,7 @@ export function IdCardDesignerDialog({ sampleUser, company }: IdCardDesignerDial
                                 <Button variant="outline" size="sm" onClick={handleReset} title="Reset to Defaults">
                                     <RotateCcw className="h-3 w-3 mr-1" /> Reset
                                 </Button>
-                                <Button size="sm" onClick={handleSave} title="Save Configuration">
+                                <Button size="sm" onClick={handleSave} title="Save Configuration" className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                     <Save className="h-3 w-3 mr-1" /> Save
                                 </Button>
                             </div>

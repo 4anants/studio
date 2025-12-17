@@ -114,7 +114,7 @@ export function StageOne({ defaultConfig, onNext }: StageOneProps) {
             )}
 
             <div className="mt-auto flex justify-end pt-6">
-                <Button size="lg" onClick={() => onNext(files, config)} disabled={files.length === 0}>
+                <Button size="lg" onClick={() => onNext(files, config)} disabled={files.length === 0} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                     Proceed to Review
                 </Button>
             </div>

@@ -6,6 +6,7 @@ import {
   LogOut,
   User,
   LayoutDashboard,
+  Shield,
 } from 'lucide-react'
 // ... imports
 
@@ -41,11 +42,18 @@ export function DashboardHeader() {
   const [siteName, setSiteName] = useState(CompanyName);
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
 
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+
   useEffect(() => {
     const storedSiteName = localStorage.getItem('siteName');
     if (storedSiteName) {
       setSiteName(storedSiteName);
       document.title = storedSiteName;
+    }
+
+    const storedLogo = localStorage.getItem('companyLogo');
+    if (storedLogo) {
+      setLogoSrc(storedLogo);
     }
 
     const handleStorageChange = () => {
@@ -54,9 +62,14 @@ export function DashboardHeader() {
         setSiteName(storedSiteName);
         document.title = storedSiteName;
       }
+
+      const storedLogo = localStorage.getItem('companyLogo');
+      setLogoSrc(storedLogo); // This handles both new logo and reset (null)
     };
 
     window.addEventListener('storage', handleStorageChange);
+
+    // ... existing user session logic ... 
 
     // Determine the current user
     let user: UserType | undefined;
@@ -169,8 +182,12 @@ export function DashboardHeader() {
             href={`/dashboard?${searchParams.toString()}`}
             className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
           >
-            <div className="h-8 w-8">
-              <AseLogo />
+            <div className="h-8 w-8 relative">
+              {logoSrc ? (
+                <img src={logoSrc} alt="Logo" className="h-full w-full object-contain" />
+              ) : (
+                <AseLogo />
+              )}
             </div>
             <span className="font-bold">{siteName}</span>
           </Link>
@@ -189,25 +206,42 @@ export function DashboardHeader() {
 
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-        <Link
-          href={`/dashboard?${searchParams.toString()}`}
-          className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
-        >
-          <div className="h-8 w-8">
-            <AseLogo />
-          </div>
-          <span className="font-bold">{siteName}</span>
-        </Link>
+    <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background px-4 sm:px-6 relative">
+      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6 z-10">
         <Link
           href={`/dashboard?role=${searchParams.get('role') || 'employee'}`}
-          className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2"
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 whitespace-nowrap animate-gradient-xy bg-[length:200%_200%]"
         >
           <LayoutDashboard className="h-4 w-4" />
           Dashboard
         </Link>
+        {currentUser?.role === 'admin' && (
+          <Link
+            href="/dashboard?role=admin&view=panel"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 whitespace-nowrap animate-gradient-xy bg-[length:200%_200%]"
+          >
+            <Shield className="h-4 w-4" />
+            Admin Panel
+          </Link>
+        )}
       </nav>
+
+      {/* Centered Logo/Branding */}
+      <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none md:pointer-events-auto">
+        <Link
+          href={`/dashboard?${searchParams.toString()}`}
+          className="flex items-center gap-3 text-lg font-semibold md:text-base"
+        >
+          <div className="h-10 w-10 relative bg-white rounded-full overflow-hidden shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800">
+            {logoSrc ? (
+              <img src={logoSrc} alt="Logo" className="h-full w-full object-cover" />
+            ) : (
+              <AseLogo />
+            )}
+          </div>
+          <span className="font-bold whitespace-nowrap text-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text animate-gradient-xy bg-[length:200%_200%]">{siteName}</span>
+        </Link>
+      </div>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial" />
         <ThemeToggle />

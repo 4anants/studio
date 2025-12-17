@@ -323,10 +323,10 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                   </div>
                 ) : (
                   <div className="hidden sm:flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleView(doc)}>
+                    <Button size="sm" onClick={() => handleView(doc)} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                       <Eye className="mr-2 h-4 w-4" /> View
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDownload(doc)}>
+                    <Button size="sm" onClick={() => handleDownload(doc)} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                       <Download className="mr-2 h-4 w-4" /> Download
                     </Button>
                     {onDelete && (
@@ -396,8 +396,8 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogCancel className="rounded-full shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmBulkDelete} className="rounded-full bg-gradient-to-r from-red-500 via-orange-500 to-pink-500 text-white shadow-md hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
               Delete {numSelected} Document(s)
             </AlertDialogAction>
           </AlertDialogFooter>

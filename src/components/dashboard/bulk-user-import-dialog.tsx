@@ -257,8 +257,8 @@ export function BulkUserImportDialog({ onImport, children }: BulkUserImportDialo
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleImport} disabled={isLoading || parsedUsers.length === 0 || hasErrors}>
+          <Button variant="outline" onClick={() => setOpen(false)} className="rounded-full shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</Button>
+          <Button onClick={handleImport} disabled={isLoading || parsedUsers.length === 0 || hasErrors} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
             Import {parsedUsers.filter(u => u._errors.length === 0).length} Valid User(s)
           </Button>
         </DialogFooter>

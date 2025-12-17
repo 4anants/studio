@@ -6,11 +6,44 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { CompanyName } from '@/lib/constants';
 import './print.css';
 import { SessionProvider } from '@/components/session-provider';
+import { DynamicFavicon } from '@/components/dynamic-favicon';
 
-export const metadata: Metadata = {
-  title: CompanyName,
-  description: 'Your secure internal document repository.',
-};
+import { query } from '@/lib/db';
+
+export async function generateMetadata(): Promise<Metadata> {
+  let title = CompanyName;
+  let icon = '/icon.svg';
+
+  try {
+    // Fetch settings from DB
+    const rows = await query<any[]>('SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN (?, ?)', ['siteName', 'companyLogo']);
+
+    const settings: Record<string, string> = {};
+    rows.forEach((row) => {
+      settings[row.setting_key] = row.setting_value;
+    });
+
+    if (settings['siteName']) {
+      title = settings['siteName'];
+    }
+    if (settings['companyLogo']) {
+      icon = settings['companyLogo'];
+    }
+
+  } catch (error) {
+    console.error('Error fetching metadata settings:', error);
+  }
+
+  return {
+    title: title,
+    description: 'Your secure internal document repository.',
+    icons: {
+      icon: icon,
+      shortcut: icon,
+      apple: icon,
+    },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -26,6 +59,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <SessionProvider>
+          <DynamicFavicon />
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

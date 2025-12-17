@@ -59,7 +59,7 @@ export function AdminPanelView() {
                         Dashboard
                     </Link>
                 </Button>
-                <Button variant="default" className="flex items-center gap-2">
+                <Button className="flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                     <Shield className="h-4 w-4" />
                     Admin Panel
                 </Button>
@@ -75,24 +75,24 @@ export function AdminPanelView() {
 
             {/* Navigation Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-5 lg:w-auto">
-                    <TabsTrigger value="file-explorer" className="flex items-center gap-2">
+                <TabsList className="grid w-full grid-cols-5 lg:w-max bg-transparent p-0 gap-2 h-auto">
+                    <TabsTrigger value="file-explorer" className="flex items-center gap-2 rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">
                         <Folder className="h-4 w-4" />
                         <span className="hidden sm:inline">File Explorer</span>
                     </TabsTrigger>
-                    <TabsTrigger value="employees" className="flex items-center gap-2">
+                    <TabsTrigger value="employees" className="flex items-center gap-2 rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">
                         <Users className="h-4 w-4" />
                         <span className="hidden sm:inline">Employees</span>
                     </TabsTrigger>
-                    <TabsTrigger value="announcements" className="flex items-center gap-2">
+                    <TabsTrigger value="announcements" className="flex items-center gap-2 rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">
                         <Bell className="h-4 w-4" />
                         <span className="hidden sm:inline">Announcements</span>
                     </TabsTrigger>
-                    <TabsTrigger value="holidays" className="flex items-center gap-2">
+                    <TabsTrigger value="holidays" className="flex items-center gap-2 rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">
                         <Calendar className="h-4 w-4" />
                         <span className="hidden sm:inline">Holidays</span>
                     </TabsTrigger>
-                    <TabsTrigger value="settings" className="flex items-center gap-2">
+                    <TabsTrigger value="settings" className="flex items-center gap-2 rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">
                         <Settings className="h-4 w-4" />
                         <span className="hidden sm:inline">Settings</span>
                     </TabsTrigger>
@@ -120,7 +120,7 @@ export function AdminPanelView() {
                                 <Upload className="h-4 w-4" />
                                 Bulk Upload
                             </Button>
-                            <Button className="flex items-center gap-2">
+                            <Button className="flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                 <Upload className="h-4 w-4" />
                                 Manual Upload
                             </Button>
@@ -186,7 +186,7 @@ export function AdminPanelView() {
                                 <li>Manage roles and permissions</li>
                                 <li>View employee profiles</li>
                             </ul>
-                            <Button asChild className="mt-4">
+                            <Button asChild className="mt-4 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                 <a href="/dashboard?role=admin&view=admin">
                                     Go to Full Admin Interface
                                 </a>

@@ -209,14 +209,14 @@ export function PinVerifyDialog({
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
                                 disabled={loading}
-                                className="w-full sm:w-auto"
+                                className="w-full sm:w-auto rounded-full px-8 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={loading || pin.length !== 4}
-                                className="w-full sm:w-auto"
+                                className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
                             >
                                 {loading ? 'Verifying...' : 'Verify PIN'}
                             </Button>

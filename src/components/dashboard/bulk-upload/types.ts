@@ -12,6 +12,7 @@ export interface FileRow {
     employeeName?: string; // Display name
     employeeCode?: string; // Display code
     department?: string; // Added Department
+    createdDocumentId?: string; // ID of the created document
 
     // Metadata
     docType: string;

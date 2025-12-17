@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { LayoutDashboard, Shield } from 'lucide-react'
 import {
     Carousel,
     CarouselContent,
@@ -119,6 +120,7 @@ export function EmployeeDashboard() {
 
     return (
         <div className="space-y-8">
+
             {/* Welcome Header */}
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">

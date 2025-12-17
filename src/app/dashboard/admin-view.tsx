@@ -226,6 +226,54 @@ export function AdminView() {
         };
     }, []);
 
+    useEffect(() => {
+        // Fetch settings from server to sync state
+        const fetchSettings = async () => {
+            try {
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.companyLogo) {
+                        setLogoSrc(data.companyLogo);
+                        localStorage.setItem('companyLogo', data.companyLogo);
+                        window.dispatchEvent(new Event('storage'));
+                    }
+                    if (data.siteName) {
+                        setSiteName(data.siteName);
+                        setTempSiteName(data.siteName);
+                        localStorage.setItem('siteName', data.siteName);
+                        window.dispatchEvent(new Event('storage'));
+                    }
+                    if (data.allowedDomains) {
+                        try {
+                            const domains = JSON.parse(data.allowedDomains);
+                            setAllowedDomains(domains);
+                            localStorage.setItem('allowedDomains', data.allowedDomains);
+                        } catch (e) {
+                            console.error("Failed to parse allowedDomains setting", e);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch settings", error);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    const saveSystemSetting = async (key: string, value: string) => {
+        try {
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value }),
+            });
+        } catch (error) {
+            console.error('Failed to save setting:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to save setting to server.' });
+        }
+    };
+
     const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
@@ -234,6 +282,8 @@ export function AdminView() {
                 const newLogo = e.target?.result as string;
                 setLogoSrc(newLogo);
                 localStorage.setItem('companyLogo', newLogo);
+                saveSystemSetting('companyLogo', newLogo);
+                window.dispatchEvent(new Event('storage'));
                 toast({
                     title: 'Logo Updated',
                     description: 'The company logo has been changed successfully.',
@@ -246,6 +296,8 @@ export function AdminView() {
     const handleResetLogo = () => {
         setLogoSrc(null);
         localStorage.removeItem('companyLogo');
+        saveSystemSetting('companyLogo', '');
+        window.dispatchEvent(new Event('storage'));
         toast({
             title: 'Logo Reset',
             description: 'The company logo has been reset to the default.',
@@ -255,6 +307,7 @@ export function AdminView() {
     const handleSiteNameSave = () => {
         setSiteName(tempSiteName);
         localStorage.setItem('siteName', tempSiteName);
+        saveSystemSetting('siteName', tempSiteName);
         window.dispatchEvent(new Event('storage')); // Notify other tabs/components
         toast({
             title: 'Site Name Updated',
@@ -266,7 +319,9 @@ export function AdminView() {
         if (newDomain && !allowedDomains.includes(newDomain)) {
             const newDomains = [...allowedDomains, newDomain];
             setAllowedDomains(newDomains);
-            localStorage.setItem('allowedDomains', JSON.stringify(newDomains));
+            const jsonDomains = JSON.stringify(newDomains);
+            localStorage.setItem('allowedDomains', jsonDomains);
+            saveSystemSetting('allowedDomains', jsonDomains);
             setNewDomain('');
             toast({ title: 'Domain Added', description: `Domain "${newDomain}" has been added.` });
         } else {
@@ -277,27 +332,63 @@ export function AdminView() {
     const handleRemoveDomain = (domainToRemove: string) => {
         const newDomains = allowedDomains.filter(d => d !== domainToRemove);
         setAllowedDomains(newDomains);
-        localStorage.setItem('allowedDomains', JSON.stringify(newDomains));
+        const jsonDomains = JSON.stringify(newDomains);
+        localStorage.setItem('allowedDomains', jsonDomains);
+        saveSystemSetting('allowedDomains', jsonDomains);
         toast({ title: 'Domain Removed', description: `Domain "${domainToRemove}" has been removed.` });
     };
 
-    const handleUndoLastBulkUpload = () => {
+    const handleUndoLastBulkUpload = async () => {
         if (lastBulkUploadInfo && lastBulkUploadInfo.ids.length > 0) {
-            setDocs(prev => prev.filter(d => !lastBulkUploadInfo.ids.includes(d.id)));
-            toast({
-                title: 'Upload Undone',
-                description: `${lastBulkUploadInfo.ids.length} document(s) have been removed.`,
-            });
-            setLastBulkUploadInfo(null);
+            try {
+                // Determine if we want soft delete or permanent delete for "Undo". 
+                // "Undo" typically implies "it never happened", so permanent delete is appropriate.
+                // However, safety first? Regular delete moves to trash.
+                // Let's do permanent delete to clean up files.
+                const responses = await Promise.all(lastBulkUploadInfo.ids.map(id =>
+                    fetch(`/api/documents?id=${id}&permanent=true`, { method: 'DELETE' })
+                ));
+
+                const failed = responses.find(r => !r.ok);
+                if (failed) {
+                    throw new Error('Failed to delete some documents during undo.');
+                }
+
+                await mutateDocuments();
+                toast({
+                    title: 'Upload Undone',
+                    description: `${lastBulkUploadInfo.ids.length} document(s) have been permanently removed.`,
+                });
+                setLastBulkUploadInfo(null);
+            } catch (error: any) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Undo Failed',
+                    description: error.message || 'Failed to undo upload.'
+                });
+            }
         }
         setIsUndoDialogOpen(false);
     };
 
-    const handleBulkUploadComplete = useCallback((count: number) => {
+    const handleBulkUploadComplete = useCallback((count: number, ids?: string[]) => {
         mutateDocuments();
+        if (ids && ids.length > 0) {
+            setLastBulkUploadInfo({ ids, timestamp: Date.now() });
+            // Optionally open undo dialog immediately or just show toast with undo button?
+            // Current UI probably has a button somewhere.
+        }
         toast({
             title: 'Upload Successful!',
             description: `${count} documents have been added.`,
+            action: ids && ids.length > 0 ? (
+                <div
+                    className="font-medium cursor-pointer hover:underline"
+                    onClick={() => setIsUndoDialogOpen(true)}
+                >
+                    Undo
+                </div>
+            ) : undefined
         });
     }, [toast, mutateDocuments]);
 
@@ -459,80 +550,120 @@ export function AdminView() {
         }
     }, [toast, mutateUsers]);
 
-    const handleResetPassword = useCallback((employeeId: string) => {
+    const handleResetPassword = useCallback(async (employeeId: string) => {
         if (employeeId === 'sadmin') {
             toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Password for the Super Admin must be changed via the edit profile screen.' });
             return;
         }
-        const user = users.find(u => u.id === employeeId);
-        if (user && user.email) {
-            toast({
-                title: "Password Reset Link Sent",
-                description: `An email has been sent to ${user.name} with password reset instructions.`
+
+        if (!confirm('Are you sure you want to reset the password for this user? It will be set to the default: Welcome@123')) return;
+
+        try {
+            const res = await fetch('/api/users/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: employeeId }),
             });
+
+            if (!res.ok) throw new Error('Failed to reset password');
+
+            toast({
+                title: "Password Reset Successful",
+                description: `Password has been reset to default: Welcome@123`
+            });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to reset password.' });
         }
-    }, [toast, users]);
-
-
+    }, [toast]);
 
     const handleBulkRoleChange = useCallback(async (newRole: 'admin' | 'employee') => {
         try {
-            let successCount = 0;
-            for (const id of selectedUserIds) {
-                const user = users.find(u => u.id === id);
-                if (user && user.role !== newRole) {
-                    // Update user role via API (reusing POST /api/users logic by simulating save)
-                    await fetch('/api/users', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...user, role: newRole, originalId: user.id }),
-                    });
-                    successCount++;
-                }
+            console.log('Changing roles for:', selectedUserIds, 'to', newRole);
+            const res = await fetch('/api/users/bulk-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userIds: selectedUserIds,
+                    updates: { role: newRole }
+                }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `Request failed with status ${res.status}`);
             }
+
+            const data = await res.json();
             await mutateUsers();
-            toast({ title: "Roles Updated", description: `Updated roles for ${successCount} users.` });
+            toast({ title: "Roles Updated", description: `Updated roles for ${data.count} users.` });
             setSelectedUserIds([]);
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Error", description: "Failed to update roles." });
+        } catch (error: any) {
+            console.error('Bulk role change error:', error);
+            toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to update roles." });
         }
-    }, [selectedUserIds, users, mutateUsers, toast]);
+    }, [selectedUserIds, mutateUsers, toast]);
 
     const handleBulkSoftDeleteUsers = useCallback(async () => {
         if (!confirm(`Are you sure you want to move ${selectedUserIds.length} users to the Deleted Users list?`)) return;
+
         try {
-            let successCount = 0;
-            for (const id of selectedUserIds) {
-                const user = users.find(u => u.id === id);
-                // Skip if already deleted or sadmin (though sadmin usually filtered out of selection)
-                if (user && user.id !== 'sadmin') {
-                    await fetch('/api/users', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...user, status: 'deleted' }),
-                    });
-                    successCount++;
-                }
+            console.log('Soft deleting users:', selectedUserIds);
+            const res = await fetch('/api/users/bulk-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userIds: selectedUserIds,
+                    updates: { status: 'deleted' }
+                }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `Request failed with status ${res.status}`);
             }
+
+            const data = await res.json();
             await mutateUsers();
-            toast({ title: "Users Deleted", description: `${successCount} users moved to deleted list.` });
+            toast({ title: "Users Deleted", description: `${data.count} users moved to deleted list.` });
             setSelectedUserIds([]);
-        } catch {
-            toast({ variant: 'destructive', title: "Error", description: "Failed to delete users." });
+        } catch (error: any) {
+            console.error('Bulk delete error:', error);
+            toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to delete users." });
         }
-    }, [selectedUserIds, users, mutateUsers, toast]);
+    }, [selectedUserIds, mutateUsers, toast]);
 
     const handleBulkResetPassword = useCallback(async () => {
-        if (!confirm(`Send password reset links to ${selectedUserIds.length} users?`)) return;
-        for (const id of selectedUserIds) {
-            handleResetPassword(id);
+        if (!confirm(`Are you sure you want to reset passwords for ${selectedUserIds.length} users? They will be set to: Welcome@123`)) return;
+
+        try {
+            console.log('Resetting passwords for:', selectedUserIds);
+            const res = await fetch('/api/users/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userIds: selectedUserIds }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `Request failed with status ${res.status}`);
+            }
+
+            const data = await res.json();
+            toast({
+                title: "Bulk Password Reset Successful",
+                description: `Reset passwords for ${data.count} users.`
+            });
+            setSelectedUserIds([]);
+        } catch (error: any) {
+            console.error('Bulk password reset error:', error);
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to reset passwords.' });
         }
-        setSelectedUserIds([]);
-    }, [selectedUserIds, handleResetPassword]);
+    }, [selectedUserIds, toast]);
 
     const handleBulkResetPins = useCallback(async () => {
         if (!confirm(`Are you sure you want to reset the PINs for ${selectedUserIds.length} users?`)) return;
         try {
+            console.log('Resetting PINs for:', selectedUserIds);
             const res = await fetch('/api/document-pin/reset', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -541,7 +672,7 @@ export function AdminView() {
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Failed to reset PINs');
+                throw new Error(errorData.error || `Request failed with status ${res.status}`);
             }
 
             const data = await res.json();
@@ -551,11 +682,10 @@ export function AdminView() {
             });
             setSelectedUserIds([]);
         } catch (error: any) {
+            console.error('Bulk PIN reset error:', error);
             toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to reset PINs." });
         }
     }, [selectedUserIds, toast]);
-
-
 
     const handleResetPin = useCallback(async (employeeId: string) => {
         if (employeeId === 'sadmin') {
@@ -572,7 +702,7 @@ export function AdminView() {
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Failed to reset PIN');
+                throw new Error(errorData.error || `Request failed with status ${res.status}`);
             }
 
             toast({
@@ -580,6 +710,7 @@ export function AdminView() {
                 description: "The user's PIN has been cleared. They can now set a new one.",
             });
         } catch (error: any) {
+            console.error('PIN reset error:', error);
             toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to reset PIN." });
         }
     }, [toast]);
@@ -1655,19 +1786,18 @@ export function AdminView() {
 
     return (
         <>
-            {/* Navigation Tabs */}
-            <div className="flex gap-2 border-b pb-4 mb-6">
-                <Button variant="outline" asChild className="flex items-center gap-2">
-                    <Link href="/dashboard?role=admin">
-                        <LayoutDashboard className="h-4 w-4" />
-                        Dashboard
-                    </Link>
-                </Button>
-                <Button variant="default" className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Admin Panel
-                </Button>
-            </div>
+
+
+            {/* Gradient Definition for Icons */}
+            <svg width="0" height="0" className="absolute block w-0 h-0 overflow-hidden" aria-hidden="true">
+                <defs>
+                    <linearGradient id="folder-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#3b82f6" /> {/* blue-500 */}
+                        <stop offset="50%" stopColor="#a855f7" /> {/* purple-500 */}
+                        <stop offset="100%" stopColor="#ec4899" /> {/* pink-500 */}
+                    </linearGradient>
+                </defs>
+            </svg>
 
             {/* Management Section Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -1687,24 +1817,24 @@ export function AdminView() {
                                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                                     <span className="text-sm font-medium mr-2 hidden sm:inline-block">{numSelected} selected</span>
                                     <BulkRoleChangeDialog onSave={handleBulkRoleChange}>
-                                        <Button variant="outline" size="sm">
+                                        <Button size="sm" className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                             <Users className="mr-2 h-4 w-4" /> Change Roles
                                         </Button>
                                     </BulkRoleChangeDialog>
-                                    <Button variant="outline" size="sm" onClick={handleBulkResetPassword}>
+                                    <Button size="sm" onClick={handleBulkResetPassword} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                         <KeyRound className="mr-2 h-4 w-4" /> Reset Passwords
                                     </Button>
-                                    <Button variant="outline" size="sm" onClick={handleBulkResetPins}>
+                                    <Button size="sm" onClick={handleBulkResetPins} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                         <FileLock2 className="mr-2 h-4 w-4" /> Reset PINs
                                     </Button>
-                                    <Button variant="destructive" size="sm" onClick={handleBulkSoftDeleteUsers}>
+                                    <Button size="sm" onClick={handleBulkSoftDeleteUsers} className="rounded-full bg-gradient-to-r from-red-500 via-orange-500 to-pink-500 text-white shadow-md hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
                                     </Button>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2 w-full">
                                     <EmployeeManagementDialog onSave={handleEmployeeSave} departments={departments} companies={companies}>
-                                        <Button className="w-full sm:w-auto">Add Employee</Button>
+                                        <Button className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">Add Employee</Button>
                                     </EmployeeManagementDialog>
                                     <BulkUploadDialog onBulkUploadComplete={handleBulkUploadComplete} users={activeUsers} />
                                 </div>
@@ -1717,14 +1847,14 @@ export function AdminView() {
             <Tabs value={activeTab} onValueChange={onTabChange} className="mt-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center mb-4 gap-4">
                     <div className="overflow-x-auto w-full pb-2">
-                        <TabsList className="w-max">
-                            <TabsTrigger value="file-explorer">File Explorer</TabsTrigger>
-                            <TabsTrigger value="employee-management">Employee Management</TabsTrigger>
-                            <TabsTrigger value="print-cards">Print Cards</TabsTrigger>
-                            <TabsTrigger value="announcements">Announcements</TabsTrigger>
-                            <TabsTrigger value="holidays">Holidays</TabsTrigger>
-                            <TabsTrigger value="settings">Settings</TabsTrigger>
-                            <TabsTrigger value="deleted-items">Deleted Items</TabsTrigger>
+                        <TabsList className="w-max bg-transparent p-0 gap-2 h-auto">
+                            <TabsTrigger value="file-explorer" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">File Explorer</TabsTrigger>
+                            <TabsTrigger value="employee-management" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Employee Management</TabsTrigger>
+                            <TabsTrigger value="print-cards" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Print Cards</TabsTrigger>
+                            <TabsTrigger value="announcements" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Announcements</TabsTrigger>
+                            <TabsTrigger value="holidays" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Holidays</TabsTrigger>
+                            <TabsTrigger value="settings" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Settings</TabsTrigger>
+                            <TabsTrigger value="deleted-items" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Deleted Items</TabsTrigger>
                         </TabsList>
                     </div>
                     <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
@@ -1847,12 +1977,16 @@ export function AdminView() {
                                     {documentTypes.filter(dt => dt.name.toLowerCase().includes(searchTerm.toLowerCase())).map(docType => (
                                         <Card
                                             key={docType.id}
-                                            className="cursor-pointer hover:border-primary transition-all group"
+                                            className="cursor-pointer hover:border-purple-500 hover:shadow-lg hover:bg-purple-50/10 transition-all group border-muted relative overflow-hidden"
                                             onClick={() => setExplorerState({ view: 'usersInDocType', docType: docType.name })}
                                         >
-                                            <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                                <Folder className="h-16 w-16 text-primary group-hover:scale-105 transition-transform" />
-                                                <p className="text-sm font-medium text-center truncate w-full">{docType.name}</p>
+                                            <CardContent className="flex flex-col items-center justify-center p-6 gap-4">
+                                                <Folder
+                                                    className="h-16 w-16 group-hover:scale-110 transition-transform duration-300"
+                                                    strokeWidth={1.5}
+                                                    style={{ stroke: 'url(#folder-gradient)' }}
+                                                />
+                                                <p className="font-semibold text-center truncate w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{docType.name}</p>
                                             </CardContent>
                                         </Card>
                                     ))}
@@ -1893,9 +2027,9 @@ export function AdminView() {
 
                 <TabsContent value="employee-management">
                     <Tabs defaultValue="overview" value={activeSubTab} onValueChange={setActiveSubTab}>
-                        <TabsList>
-                            <TabsTrigger value="overview">Employee Overview</TabsTrigger>
-                            <TabsTrigger value="manage">Manage Employees</TabsTrigger>
+                        <TabsList className="bg-transparent p-0 gap-2 h-auto">
+                            <TabsTrigger value="overview" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Employee Overview</TabsTrigger>
+                            <TabsTrigger value="manage" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Manage Employees</TabsTrigger>
                         </TabsList>
                         <TabsContent value="overview" className="mt-4">
                             <Card>
@@ -1942,12 +2076,12 @@ export function AdminView() {
                                             <CardDescription>A list of all active employees in the system.</CardDescription>
                                         </div>
                                         <div className="flex items-center gap-2 w-full md:w-auto">
-                                            <Button onClick={handleExportUsers} variant="outline" className="w-full sm:w-auto">
+                                            <Button onClick={handleExportUsers} className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                                 <Download className="mr-2 h-4 w-4" />
                                                 Export All Users
                                             </Button>
                                             <BulkUserImportDialog onImport={handleBulkUserImport}>
-                                                <Button variant="outline" className="w-full sm:w-auto">
+                                                <Button className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                                     <Upload className="mr-2 h-4 w-4" /> Import Users
                                                 </Button>
                                             </BulkUserImportDialog>
@@ -2092,7 +2226,7 @@ export function AdminView() {
                                         users={users.filter(u => selectedUserIds.includes(u.id))}
                                         companies={companies}
                                     >
-                                        <Button className="w-full sm:w-auto" disabled={numSelected === 0}>
+                                        <Button className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0" disabled={numSelected === 0}>
                                             <Printer className="mr-2 h-4 w-4" />
                                             {numSelected > 0 ? `Print Cards (${numSelected})` : 'Print Cards'}
                                         </Button>
@@ -2183,7 +2317,7 @@ export function AdminView() {
                                 onAdd={handleAddAnnouncement}
                                 departments={Array.from(new Set(departments.map(d => d.name)))}
                             >
-                                <Button variant="outline">
+                                <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                     <Bell className="mr-2 h-4 w-4" /> New Announcement
                                 </Button>
                             </AddAnnouncementDialog>
@@ -2285,7 +2419,7 @@ export function AdminView() {
                                     </Select>
                                 </div>
                                 <AddHolidayDialog onAdd={handleAddHoliday}>
-                                    <Button variant="outline" className="w-full sm:w-auto">
+                                    <Button className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                         <CalendarPlus className="mr-2 h-4 w-4" /> Add Holiday
                                     </Button>
                                 </AddHolidayDialog>
@@ -2348,14 +2482,14 @@ export function AdminView() {
                         <CardContent>
                             <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
                                 <div className="overflow-x-auto w-full pb-2">
-                                    <TabsList className="w-max">
-                                        <TabsTrigger value="companies">Companies</TabsTrigger>
-                                        <TabsTrigger value="branding">Branding</TabsTrigger>
-                                        <TabsTrigger value="doc-types">Document Types</TabsTrigger>
-                                        <TabsTrigger value="departments">Departments</TabsTrigger>
-                                        <TabsTrigger value="security">Security</TabsTrigger>
-                                        <TabsTrigger value="data-management">Data Management</TabsTrigger>
-                                        <TabsTrigger value="integrations">Integrations</TabsTrigger>
+                                    <TabsList className="w-max bg-transparent p-0 gap-2 h-auto">
+                                        <TabsTrigger value="companies" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Companies</TabsTrigger>
+                                        <TabsTrigger value="branding" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Branding</TabsTrigger>
+                                        <TabsTrigger value="doc-types" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Document Types</TabsTrigger>
+                                        <TabsTrigger value="departments" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Departments</TabsTrigger>
+                                        <TabsTrigger value="security" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Security</TabsTrigger>
+                                        <TabsTrigger value="data-management" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Data Management</TabsTrigger>
+                                        <TabsTrigger value="integrations" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Integrations</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <TabsContent value="companies" className="pt-6">
@@ -2366,7 +2500,7 @@ export function AdminView() {
                                                 <CardDescription>Add, edit, or delete companies from the organization.</CardDescription>
                                             </div>
                                             <CompanyManagementDialog onSave={handleSaveCompany}>
-                                                <Button variant="outline">
+                                                <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                                     <Home className="mr-2 h-4 w-4" /> Add Company
                                                 </Button>
                                             </CompanyManagementDialog>
@@ -2506,7 +2640,7 @@ export function AdminView() {
                                                         onChange={(e) => setTempSiteName(e.target.value)}
                                                         className="max-w-xs"
                                                     />
-                                                    <Button onClick={handleSiteNameSave}>
+                                                    <Button onClick={handleSiteNameSave} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                                         <Save className="mr-2 h-4 w-4" />
                                                         Save Name
                                                     </Button>
@@ -2524,7 +2658,7 @@ export function AdminView() {
                                                 <CardDescription>Add or edit document categories for the whole organization.</CardDescription>
                                             </div>
                                             <AddDocumentTypeDialog onAdd={handleAddDocumentType}>
-                                                <Button variant="outline">
+                                                <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                                     <FolderPlus className="mr-2 h-4 w-4" /> Add Doc Type
                                                 </Button>
                                             </AddDocumentTypeDialog>
@@ -2594,7 +2728,7 @@ export function AdminView() {
                                                 <CardDescription>Add, edit, or delete departments for the organization.</CardDescription>
                                             </div>
                                             <AddDepartmentDialog onAdd={handleAddDepartment}>
-                                                <Button variant="outline">
+                                                <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                                                     <Building className="mr-2 h-4 w-4" /> Add Department
                                                 </Button>
                                             </AddDepartmentDialog>
@@ -2725,14 +2859,14 @@ export function AdminView() {
                         <CardContent>
                             <Tabs defaultValue="companies" className="w-full">
                                 <div className="overflow-x-auto w-full pb-2">
-                                    <TabsList className="w-max">
-                                        <TabsTrigger value="companies">Companies</TabsTrigger>
-                                        <TabsTrigger value="departments">Departments</TabsTrigger>
-                                        <TabsTrigger value="doc-types">Document Types</TabsTrigger>
-                                        <TabsTrigger value="documents">Documents</TabsTrigger>
-                                        <TabsTrigger value="users">Users</TabsTrigger>
-                                        <TabsTrigger value="announcements">Announcements</TabsTrigger>
-                                        <TabsTrigger value="holidays">Holidays</TabsTrigger>
+                                    <TabsList className="w-max bg-transparent p-0 gap-2 h-auto">
+                                        <TabsTrigger value="companies" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Companies</TabsTrigger>
+                                        <TabsTrigger value="departments" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Departments</TabsTrigger>
+                                        <TabsTrigger value="doc-types" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Document Types</TabsTrigger>
+                                        <TabsTrigger value="documents" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Documents</TabsTrigger>
+                                        <TabsTrigger value="users" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Users</TabsTrigger>
+                                        <TabsTrigger value="announcements" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Announcements</TabsTrigger>
+                                        <TabsTrigger value="holidays" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Holidays</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <TabsContent value="companies" className="pt-6">

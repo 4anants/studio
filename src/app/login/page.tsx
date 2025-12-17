@@ -41,6 +41,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     setIsClient(true);
+
+    // Initial load from localStorage if available
     const storedLogo = localStorage.getItem('companyLogo');
     if (storedLogo) {
       setLogoSrc(storedLogo);
@@ -53,11 +55,39 @@ export default function LoginPage() {
       document.title = CompanyName;
     }
 
+    // Fetch latest settings from server to ensure fresh data
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.companyLogo) {
+            setLogoSrc(data.companyLogo);
+            localStorage.setItem('companyLogo', data.companyLogo);
+          }
+          if (data.siteName) {
+            setSiteName(data.siteName);
+            document.title = data.siteName;
+            localStorage.setItem('siteName', data.siteName);
+          }
+          // Also trigger storage event for other components if needed
+          window.dispatchEvent(new Event('storage'));
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings on login page", error);
+      }
+    };
+    fetchSettings();
+
     const handleStorageChange = () => {
       const storedSiteName = localStorage.getItem('siteName');
       if (storedSiteName) {
         setSiteName(storedSiteName);
         document.title = storedSiteName;
+      }
+      const storedLogo = localStorage.getItem('companyLogo');
+      if (storedLogo) {
+        setLogoSrc(storedLogo);
       }
     }
     window.addEventListener('storage', handleStorageChange);

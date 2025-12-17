@@ -99,7 +99,7 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
           <UploadCloud className="mr-2 h-4 w-4" />
           Upload Document
         </Button>
@@ -139,7 +139,7 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" onClick={handleUpload} disabled={!fileName}>
+              <Button type="button" onClick={handleUpload} disabled={!fileName} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                 Upload
               </Button>
             </DialogFooter>

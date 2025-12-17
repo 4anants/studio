@@ -64,9 +64,10 @@ export function StageThree({ rows: initialRows, onClose, onRetry }: StageThreePr
 
                     if (!res.ok) throw new Error('Upload failed');
 
-                    await res.json(); // Consum body
+                    const data = await res.json();
+                    const createdId = data.id;
 
-                    setRows(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'success' } : r));
+                    setRows(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'success', createdDocumentId: createdId } : r));
                 } catch (error) {
                     console.error(`Error uploading ${row.originalName}:`, error);
                     setRows(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'error', errorMessage: 'Upload Failed' } : r));
@@ -148,9 +149,9 @@ export function StageThree({ rows: initialRows, onClose, onRetry }: StageThreePr
                         <div className="flex items-center justify-between bg-destructive/10 p-4 rounded-md border border-destructive/20 text-destructive text-sm">
                             <span className="flex items-center"><XCircle className="w-4 h-4 mr-2" /> {failCount} items failed to upload.</span>
                             <Button
-                                variant="destructive"
                                 size="sm"
                                 onClick={() => onRetry(rows)}
+                                className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
                             >
                                 Review & Retry Failed
                             </Button>
@@ -158,11 +159,11 @@ export function StageThree({ rows: initialRows, onClose, onRetry }: StageThreePr
                     )}
 
                     <div className="flex justify-center gap-4 pt-4 border-t">
-                        <Button variant="outline" onClick={handleDownloadReport}>
+                        <Button onClick={handleDownloadReport} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                             <Download className="mr-2 h-4 w-4" />
                             Download Report
                         </Button>
-                        <Button onClick={onClose} variant={failCount > 0 ? 'secondary' : 'default'} className="min-w-[120px]">
+                        <Button onClick={onClose} className="min-w-[120px] rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                             {failCount > 0 ? 'Close & Exit' : 'Done'}
                         </Button>
                     </div>

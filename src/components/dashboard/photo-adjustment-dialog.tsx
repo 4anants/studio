@@ -70,7 +70,7 @@ export function PhotoAdjustmentDialog({ user, company, onUpdate }: PhotoAdjustme
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                     <Crop className="w-4 h-4 mr-2" />
                     Adjust Photo
                 </Button>
@@ -127,7 +127,7 @@ export function PhotoAdjustmentDialog({ user, company, onUpdate }: PhotoAdjustme
                             </div>
 
                             <div className="pt-4 flex justify-end">
-                                <Button size="sm" variant="ghost" onClick={handleReset}>
+                                <Button size="sm" variant="ghost" onClick={handleReset} className="rounded-full shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800">
                                     <RotateCcw className="w-3 h-3 mr-2" />
                                     Reset
                                 </Button>
@@ -149,8 +149,8 @@ export function PhotoAdjustmentDialog({ user, company, onUpdate }: PhotoAdjustme
                 </div>
 
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={saving}>
+                    <Button variant="ghost" onClick={() => setOpen(false)} className="rounded-full shadow-sm border hover:bg-gray-100 dark:hover:bg-gray-800 border-input">Cancel</Button>
+                    <Button onClick={handleSave} disabled={saving} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                         {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Save Changes
                     </Button>

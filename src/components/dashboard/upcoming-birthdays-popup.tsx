@@ -225,7 +225,7 @@ export function UpcomingBirthdaysPopup({ users, currentUserId }: UpcomingBirthda
                 </div>
 
                 <DialogFooter className="sm:justify-center pt-2">
-                    <Button onClick={handleClose} className="w-full sm:w-auto rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-pink-200 dark:shadow-none">
+                    <Button onClick={handleClose} className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                         Close
                     </Button>
                 </DialogFooter>

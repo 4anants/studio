@@ -253,7 +253,7 @@ export function StageTwo({ rows: initialRows, onBack, onNext, defaultConfig }: S
                             </span>
                         }
                     </div>
-                    <Button onClick={() => onNext(rows.filter(r => r.selected))} disabled={!canProceed || isProcessing}>
+                    <Button onClick={() => onNext(rows.filter(r => r.selected))} disabled={!canProceed || isProcessing} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                         {isProcessing ? 'Processing...' : `Confirm & Upload (${rows.filter(r => r.selected).length})`}
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>

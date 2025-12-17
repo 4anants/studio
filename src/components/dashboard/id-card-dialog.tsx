@@ -43,7 +43,7 @@ export function IdCardDialog({ employee, company, children }: IdCardDialogProps)
 
 
         <DialogFooter className="dialog-footer">
-          <Button variant="outline" onClick={() => {
+          <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0" onClick={() => {
             // Find the ID card content
             const content = document.querySelector('.print-content');
             if (content) {
@@ -68,7 +68,7 @@ export function IdCardDialog({ employee, company, children }: IdCardDialogProps)
               window.print(); // Fallback
             }
           }}>Print</Button>
-          <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} className="rounded-full shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800">Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

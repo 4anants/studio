@@ -67,7 +67,7 @@ export function BulkIdCardPrintDialog({ users, companies, children }: BulkIdCard
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {children || (
-                    <Button variant="outline">
+                    <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                         <Printer className="mr-2 h-4 w-4" />
                         Print Selected ({users.length})
                     </Button>
@@ -97,10 +97,10 @@ export function BulkIdCardPrintDialog({ users, companies, children }: BulkIdCard
                 </div>
 
                 <DialogFooter>
-                    <Button variant="default" onClick={handlePrint}>
+                    <Button variant="default" onClick={handlePrint} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                         <Printer className="mr-2 h-4 w-4" /> Print Now
                     </Button>
-                    <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+                    <Button variant="outline" onClick={() => setOpen(false)} className="rounded-full shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800">Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

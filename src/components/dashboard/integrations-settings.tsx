@@ -101,7 +101,7 @@ export function IntegrationsSettings() {
                             placeholder="Enter Client Secret"
                         />
                     </div>
-                    <Button onClick={handleSaveSSO}>
+                    <Button onClick={handleSaveSSO} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
                         <Save className="mr-2 h-4 w-4" /> Save SSO Configuration
                     </Button>
                 </CardContent>
