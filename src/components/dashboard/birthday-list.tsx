@@ -3,16 +3,22 @@
 import { User } from '@/lib/types';
 import Image from 'next/image';
 import { getAvatarSrc } from '@/lib/utils';
-import { Calendar, Cake, PartyPopper } from 'lucide-react';
+import { Calendar, Cake, PartyPopper, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface BirthdayListProps {
     users: User[];
+    searchQuery?: string;
 }
 
-export function BirthdayList({ users }: BirthdayListProps) {
+export function BirthdayList({ users, searchQuery }: BirthdayListProps) {
+    const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
+
     if (!users || users.length === 0) {
         return (
             <Card>
@@ -25,38 +31,60 @@ export function BirthdayList({ users }: BirthdayListProps) {
     }
 
     const today = new Date();
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    // Sort and filter users by upcoming birthday
-    const upcomingBirthdays = users
-        .filter(u => u.dateOfBirth && u.status === 'active')
-        .map(u => {
-            const dob = new Date(u.dateOfBirth!);
-            const currentYear = today.getFullYear();
-            let nextBday = new Date(currentYear, dob.getMonth(), dob.getDate());
+    // Optimized birthday calculation with useMemo
+    const upcomingBirthdays = useMemo(() => {
+        return users
+            .filter(u => u.dateOfBirth && u.status === 'active')
+            .map(u => {
+                const dob = new Date(u.dateOfBirth!);
+                const currentYear = today.getFullYear();
+                let nextBday = new Date(currentYear, dob.getMonth(), dob.getDate());
 
-            // If birthday passed this year, it's next year
-            if (nextBday < new Date(today.setHours(0, 0, 0, 0))) {
-                nextBday.setFullYear(currentYear + 1);
-            }
+                // If birthday passed this year, use next year
+                const todayNormalized = new Date(today);
+                todayNormalized.setHours(0, 0, 0, 0);
 
-            const diffTime = nextBday.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (nextBday < todayNormalized) {
+                    nextBday.setFullYear(currentYear + 1);
+                }
 
-            return {
-                ...u,
-                nextBirthday: nextBday,
-                daysUntil: diffDays,
-                isToday: diffDays === 0
-            };
-        })
-        .sort((a, b) => a.daysUntil - b.daysUntil)
-        // Filter to show commonly relevant ones (e.g. next 30-60 days) or just all sorted
-        // User asked for "upcoming weekly", so let's highlight this week but show more context (e.g. month)
-        // Let's show next 30 days to fill the tab
-        .filter(u => u.daysUntil <= 30);
+                const diffTime = nextBday.getTime() - todayNormalized.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                // Calculate age they'll turn
+                const turningAge = nextBday.getFullYear() - dob.getFullYear();
+
+                return {
+                    ...u,
+                    nextBirthday: nextBday,
+                    daysUntil: diffDays,
+                    isToday: diffDays === 0,
+                    turningAge,
+                    birthMonth: dob.getMonth()
+                };
+            })
+            .sort((a, b) => a.daysUntil - b.daysUntil)
+            .filter(u => u.daysUntil <= 365) // Show next 365 days (full year)
+            .filter(u => {
+                // Month filter
+                if (selectedMonth !== 'all' && u.birthMonth !== selectedMonth) return false;
+
+                // Search filter
+                if (!searchQuery || searchQuery.trim() === '') return true;
+                const query = searchQuery.toLowerCase();
+                return (
+                    u.name?.toLowerCase().includes(query) ||
+                    u.department?.toLowerCase().includes(query) ||
+                    u.designation?.toLowerCase().includes(query)
+                );
+            });
+    }, [users, searchQuery, selectedMonth, today]);
 
     const thisWeek = upcomingBirthdays.filter(u => u.daysUntil <= 7);
-    const later = upcomingBirthdays.filter(u => u.daysUntil > 7);
+    const thisMonth = upcomingBirthdays.filter(u => u.daysUntil > 7 && u.daysUntil <= 30);
+    const later = upcomingBirthdays.filter(u => u.daysUntil > 30);
 
     const BirthdayCard = ({ user }: { user: typeof upcomingBirthdays[0] }) => (
         <div
@@ -68,7 +96,7 @@ export function BirthdayList({ users }: BirthdayListProps) {
             )}
         >
             <div className="relative shrink-0">
-                <div className={cn("rounded-full p-1", user.isToday && "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500")}>
+                <div className="rounded-full p-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
                     <Image
                         src={getAvatarSrc(user)}
                         alt={user.name}
@@ -92,7 +120,7 @@ export function BirthdayList({ users }: BirthdayListProps) {
 
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <Badge variant={user.isToday ? "default" : "secondary"} className={cn(user.isToday ? "bg-pink-500 hover:bg-pink-600" : "")}>
-                        {user.isToday ? "Today!" : (
+                        {user.isToday ? "🎉 Today!" : (
                             user.daysUntil === 1 ? "Tomorrow" : `In ${user.daysUntil} days`
                         )}
                     </Badge>
@@ -108,10 +136,61 @@ export function BirthdayList({ users }: BirthdayListProps) {
 
     return (
         <div className="space-y-6">
+            {/* Month Filter */}
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <Cake className="h-5 w-5 text-pink-500" />
+                                Upcoming Birthdays
+                            </CardTitle>
+                            <CardDescription>
+                                {upcomingBirthdays.length} {upcomingBirthdays.length === 1 ? 'birthday' : 'birthdays'} in the next year
+                            </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    size="sm"
+                                    variant={selectedMonth === 'all' ? 'default' : 'outline'}
+                                    onClick={() => setSelectedMonth('all')}
+                                    className={cn(
+                                        "rounded-full transition-all",
+                                        selectedMonth === 'all'
+                                            ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                                            : "hover:bg-accent"
+                                    )}
+                                >
+                                    All Months
+                                </Button>
+                                {monthNames.map((month, index) => (
+                                    <Button
+                                        key={index}
+                                        size="sm"
+                                        variant={selectedMonth === index ? 'default' : 'outline'}
+                                        onClick={() => setSelectedMonth(index)}
+                                        className={cn(
+                                            "rounded-full transition-all",
+                                            selectedMonth === index
+                                                ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                                                : "hover:bg-accent"
+                                        )}
+                                    >
+                                        {month.slice(0, 3)}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+
             <Card className="border-pink-100 dark:border-pink-900 overflow-hidden">
                 <CardHeader className="bg-pink-50/50 dark:bg-pink-950/20 pb-4">
                     <div className="flex items-center gap-2">
-                        <Cake className="h-6 w-6 text-pink-500" />
+                        <PartyPopper className="h-6 w-6 text-pink-500" />
                         <CardTitle>This Week's Celebrations</CardTitle>
                     </div>
                     <CardDescription>Don't miss the chance to wish your colleagues!</CardDescription>
@@ -127,10 +206,29 @@ export function BirthdayList({ users }: BirthdayListProps) {
                 </CardContent>
             </Card>
 
+            {thisMonth.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Calendar className="h-5 w-5 text-blue-500" />
+                            Later This Month
+                        </CardTitle>
+                        <CardDescription>Birthdays in the next 30 days</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid md:grid-cols-2 gap-4">
+                        {thisMonth.map(user => <BirthdayCard key={user.id} user={user} />)}
+                    </CardContent>
+                </Card>
+            )}
+
             {later.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg">Coming Up Later this Month</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Cake className="h-5 w-5 text-purple-500" />
+                            Later This Year
+                        </CardTitle>
+                        <CardDescription>Upcoming birthdays beyond this month</CardDescription>
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-4">
                         {later.map(user => <BirthdayCard key={user.id} user={user} />)}

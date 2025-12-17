@@ -59,8 +59,21 @@ if (process.env.AZURE_AD_CLIENT_ID && process.env.AZURE_AD_CLIENT_SECRET) {
         AzureADProvider({
             clientId: process.env.AZURE_AD_CLIENT_ID,
             clientSecret: process.env.AZURE_AD_CLIENT_SECRET,
-            tenantId: process.env.AZURE_AD_TENANT_ID,
-            authorization: { params: { prompt: "login" } },
+            tenantId: process.env.AZURE_AD_TENANT_ID || "common", // Use "common" for multi-tenant
+            authorization: {
+                params: {
+                    scope: "openid profile email User.Read",
+                    prompt: "select_account", // Allow account selection
+                }
+            },
+            profile(profile) {
+                return {
+                    id: profile.sub,
+                    name: profile.name,
+                    email: profile.email || profile.preferred_username,
+                    image: profile.picture,
+                };
+            },
         })
     );
 }
@@ -133,11 +146,46 @@ export const authOptions: NextAuthOptions = {
                     ...token,
                     userId: dbId,
                     userRole: dbRole,
+                    loginTime: Date.now(), // Track when user logged in
                 };
             }
+
+            // Check if session has expired based on role
+            if (token.loginTime && token.userRole) {
+                const now = Date.now();
+                const loginTime = token.loginTime as number;
+                const role = token.userRole as string;
+
+                // Session timeout: 15 min (900000ms) for employees, 180 min (10800000ms) for admins
+                const timeout = role === 'admin' ? 10800000 : 900000;
+
+                if (now - loginTime > timeout) {
+                    // Session expired - clear user data to force re-login
+                    return {
+                        ...token,
+                        userId: null,
+                        userRole: null,
+                        loginTime: null,
+                    };
+                }
+            }
+
             return token;
         },
         async session({ session, token }) {
+            // If userId is null, session has expired
+            if (!token.userId) {
+                return {
+                    ...session,
+                    user: {
+                        ...session.user,
+                        id: '',
+                        role: '',
+                    },
+                    expires: new Date(0).toISOString(), // Force immediate expiration
+                };
+            }
+
             return {
                 ...session,
                 user: {

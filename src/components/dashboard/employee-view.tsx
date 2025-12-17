@@ -58,10 +58,12 @@ export function EmployeeView() {
     // So 'serverDocuments' IS 'userDocuments'.
 
 
+
     const [selectedYear, setSelectedYear] = useState<string>('all');
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [holidayLocationFilter, setHolidayLocationFilter] = useState<HolidayLocation | 'all'>('all');
     const [activeTab, setActiveTab] = useState('documents');
+    const [birthdaySearchQuery, setBirthdaySearchQuery] = useState<string>('');
     const searchParams = useSearchParams();
 
     useEffect(() => {
@@ -408,7 +410,7 @@ export function EmployeeView() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="birthdays">
-                    <BirthdayList users={birthdays as User[]} />
+                    <BirthdayList users={birthdays as User[]} searchQuery={birthdaySearchQuery} />
                 </TabsContent>
             </Tabs>
         </>

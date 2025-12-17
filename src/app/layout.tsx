@@ -10,7 +10,16 @@ import { DynamicFavicon } from '@/components/dynamic-favicon';
 
 import { query } from '@/lib/db';
 
+// Simple cache for metadata to reduce DB queries
+let metadataCache: { data: Metadata; timestamp: number } | null = null;
+const CACHE_TTL = 60000; // 60 seconds
+
 export async function generateMetadata(): Promise<Metadata> {
+  // Check cache first
+  if (metadataCache && Date.now() - metadataCache.timestamp < CACHE_TTL) {
+    return metadataCache.data;
+  }
+
   let title = CompanyName;
   let icon = '/icon.svg';
 
@@ -32,9 +41,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   } catch (error) {
     console.error('Error fetching metadata settings:', error);
+    // Return default metadata on error
   }
 
-  return {
+  const metadata: Metadata = {
     title: title,
     description: 'Your secure internal document repository.',
     icons: {
@@ -43,6 +53,11 @@ export async function generateMetadata(): Promise<Metadata> {
       apple: icon,
     },
   };
+
+  // Update cache
+  metadataCache = { data: metadata, timestamp: Date.now() };
+
+  return metadata;
 }
 
 export default function RootLayout({
