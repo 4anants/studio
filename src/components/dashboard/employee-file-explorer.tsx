@@ -32,7 +32,7 @@ import {
     TableCell,
     TableHead,
     TableHeader,
-    TableRow
+    TableRow,
 } from '@/components/ui/table';
 import {
     DropdownMenu,
@@ -54,6 +54,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { format, getYear, getMonth } from 'date-fns';
 import { documentTypesList } from '@/lib/constants';
+import { PinVerifyDialog } from './pin-verify-dialog';
 
 // --- Types & Constants ---
 type ViewMode = 'grid' | 'list';
@@ -90,6 +91,11 @@ export function EmployeeFileExplorer({ documents, currentUser, checkPermission: 
         { id: 'root', name: 'Home', type: 'root' }
     ]);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // PIN Verification State
+    const [pinVerifyOpen, setPinVerifyOpen] = useState(false);
+    const [pendingDoc, setPendingDoc] = useState<Document | null>(null);
+    const [pendingAction, setPendingAction] = useState<'view' | 'download'>('view');
 
     // Default filters to Current Date for dropdowns
     const currentYearStr = new Date().getFullYear().toString();
@@ -274,13 +280,26 @@ export function EmployeeFileExplorer({ documents, currentUser, checkPermission: 
         }
     }, [(content as any).type]);
 
-    // Action Handlers
+    // Action Handlers with PIN Verification
     const handleView = (doc: Document) => {
-        if (doc.url) window.open(doc.url, '_blank');
+        setPendingDoc(doc);
+        setPendingAction('view');
+        setPinVerifyOpen(true);
     };
 
     const handleDownload = (doc: Document) => {
-        if (doc.url) window.open(doc.url, '_blank');
+        setPendingDoc(doc);
+        setPendingAction('download');
+        setPinVerifyOpen(true);
+    };
+
+    const handlePinSuccess = () => {
+        if (pendingDoc) {
+            if (pendingDoc.url) {
+                window.open(pendingDoc.url, '_blank');
+            }
+        }
+        setPendingDoc(null);
     };
 
     const handleDelete = async (docId: string) => {
@@ -509,6 +528,14 @@ export function EmployeeFileExplorer({ documents, currentUser, checkPermission: 
                     )
                 }
             </main >
+
+            <PinVerifyDialog
+                open={pinVerifyOpen}
+                onOpenChange={setPinVerifyOpen}
+                onSuccess={handlePinSuccess}
+                documentName={pendingDoc?.name}
+                action={pendingAction}
+            />
         </div >
     );
 }

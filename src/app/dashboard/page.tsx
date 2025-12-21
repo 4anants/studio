@@ -9,18 +9,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 function DashboardContent({ role, view }: { role: string | null, view: string | null }) {
-  console.log('[DashboardContent] Rendering with role:', role, 'view:', view);
+  logger.log('[DashboardContent] Rendering with role:', role, 'view:', view);
 
   if (role === 'admin') {
     const component = view === 'panel' ? 'AdminView' : 'EmployeeDashboard (Admin Mode)';
-    console.log('[DashboardContent] Admin role detected, rendering:', component);
+    logger.log('[DashboardContent] Admin role detected, rendering:', component);
     return view === 'panel' ? <AdminView /> : <EmployeeDashboard />
   }
 
   const component = view === 'panel' ? 'EmployeeView' : 'EmployeeDashboard';
-  console.log('[DashboardContent] Employee role (or no role), rendering:', component);
+  logger.log('[DashboardContent] Employee role (or no role), rendering:', component);
   return view === 'panel' ? <EmployeeView /> : <EmployeeDashboard />
 }
 
@@ -60,14 +61,14 @@ function DashboardPageContent() {
 
   useEffect(() => {
     // Debug logging
-    console.log('[Dashboard] Status:', status);
-    console.log('[Dashboard] Session role:', session?.user?.role);
-    console.log('[Dashboard] URL role param:', roleFromUrl);
-    console.log('[Dashboard] Effective role:', effectiveRole);
+    logger.log('[Dashboard] Status:', status);
+    logger.log('[Dashboard] Session role:', session?.user?.role);
+    logger.log('[Dashboard] URL role param:', roleFromUrl);
+    logger.log('[Dashboard] Effective role:', effectiveRole);
 
     // Redirect to login if not authenticated
     if (status === 'unauthenticated') {
-      console.log('[Dashboard] Not authenticated, redirecting to login');
+      logger.log('[Dashboard] Not authenticated, redirecting to login');
       router.push('/login');
       return;
     }
@@ -80,18 +81,18 @@ function DashboardPageContent() {
     // Security and role routing
     if (status === 'authenticated' && session?.user) {
       const userRole = session.user.role;
-      console.log('[Dashboard] User authenticated with role:', userRole);
+      logger.log('[Dashboard] User authenticated with role:', userRole);
 
       // Security: Prevent role escalation via URL
       if (roleFromUrl === 'admin' && userRole !== 'admin') {
-        console.log('[Dashboard] Non-admin trying to access admin view, redirecting');
+        logger.log('[Dashboard] Non-admin trying to access admin view, redirecting');
         router.replace('/dashboard');
         return;
       }
 
       // Automatically redirect admins to admin view if no role specified
       if (!roleFromUrl && userRole === 'admin') {
-        console.log('[Dashboard] Admin user without role param, redirecting to admin view');
+        logger.log('[Dashboard] Admin user without role param, redirecting to admin view');
         router.replace('/dashboard?role=admin');
         return;
       }

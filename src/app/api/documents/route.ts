@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { unlink, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '@/lib/logger';
 
 async function ensureDeletedAtColumn() {
     try {
@@ -29,7 +30,7 @@ async function ensureIsDeletedColumn() {
 
 async function deletePhysicalFile(url: string) {
     try {
-        console.log('Attempting to delete file with URL:', url);
+        logger.log('Attempting to delete file with URL:', url);
 
         // URL format: /uploads/{userId}/{docType}/{year}/{month}/{filename}
         // Remove leading slash if present
@@ -37,24 +38,24 @@ async function deletePhysicalFile(url: string) {
 
         // Construct full filesystem path
         const filePath = join(process.cwd(), 'public', cleanUrl);
-        console.log('Full file path:', filePath);
+        logger.log('Full file path:', filePath);
 
         // Check if file exists before attempting to delete
         const { access, constants } = await import('fs/promises');
         try {
             await access(filePath, constants.F_OK);
-            console.log('File exists, proceeding with deletion');
+            logger.log('File exists, proceeding with deletion');
         } catch {
-            console.warn('File does not exist:', filePath);
+            logger.warn('File does not exist:', filePath);
             return; // File doesn't exist, nothing to delete
         }
 
         // Delete the file
         await unlink(filePath);
-        console.log('✅ Successfully deleted physical file:', filePath);
+        logger.log('✅ Successfully deleted physical file:', filePath);
     } catch (error: any) {
-        console.error('❌ Error deleting physical file:', error);
-        console.error('Error details:', {
+        logger.error('❌ Error deleting physical file:', error);
+        logger.error('Error details:', {
             message: error.message,
             code: error.code,
             path: error.path
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, id: docId, url: publicUrl });
 
     } catch (error) {
-        console.error('Upload error:', error);
+        logger.error('Upload error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
@@ -179,7 +180,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(documents);
     } catch (error) {
-        console.error('Error fetching documents:', error);
+        logger.error('Error fetching documents:', error);
         return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 }
@@ -208,18 +209,18 @@ export async function DELETE(request: NextRequest) {
         }
 
         if (permanent) {
-            console.log('🗑️ Permanent delete requested for document ID:', id);
+            logger.log('🗑️ Permanent delete requested for document ID:', id);
 
             // Get file details before deleting from DB
             const [rows] = await pool.execute<RowDataPacket[]>('SELECT url, filename, storage_path FROM documents WHERE id = ?', [id]);
 
             if (rows.length === 0) {
-                console.warn('⚠️ Document not found in database:', id);
+                logger.warn('⚠️ Document not found in database:', id);
                 return NextResponse.json({ error: 'Document not found' }, { status: 404 });
             }
 
             const document = rows[0];
-            console.log('📄 Document details:', {
+            logger.log('📄 Document details:', {
                 id,
                 filename: document.filename,
                 url: document.url,
@@ -227,28 +228,28 @@ export async function DELETE(request: NextRequest) {
             });
 
             if (document.storage_path) {
-                console.log('🔒 Encrypted file detected. Deleting from vault...');
+                logger.log('🔒 Encrypted file detected. Deleting from vault...');
                 try {
                     const filePath = join(process.cwd(), document.storage_path);
                     await unlink(filePath);
-                    console.log('✅ Successfully deleted from vault:', filePath);
+                    logger.log('✅ Successfully deleted from vault:', filePath);
                 } catch (err: any) {
-                    console.error('❌ Error deleting from vault:', err);
+                    logger.error('❌ Error deleting from vault:', err);
                     if (err.code !== 'ENOENT') {
                         // Log but continue to delete DB record? Yes, otherwise we get stuck.
                     }
                 }
             } else if (document.url) {
-                console.log('🔄 Legacy file detected. Attempting to delete physical file...');
+                logger.log('🔄 Legacy file detected. Attempting to delete physical file...');
                 await deletePhysicalFile(document.url);
             } else {
-                console.warn('⚠️ No URL or storage_path found for document, skipping physical file deletion');
+                logger.warn('⚠️ No URL or storage_path found for document, skipping physical file deletion');
             }
 
             // Hard Delete from DB
-            console.log('🗄️ Deleting from database...');
+            logger.log('🗄️ Deleting from database...');
             await pool.execute('DELETE FROM documents WHERE id = ?', [id]);
-            console.log('✅ Document permanently deleted from database');
+            logger.log('✅ Document permanently deleted from database');
         } else {
             // Soft Delete - mark as deleted with timestamp
             await pool.execute('UPDATE documents SET is_deleted = 1, deleted_at = NOW() WHERE id = ?', [id]);
@@ -256,7 +257,7 @@ export async function DELETE(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error deleting document:', error);
+        logger.error('Error deleting document:', error);
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }
@@ -289,7 +290,7 @@ export async function PATCH(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error restoring document:', error);
+        logger.error('Error restoring document:', error);
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }

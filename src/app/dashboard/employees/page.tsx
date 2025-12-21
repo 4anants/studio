@@ -434,10 +434,14 @@ export default function EmployeeExplorerPage() {
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <EmployeeManagementDialog employee={u} departments={departments} companies={companies} onSave={handleEmployeeSave}>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                                                        <Button size="sm" className="h-8 px-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 active:scale-95 animate-gradient-xy border-0">
+                                                            <Edit className="mr-2 h-3 w-3" /> Edit
+                                                        </Button>
                                                     </EmployeeManagementDialog>
                                                     <DeleteEmployeeDialog employee={u} onDelete={() => handleEmployeeDelete(u.id)}>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                        <Button size="sm" className="h-8 px-3 rounded-full bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 text-white shadow-md hover:from-red-600 hover:to-rose-600 transition-all transform hover:scale-105 active:scale-95 animate-gradient-xy border-0">
+                                                            <Trash2 className="mr-2 h-3 w-3" /> Delete
+                                                        </Button>
                                                     </DeleteEmployeeDialog>
                                                 </div>
                                             </TableCell>

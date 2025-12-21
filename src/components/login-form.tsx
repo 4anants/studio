@@ -27,7 +27,7 @@ const MicrosoftLogo = () => (
   </svg>
 )
 
-export function LoginForm() {
+export function LoginForm({ enableLocalLogin = true }: { enableLocalLogin?: boolean }) {
   const router = useRouter()
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
@@ -92,7 +92,7 @@ export function LoginForm() {
   // Don't render form until mounted to avoid hydration issues
   if (!mounted) {
     return (
-      <Card className="shadow-lg w-full">
+      <Card className="w-full border-0 bg-transparent shadow-none">
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>
@@ -112,7 +112,7 @@ export function LoginForm() {
 
   return (
     <>
-      <Card className="shadow-lg w-full">
+      <Card className="w-full border-0 bg-transparent shadow-none">
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>
@@ -128,49 +128,56 @@ export function LoginForm() {
             )}
             <span className="ml-2">Sign in with Microsoft</span>
           </Button>
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-          <form onSubmit={handleLocalLogin}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Email Address"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isPageLoading}
-                  suppressHydrationWarning
-                />
+
+          {enableLocalLogin && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-white/10" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-transparent px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isPageLoading}
-                  suppressHydrationWarning
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isPageLoading}>
-                {isPageLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign in
-              </Button>
+              <form onSubmit={handleLocalLogin}>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email" className="text-slate-300">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Email Address"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isPageLoading}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-indigo-500/50 focus:bg-white/10"
+                      suppressHydrationWarning
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="password" className="text-slate-300">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isPageLoading}
+                      className="bg-white/5 border-white/10 text-white focus:border-indigo-500/50 focus:bg-white/10"
+                      suppressHydrationWarning
+                    />
+                  </div>
+                  <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-lg shadow-indigo-500/20 transition-all duration-300" disabled={isPageLoading}>
+                    {isPageLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Sign in
+                  </Button>
+                </div>
+              </form>
             </div>
-          </form>
+          )}
         </CardContent>
       </Card>
     </>

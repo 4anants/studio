@@ -4,6 +4,7 @@ import { RowDataPacket } from 'mysql2';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   // Authentication check
@@ -14,16 +15,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [rows] = await pool.query<RowDataPacket[]>(`
+    const { searchParams } = new URL(request.url);
+    const emailFilter = searchParams.get('email');
+
+    let sql = `
       SELECT users.*, companies.name as company_name 
       FROM users 
       LEFT JOIN companies ON users.company_id = companies.id 
-      ORDER BY users.created_at DESC
-    `);
+    `;
+    const queryParams: any[] = [];
+
+    if (emailFilter) {
+      sql += ' WHERE users.email = ?';
+      queryParams.push(emailFilter);
+    }
+
+    sql += ' ORDER BY users.created_at DESC';
+
+    const [rows] = await pool.query<RowDataPacket[]>(sql, queryParams);
 
     // Map database fields to frontend format
     let users = rows.map(u => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const {
         password_hash,
         document_pin,
@@ -69,12 +81,18 @@ export async function GET(request: NextRequest) {
       users = users.filter((user: any) => user.id === session.user.id);
     }
 
+    // If email filter used, return object instead of array if found
+    if (emailFilter && users.length > 0) {
+      return NextResponse.json(users[0]);
+    }
+
     return NextResponse.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
+    logger.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 }
+
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -85,7 +103,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log('Received user data:', body);
+    logger.log('Received user data:', body);
 
     // Authorization limits
     if (session.user.role !== 'admin' && session.user.id !== body.id) {
@@ -131,7 +149,7 @@ export async function POST(request: NextRequest) {
       try {
         const [companyRows] = await pool.query<RowDataPacket[]>('SELECT id FROM companies WHERE name = ? LIMIT 1', [userData.company]);
         if (companyRows.length > 0) company_id = companyRows[0].id;
-      } catch (err) { console.error(err); }
+      } catch (err) { logger.error(err); }
     } else if (userData.companyId) {
       company_id = userData.companyId;
     }
@@ -142,7 +160,30 @@ export async function POST(request: NextRequest) {
       passwordHash = await bcrypt.hash(userData.password, 10);
     } else if (!isUpdate) {
       // New user default password
-      passwordHash = await bcrypt.hash('default123', 10);
+      // Generate secure random password for new users
+      const generateSecurePassword = () => {
+        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        const numbers = '0123456789';
+        const special = '!@#$%^&*';
+        const all = uppercase + lowercase + numbers + special;
+
+        let password = '';
+        password += uppercase[Math.floor(Math.random() * uppercase.length)];
+        password += lowercase[Math.floor(Math.random() * lowercase.length)];
+        password += numbers[Math.floor(Math.random() * numbers.length)];
+        password += special[Math.floor(Math.random() * special.length)];
+
+        for (let i = 0; i < 4; i++) {
+          password += all[Math.floor(Math.random() * all.length)];
+        }
+
+        return password.split('').sort(() => Math.random() - 0.5).join('');
+      };
+
+      const randomPassword = generateSecurePassword();
+      passwordHash = await bcrypt.hash(randomPassword, 10);
+      logger.log(`Generated secure password for new user: ${randomPassword}`);
     }
 
     if (isUpdate) {
@@ -224,7 +265,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error saving user:', error);
+    logger.error('Error saving user:', error);
     return NextResponse.json({ error: error.message || 'Failed to save user' }, { status: 500 });
   }
 }
@@ -256,15 +297,15 @@ export async function DELETE(request: NextRequest) {
       const { join } = await import('path');
       const userFolderPath = join(process.cwd(), 'public', 'uploads', id);
       await rm(userFolderPath, { recursive: true, force: true });
-      console.log(`Deleted user folder: ${userFolderPath}`);
+      logger.log(`Deleted user folder: ${userFolderPath}`);
     } catch (folderError) {
-      console.error('Error deleting user folder:', folderError);
+      logger.error('Error deleting user folder:', folderError);
       // Continue even if folder deletion fails
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    logger.error('Error deleting user:', error);
     return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
   }
 }

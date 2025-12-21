@@ -1,10 +1,11 @@
 
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
     try {
-        console.log('Checking location column in users table...');
+        logger.log('Checking location column in users table...');
 
         // Check if column exists
         const [columns]: any = await pool.query(`
@@ -26,7 +27,7 @@ export async function GET() {
 
         return NextResponse.json({ message: 'Location column added successfully to users table' });
     } catch (error: any) {
-        console.error('Migration error:', error);
+        logger.error('Migration error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

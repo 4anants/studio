@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
     try {
-        console.log('Checking if location column exists in companies table...');
+        logger.log('Checking if location column exists in companies table...');
 
         // Check if column already exists
         const [columns]: any = await pool.query(`
@@ -22,14 +23,14 @@ export async function GET() {
             });
         }
 
-        console.log('Adding location column to companies table...');
+        logger.log('Adding location column to companies table...');
 
         await pool.query(`
       ALTER TABLE companies 
       ADD COLUMN location VARCHAR(255) DEFAULT NULL
     `);
 
-        console.log('Location column added successfully!');
+        logger.log('Location column added successfully!');
 
         // Verify
         const [result]: any = await pool.query('DESCRIBE companies');
@@ -40,7 +41,7 @@ export async function GET() {
             tableStructure: result
         });
     } catch (error: any) {
-        console.error('Error adding location column:', error);
+        logger.error('Error adding location column:', error);
         return NextResponse.json({
             success: false,
             error: error.message

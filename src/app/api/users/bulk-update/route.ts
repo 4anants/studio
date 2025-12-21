@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import pool from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, count: safeUserIds.length });
 
     } catch (error: any) {
-        console.error('Error bulk updating users:', error);
+        logger.error('Error bulk updating users:', error);
         return NextResponse.json({ error: error.message || 'Failed to update users' }, { status: 500 });
     }
 }

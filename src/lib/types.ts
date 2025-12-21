@@ -19,6 +19,7 @@ export type Company = {
     address?: string;
     phone?: string;
     email?: string;
+    domain?: string;
     location?: string;
     logo?: string; // data URI
 };
@@ -49,6 +50,7 @@ export type User = {
     photo_x_offset?: number;
     photo_y_offset?: number;
     photo_scale?: number;
+    pin?: string;
 };
 
 export const holidayLocations = ['ALL', 'AMD', 'HYD', 'US'] as const;
@@ -86,4 +88,63 @@ export type DocumentType = {
     id: string;
     name: string;
     status: 'active' | 'deleted';
+};
+
+export type EngagementEvent = {
+    id: string;
+    title: string;
+    date: string;
+    time?: string;
+    location?: string;
+    type?: string;
+    color?: string;
+    description?: string;
+    target_location: string;
+    target_department: string;
+    created_at?: string;
+};
+
+export type EngagementResource = {
+    id: string;
+    category: string;
+    name: string;
+    type?: string;
+    size?: string;
+    url?: string;
+    target_location: string;
+    target_department: string;
+    status?: 'active' | 'deleted';
+    created_at?: string;
+};
+
+export type EngagementPollOption = {
+    id: string;
+    poll_id: string;
+    text: string;
+    votes: number;
+};
+
+export type EngagementPoll = {
+    id: string;
+    question: string;
+    is_active: boolean;
+    target_location: string;
+    target_department: string;
+    options: EngagementPollOption[];
+    userVotedOptionId?: string | null;
+    totalVotes: number;
+    created_at?: string;
+};
+
+export type EngagementFeedback = {
+    id: string;
+    user_id: string;
+    user_name?: string;
+    user_email?: string;
+    message: string;
+    category?: string;
+    is_public?: boolean;
+    vote_count?: number;
+    has_voted?: boolean;
+    created_at?: string;
 };

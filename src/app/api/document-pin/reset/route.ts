@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
             await pool.query('SELECT document_pin FROM users LIMIT 1');
         } catch (err: any) {
             if (err.code === 'ER_BAD_FIELD_ERROR') {
-                console.log('Adding PIN columns to users table (lazy migration)...');
+                logger.log('Adding PIN columns to users table (lazy migration)...');
 
                 const addColumnSafe = async (query: string) => {
                     try {
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
                     } catch (e: any) {
                         // Ignore duplicate column name error (ER_DUP_FIELDNAME)
                         if (e.code !== 'ER_DUP_FIELDNAME') {
-                            console.warn('Warning during schema update:', e.message);
+                            logger.warn('Warning during schema update:', e.message);
                         }
                     }
                 };
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ message: 'User PINs reset successfully', count: idsToReset.length });
     } catch (error: any) {
-        console.error('Error resetting PIN:', error);
+        logger.error('Error resetting PIN:', error);
         return NextResponse.json({ error: error.message || 'Failed to reset PIN' }, { status: 500 });
     }
 }

@@ -310,8 +310,8 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                 {isDeletedList ? (
                   <div className="flex items-center justify-end gap-2">
                     {onRestore &&
-                      <Button variant="outline" size="sm" onClick={() => onRestore(doc.id)}>
-                        <Undo className="mr-2 h-4 w-4" /> Restore
+                      <Button size="sm" onClick={() => onRestore(doc.id)} className="h-8 px-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 active:scale-95 animate-gradient-xy border-0">
+                        <Undo className="mr-2 h-3 w-3" /> Restore
                       </Button>
                     }
                     {onPermanentDelete &&
@@ -320,8 +320,8 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                         itemType="document"
                         onDelete={() => onPermanentDelete(doc.id)}
                       >
-                        <Button variant="destructive" size="sm">
-                          <Trash className="mr-2 h-4 w-4" /> Permanent Delete
+                        <Button size="sm" className="h-8 px-3 rounded-full bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 text-white shadow-md hover:from-red-600 hover:to-rose-600 transition-all transform hover:scale-105 active:scale-95 animate-gradient-xy border-0">
+                          <Trash className="mr-2 h-3 w-3" /> Permanent Delete
                         </Button>
                       </PermanentDeleteDialog>
                     }
@@ -339,8 +339,8 @@ export const DocumentList = React.memo(({ documents, users, showOwner = false, o
                       </Button>
                     )}
                     {onDelete && (
-                      <Button variant="destructive" size="sm" onClick={() => onDelete(doc.id)}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      <Button size="sm" onClick={() => onDelete(doc.id)} className="h-8 px-3 rounded-full bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 text-white shadow-md hover:from-red-600 hover:to-rose-600 transition-all transform hover:scale-105 active:scale-95 animate-gradient-xy border-0">
+                        <Trash2 className="mr-2 h-3 w-3" /> Delete
                       </Button>
                     )}
                   </div>

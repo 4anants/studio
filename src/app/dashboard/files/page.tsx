@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '@/hooks/use-data';
@@ -26,7 +25,28 @@ import {
     Calendar,
     Building,
     Building2,
-    MapPin
+    MapPin,
+    Banknote,
+    Stethoscope,
+    Award,
+    // Semantic Icons
+    Scale,
+    FileSignature,
+    Briefcase,
+    GraduationCap,
+    Shield,
+    Image as ImageIcon,
+    Film,
+    Music,
+    Cpu,
+    Database,
+    Plane,
+    Receipt,
+    Calculator,
+    Users,
+    BriefcaseBusiness,
+    Palette,
+    Landmark
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +77,7 @@ import { cn, getAvatarSrc } from '@/lib/utils';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, getYear, getMonth } from 'date-fns';
+import { PinVerifyDialog } from '@/components/dashboard/pin-verify-dialog';
 
 // --- Types & Constants ---
 type ViewMode = 'grid' | 'list';
@@ -67,7 +88,7 @@ interface PathItem {
     type: PathType;
 }
 
-const PRIORITY_FOLDERS = ['Salary Slip', 'Personal', 'Medical Report', 'Appraisal Letter'];
+const PRIORITY_FOLDERS = ['Salary Slip', 'Medical Report', 'Appraisal Letter', 'Personal'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function FileIconComponent({ type }: { type: string }) {
@@ -76,6 +97,51 @@ function FileIconComponent({ type }: { type: string }) {
     if (type === 'jpg' || type === 'png' || type === 'jpeg') return <FileIcon className="h-8 w-8 text-green-500" />;
     return <FileText className="h-8 w-8 text-gray-400" />;
 }
+
+// Helper: Semantic Icon Matching (Duplicated for Admin consistency)
+const getSmartIcon = (name: string) => {
+    const n = name.toLowerCase();
+
+    // Finance
+    if (n.includes('salary') || n.includes('pay') || n.includes('payroll')) return Banknote;
+    if (n.includes('tax') || n.includes('invoice') || n.includes('bill') || n.includes('receipt')) return Receipt;
+    if (n.includes('budget') || n.includes('finance') || n.includes('account') || n.includes('bank')) return Landmark;
+
+    // Legal & Contracts
+    if (n.includes('contract') || n.includes('agreement') || n.includes('nda') || n.includes('offer') || n.includes('policy')) return FileSignature;
+    if (n.includes('legal') || n.includes('law') || n.includes('compliance') || n.includes('court')) return Scale;
+
+    // HR & Personal
+    if (n.includes('personal') || n.includes('profile') || n.includes('identity') || n.includes('me')) return UserIcon;
+    if (n.includes('team') || n.includes('group') || n.includes('hr') || n.includes('people') || n.includes('staff')) return Users;
+    if (n.includes('job') || n.includes('career') || n.includes('work') || n.includes('employ')) return BriefcaseBusiness;
+    if (n.includes('education') || n.includes('degree') || n.includes('certif') || n.includes('training') || n.includes('learn')) return GraduationCap;
+
+    // Health
+    if (n.includes('health') || n.includes('medical') || n.includes('doctor') || n.includes('insur') || n.includes('medi')) return Stethoscope;
+
+    // Assets & Media
+    if (n.includes('image') || n.includes('photo') || n.includes('pic') || n.includes('gallery') || n.includes('asset')) return ImageIcon;
+    if (n.includes('video') || n.includes('movie') || n.includes('record')) return Film;
+    if (n.includes('design') || n.includes('art') || n.includes('ux') || n.includes('ui') || n.includes('creat')) return Palette;
+    if (n.includes('audio') || n.includes('sound') || n.includes('music')) return Music;
+
+    // Tech
+    if (n.includes('tech') || n.includes('code') || n.includes('dev') || n.includes('software') || n.includes('eng')) return Cpu;
+    if (n.includes('data') || n.includes('analytic') || n.includes('report') || n.includes('stat')) return Database;
+
+    // Other
+    if (n.includes('project') || n.includes('task') || n.includes('plan') || n.includes('sprint')) return Briefcase;
+    if (n.includes('travel') || n.includes('trip') || n.includes('expens') || n.includes('move')) return Plane;
+    if (n.includes('secur') || n.includes('pass') || n.includes('audit') || n.includes('auth')) return Shield;
+    if (n.includes('appraisal') || n.includes('award') || n.includes('bonus') || n.includes('promot')) return Award;
+
+    // Places
+    if (n.includes('location') || n.includes('site') || n.includes('place') || n.includes('map') || n.includes('office') || n.includes('branch')) return MapPin;
+    if (n.includes('department') || n.includes('dept') || n.includes('division')) return Building2;
+
+    return Folder; // Fallback
+};
 
 export default function FileExplorerPage() {
     const router = useRouter();
@@ -94,6 +160,11 @@ export default function FileExplorerPage() {
         { id: 'root', name: 'Departments', type: 'root' }
     ]);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // PIN Verification State
+    const [pinVerifyOpen, setPinVerifyOpen] = useState(false);
+    const [pendingDoc, setPendingDoc] = useState<Document | null>(null);
+    const [pendingAction, setPendingAction] = useState<'view' | 'download'>('view');
 
     // Default filters to Current Date
     const currentYear = new Date().getFullYear().toString();
@@ -314,9 +385,7 @@ export default function FileExplorerPage() {
         // Level 5: Year Selected -> Show Months
         if (activeLevel.type === 'year') {
             // Need robust way to get category.
-            // Hierarchy: [Root, Dept, Loc, User, Category, Year]
-            // Category is activeLevel - 1 (index - 1) ? 
-            // currentPath: [ ..., Category, Year ]
+            // Hierarchy: [ ..., Category, Year ]
             const categoryItem = currentPath[currentPath.length - 2];
             const category = categoryItem.id;
             const year = parseInt(activeLevel.id);
@@ -372,11 +441,11 @@ export default function FileExplorerPage() {
     }, [(content as any).type]);
 
 
-    // Action Handlers
+    // Action Handlers with PIN Verification
     const handleDelete = async (docId: string) => {
         if (!confirm('Permanently delete this document?')) return;
         try {
-            await fetch(`/ api / documents ? id = ${docId} `, { method: 'DELETE' });
+            await fetch(`/api/documents?id=${docId}`, { method: 'DELETE' });
             await mutateDocuments();
             toast({ title: 'Document deleted' });
         } catch (e) {
@@ -389,7 +458,9 @@ export default function FileExplorerPage() {
             toast({ variant: 'destructive', title: 'Access Denied', description: 'Restricted: Only Personal documents generally viewable.' });
             return;
         }
-        if (doc.url) window.open(doc.url, '_blank');
+        setPendingDoc(doc);
+        setPendingAction('view');
+        setPinVerifyOpen(true);
     };
 
     const handleDownload = (doc: Document) => {
@@ -397,24 +468,24 @@ export default function FileExplorerPage() {
             toast({ variant: 'destructive', title: 'Access Denied', description: 'Restricted.' });
             return;
         }
-        if (doc.url) window.open(doc.url, '_blank');
+        setPendingDoc(doc);
+        setPendingAction('download');
+        setPinVerifyOpen(true);
+    };
+
+    const handlePinSuccess = () => {
+        if (pendingDoc) {
+            if (pendingDoc.url) {
+                window.open(pendingDoc.url, '_blank');
+            }
+        }
+        setPendingDoc(null);
     };
 
     // -- Sub views --
 
     return (
         <div className="flex h-full min-h-[80vh] w-full flex-col bg-muted/10">
-            {/* Gradient Definition for Icons */}
-            <svg width="0" height="0" className="absolute block w-0 h-0 overflow-hidden" aria-hidden="true">
-                <defs>
-                    <linearGradient id="folder-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#3b82f6" /> {/* blue-500 */}
-                        <stop offset="50%" stopColor="#a855f7" /> {/* purple-500 */}
-                        <stop offset="100%" stopColor="#ec4899" /> {/* pink-500 */}
-                    </linearGradient>
-                </defs>
-            </svg>
-
             {/* Header */}
             <header className="flex items-center justify-between px-6 py-4 border-b bg-background sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center gap-4 flex-1">
@@ -528,13 +599,13 @@ export default function FileExplorerPage() {
                             </TableBody></Table></Card>
                         ) : (
                             (content as any).data.map((u: User) => (
-                                <Card key={u.id} className="cursor-pointer hover:border-purple-500 hover:shadow-lg hover:bg-purple-50/10 transition-all group border-muted" onClick={() => enterUser(u)}>
+                                <Card key={u.id} className="cursor-pointer hover:border-blue-500/50 hover:shadow-lg hover:bg-blue-500/5 transition-all group border-white/5 bg-[#1a1c24]" onClick={() => enterUser(u)}>
                                     <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
-                                        <div className="p-1 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 group-hover:scale-105 transition-transform duration-300">
-                                            <Image src={getAvatarSrc(u)} width={64} height={64} className="rounded-full object-cover border-2 border-background" alt="" />
+                                        <div className="p-1 rounded-full bg-blue-500/20 group-hover:bg-blue-500/40 transition-colors duration-300">
+                                            <Image src={getAvatarSrc(u)} width={64} height={64} className="rounded-full object-cover border-2 border-transparent" alt="" />
                                         </div>
-                                        <p className="font-medium text-center truncate w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{u.name}</p>
-                                        <p className="text-xs text-muted-foreground">{u.department || 'No Dept'}</p>
+                                        <p className="font-medium text-center truncate w-full group-hover:text-blue-400 transition-colors text-slate-200">{u.name}</p>
+                                        <p className="text-xs text-slate-500">{u.department || 'No Dept'}</p>
                                     </CardContent>
                                 </Card>
                             ))
@@ -546,23 +617,73 @@ export default function FileExplorerPage() {
                 {(content as any).type === 'folders' && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 animate-in fade-in zoom-in-95 duration-300">
                         {(content as any).data.map((folderName: string) => {
-                            let icon = <Folder className="h-16 w-16 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} style={{ stroke: 'url(#folder-gradient)' }} />;
-                            if ((content as any).icon === 'calendar') icon = <Calendar className="h-16 w-16 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />;
-                            if ((content as any).icon === 'clock') icon = <Clock className="h-16 w-16 text-emerald-500 fill-emerald-500/20 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />;
-                            if ((content as any).icon === 'department') icon = <Building2 className="h-16 w-16 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} style={{ stroke: 'url(#folder-gradient)' }} />;
-                            if ((content as any).icon === 'map-pin') icon = <MapPin className="h-16 w-16 text-red-500 fill-red-500/20 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />;
+                            // 1. Define Palette (Dark Theme Optimized)
+                            const colors = [
+                                { name: 'blue', color: 'text-blue-500', fill: 'fill-blue-500/20', border: 'border-white/5 hover:border-blue-500/50', bg: 'bg-[#1a1c24] hover:bg-blue-500/10', shadow: 'shadow-sm hover:shadow-blue-500/20' },
+                                { name: 'emerald', color: 'text-emerald-500', fill: 'fill-emerald-500/20', border: 'border-white/5 hover:border-emerald-500/50', bg: 'bg-[#1a1c24] hover:bg-emerald-500/10', shadow: 'shadow-sm hover:shadow-emerald-500/20' },
+                                { name: 'purple', color: 'text-purple-500', fill: 'fill-purple-500/20', border: 'border-white/5 hover:border-purple-500/50', bg: 'bg-[#1a1c24] hover:bg-purple-500/10', shadow: 'shadow-sm hover:shadow-purple-500/20' },
+                                { name: 'rose', color: 'text-rose-500', fill: 'fill-rose-500/20', border: 'border-white/5 hover:border-rose-500/50', bg: 'bg-[#1a1c24] hover:bg-rose-500/10', shadow: 'shadow-sm hover:shadow-rose-500/20' },
+                                { name: 'amber', color: 'text-amber-500', fill: 'fill-amber-500/20', border: 'border-white/5 hover:border-amber-500/50', bg: 'bg-[#1a1c24] hover:bg-amber-500/10', shadow: 'shadow-sm hover:shadow-amber-500/20' },
+                                { name: 'cyan', color: 'text-cyan-500', fill: 'fill-cyan-500/20', border: 'border-white/5 hover:border-cyan-500/50', bg: 'bg-[#1a1c24] hover:bg-cyan-500/10', shadow: 'shadow-sm hover:shadow-cyan-500/20' },
+                                { name: 'indigo', color: 'text-indigo-500', fill: 'fill-indigo-500/20', border: 'border-white/5 hover:border-indigo-500/50', bg: 'bg-[#1a1c24] hover:bg-indigo-500/10', shadow: 'shadow-sm hover:shadow-indigo-500/20' },
+                                { name: 'pink', color: 'text-pink-500', fill: 'fill-pink-500/20', border: 'border-white/5 hover:border-pink-500/50', bg: 'bg-[#1a1c24] hover:bg-pink-500/10', shadow: 'shadow-sm hover:shadow-pink-500/20' },
+                                { name: 'orange', color: 'text-orange-500', fill: 'fill-orange-500/20', border: 'border-white/5 hover:border-orange-500/50', bg: 'bg-[#1a1c24] hover:bg-orange-500/10', shadow: 'shadow-sm hover:shadow-orange-500/20' },
+                                { name: 'teal', color: 'text-teal-500', fill: 'fill-teal-500/20', border: 'border-white/5 hover:border-teal-500/50', bg: 'bg-[#1a1c24] hover:bg-teal-500/10', shadow: 'shadow-sm hover:shadow-teal-500/20' },
+                            ];
+
+                            // 2. Deterministic Hash
+                            const hash = folderName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                            const theme = colors[hash % colors.length];
+
+                            // 3. Determine Config & Icon
+                            const semanticIcon = getSmartIcon(folderName);
+                            let Icon = semanticIcon !== Folder ? semanticIcon : Folder;
+
+                            // 4. Overrides (Preserve structural logic if generic folder)
+                            if (Icon === Folder) {
+                                // Only use structural icons if semantic matching failed
+                                if ((content as any).icon === 'department') Icon = Building2;
+                                if ((content as any).icon === 'map-pin') Icon = MapPin;
+                                if ((content as any).icon === 'calendar') Icon = Calendar;
+                                if ((content as any).icon === 'clock') Icon = Clock;
+                            }
+
+                            // Use Specific Colors for semantic matches if desired, otherwise Hash Theme
+                            let Config = { icon: Icon, ...theme };
+
+                            // Apply overrides for Structural Types to match specific colors if they were set
+                            if (Icon === Building2) Config = { ...Config, ...colors.find(c => c.name === 'indigo')! };
+                            if (Icon === MapPin) Config = { ...Config, ...colors.find(c => c.name === 'teal')! };
+                            if (Icon === Calendar) Config = { ...Config, ...colors.find(c => c.name === 'pink')! };
+                            if (Icon === Clock) Config = { ...Config, ...colors.find(c => c.name === 'orange')! };
+
+                            // If Semantic Match Found (e.g. Banknote for Salary), we might want to force a color?
+                            // Employee view re-uses the 'Known' Logic. Let's keep specific known overrides for consistency.
+                            if (folderName === 'Salary Slip') Config = { ...Config, ...colors.find(c => c.name === 'emerald')! };
+                            if (folderName === 'Personal') Config = { ...Config, ...colors.find(c => c.name === 'blue')! };
+                            if (folderName === 'Medical Report') Config = { ...Config, ...colors.find(c => c.name === 'rose')! };
+                            if (folderName === 'Appraisal Letter') Config = { ...Config, ...colors.find(c => c.name === 'amber')! };
+
+                            // Final Icon Check
+                            Icon = Config.icon;
 
                             return (
                                 <Card
                                     key={folderName}
-                                    className="cursor-pointer hover:border-purple-500 hover:shadow-lg hover:bg-purple-50/10 transition-all border-muted shadow-sm bg-card group relative overflow-hidden"
+                                    className={cn(
+                                        "cursor-pointer transition-all duration-300 group relative overflow-hidden border-2",
+                                        "transform hover:-translate-y-1 hover:scale-[1.02]",
+                                        Config.border,
+                                        Config.bg,
+                                        Config.shadow
+                                    )}
                                     onClick={() => enterFolder(folderName, folderName, (content as any).nextType)}
                                 >
-                                    <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
-                                        <div className="group-hover:-translate-y-1 transition-transform duration-300">
-                                            {icon}
+                                    <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[160px]">
+                                        <div className={cn("p-4 rounded-full transition-transform duration-300 group-hover:scale-110 bg-white/5", Config.fill)}>
+                                            <Icon className={cn("h-10 w-10 transition-colors duration-300", Config.color)} strokeWidth={1.5} />
                                         </div>
-                                        <span className="font-medium text-center truncate w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{folderName}</span>
+                                        <span className={cn("font-medium text-center truncate w-full transition-colors duration-300", "text-slate-300 group-hover:text-white")}>{folderName}</span>
                                     </CardContent>
                                 </Card>
                             );
@@ -604,6 +725,14 @@ export default function FileExplorerPage() {
                     )
                 )}
             </main>
+
+            <PinVerifyDialog
+                open={pinVerifyOpen}
+                onOpenChange={setPinVerifyOpen}
+                onSuccess={handlePinSuccess}
+                documentName={pendingDoc?.name}
+                action={pendingAction}
+            />
         </div>
     );
 }
@@ -655,13 +784,13 @@ function FileTable({ docs, users, checkPermission, onDelete, onView, onDownload 
                                     {(checkPermission(doc, 'view') || checkPermission(doc, 'download')) && (
                                         <div className="flex gap-2">
                                             {checkPermission(doc, 'view') && (
-                                                <Button size="sm" onClick={() => onView(doc)} className="h-8 px-3 rounded-md bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
+                                                <Button size="sm" onClick={() => onView(doc)} className="h-8 px-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 active:scale-95 animate-gradient-xy border-0">
                                                     <Eye className="mr-2 h-3 w-3" /> View
                                                 </Button>
                                             )}
                                         </div>
                                     )}
-                                    <Button variant="destructive" size="sm" className="h-8 px-3 shadow-sm" onClick={() => onDelete(doc.id)}>
+                                    <Button size="sm" onClick={() => onDelete(doc.id)} className="h-8 px-3 rounded-full bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 text-white shadow-md hover:from-red-600 hover:to-rose-600 transition-all transform hover:scale-105 active:scale-95 animate-gradient-xy border-0">
                                         <Trash2 className="mr-2 h-3 w-3" /> Delete
                                     </Button>
                                 </div>

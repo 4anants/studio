@@ -4,6 +4,7 @@ import { RowDataPacket } from 'mysql2';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import { logger } from '@/lib/logger';
 
 // Auto-repair: Add PIN columns if they don't exist
 async function ensurePinColumns() {
@@ -11,14 +12,14 @@ async function ensurePinColumns() {
         await pool.query('SELECT document_pin, pin_set, failed_pin_attempts, pin_locked_until FROM users LIMIT 1');
     } catch (err: any) {
         if (err.code === 'ER_BAD_FIELD_ERROR') {
-            console.log('Adding PIN columns to users table...');
+            logger.log('Adding PIN columns to users table...');
 
             const addColumnSafe = async (query: string) => {
                 try {
                     await pool.query(query);
                 } catch (e: any) {
                     if (e.code !== 'ER_DUP_FIELDNAME') {
-                        console.warn('Warning during schema update:', e.message);
+                        logger.warn('Warning during schema update:', e.message);
                     }
                 }
             };
@@ -27,7 +28,7 @@ async function ensurePinColumns() {
             await addColumnSafe('ALTER TABLE users ADD COLUMN pin_set BOOLEAN DEFAULT 0');
             await addColumnSafe('ALTER TABLE users ADD COLUMN failed_pin_attempts INT DEFAULT 0');
             await addColumnSafe('ALTER TABLE users ADD COLUMN pin_locked_until TIMESTAMP NULL DEFAULT NULL');
-            console.log('PIN columns added successfully');
+            logger.log('PIN columns added successfully');
         }
     }
 }
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
             failedAttempts: user.failed_pin_attempts || 0
         });
     } catch (error) {
-        console.error('Error checking PIN status:', error);
+        logger.error('Error checking PIN status:', error);
         return NextResponse.json({ error: 'Failed to check PIN status' }, { status: 500 });
     }
 }
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
             message: user.pin_set ? 'PIN updated successfully' : 'PIN set successfully'
         });
     } catch (error) {
-        console.error('Error setting PIN:', error);
+        logger.error('Error setting PIN:', error);
         return NextResponse.json({ error: 'Failed to set PIN' }, { status: 500 });
     }
 }
@@ -223,7 +224,7 @@ export async function PATCH(request: NextRequest) {
             }
         }
     } catch (error) {
-        console.error('Error verifying PIN:', error);
+        logger.error('Error verifying PIN:', error);
         return NextResponse.json({ error: 'Failed to verify PIN' }, { status: 500 });
     }
 }
@@ -262,7 +263,7 @@ export async function DELETE(request: NextRequest) {
             message: 'PIN reset successfully. User will be prompted to set a new PIN.'
         });
     } catch (error) {
-        console.error('Error resetting PIN:', error);
+        logger.error('Error resetting PIN:', error);
         return NextResponse.json({ error: 'Failed to reset PIN' }, { status: 500 });
     }
 }

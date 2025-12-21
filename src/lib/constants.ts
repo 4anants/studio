@@ -11,6 +11,14 @@ export const documentTypesList: string[] = ['Salary Slip', 'Medical Report', 'Ap
 
 export const departments: string[] = ['Human Resources', 'Engineering', 'Marketing', 'Sales', 'Information & Technology'];
 
+// Static domain mapping (for reference only - actual mapping is in database)
+export const domainToCompanyMap: Record<string, string> = {
+    'asepltd.com': 'ASE',
+    'amepltd.com': 'AMEP',
+    'potomaccs.com': 'POTOMAC',
+    'aeintraweb.com': 'AE INTRAWEB'
+};
+
 import { Company } from './types';
 
 export const companies: Company[] = [

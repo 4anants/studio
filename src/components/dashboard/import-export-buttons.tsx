@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { logger } from "@/lib/logger"
 import { Download, Upload, FileDown } from "lucide-react"
 import { useRef, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
@@ -53,7 +54,7 @@ export function ImportExportButtons({ onExport, onImport, onDownloadSample, item
                 await onImport(result);
                 toast({ title: "Import Successful", description: `Imported ${result.length} ${itemName} items.` });
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 toast({ variant: "destructive", title: "Import Failed", description: "Could not parse file or import data." });
             } finally {
                 if (fileInputRef.current) fileInputRef.current.value = '';
@@ -69,7 +70,7 @@ export function ImportExportButtons({ onExport, onImport, onDownloadSample, item
                 size="sm"
                 onClick={onExport}
                 title={`Export ${itemName}`}
-                className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-4"
             >
                 <Download className="mr-2 h-4 w-4" />
                 Export
@@ -87,13 +88,13 @@ export function ImportExportButtons({ onExport, onImport, onDownloadSample, item
                     size="sm"
                     disabled={isImporting}
                     title={`Import ${itemName}`}
-                    className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                    className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-4"
                     onClick={() => { }} // We use the dropdown trigger instead
                     asChild
                 >
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button size="sm" className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
+                            <Button size="sm" className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-4">
                                 <Upload className="mr-2 h-4 w-4" />
                                 {isImporting ? 'Importing...' : 'Import'}
                             </Button>

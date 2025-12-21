@@ -14,13 +14,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Lock, AlertCircle, Clock } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface PinVerifyDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
     documentName?: string;
-    action?: 'view' | 'download';
+    action?: 'view' | 'download' | 'edit';
+    customTitle?: string;
+    customDescription?: string;
 }
 
 export function PinVerifyDialog({
@@ -28,7 +31,9 @@ export function PinVerifyDialog({
     onOpenChange,
     onSuccess,
     documentName,
-    action = 'view'
+    action = 'view',
+    customTitle,
+    customDescription
 }: PinVerifyDialogProps) {
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
@@ -62,7 +67,7 @@ export function PinVerifyDialog({
                 updateLockTimer(data.lockedUntil);
             }
         } catch (error) {
-            console.error('Error checking lock status:', error);
+            logger.error('Error checking lock status:', error);
         }
     };
 
@@ -141,12 +146,12 @@ export function PinVerifyDialog({
                 <DialogHeader>
                     <div className="flex items-center gap-2">
                         <Lock className="h-5 w-5 text-primary" />
-                        <DialogTitle>Enter Document PIN</DialogTitle>
+                        <DialogTitle>{customTitle || 'Enter PIN'}</DialogTitle>
                     </div>
                     <DialogDescription>
-                        {documentName
+                        {customDescription || (documentName
                             ? `Enter your 4-digit PIN to ${action} "${documentName}"`
-                            : `Enter your 4-digit PIN to ${action} this document`}
+                            : `Enter your 4-digit PIN to ${action} this document`)}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -183,7 +188,7 @@ export function PinVerifyDialog({
                                 disabled={loading}
                             />
                             <p className="text-xs text-muted-foreground text-center">
-                                Enter your 4-digit document PIN
+                                Enter your 4-digit PIN
                             </p>
                         </div>
 
@@ -209,14 +214,14 @@ export function PinVerifyDialog({
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
                                 disabled={loading}
-                                className="w-full sm:w-auto rounded-full px-8 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                className="w-full sm:w-auto rounded-xl px-8 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={loading || pin.length !== 4}
-                                className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
+                                className="w-full sm:w-auto rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-6"
                             >
                                 {loading ? 'Verifying...' : 'Verify PIN'}
                             </Button>

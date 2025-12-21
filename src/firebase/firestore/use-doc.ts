@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { logger } from '@/lib/logger';
 
 /**
  * Custom hook to get a document from Firestore in real-time.
@@ -33,7 +34,7 @@ export function useDoc<T = DocumentData>(collectionName: string, docId: string) 
       }
       setLoading(false);
     }, (err) => {
-      console.error(err);
+      logger.error(err);
       setError(err);
       setLoading(false);
     });

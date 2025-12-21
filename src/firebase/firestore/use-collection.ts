@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, type Query, type DocumentData } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { logger } from '@/lib/logger';
 
 /**
  * Custom hook to get a collection from Firestore in real-time.
@@ -32,14 +33,14 @@ export function useCollection<T = DocumentData>(
         setData(documents);
         setLoading(false);
       }, (err) => {
-        console.error(err);
+        logger.error(err);
         setError(err);
         setLoading(false);
       });
 
       return () => unsubscribe();
     } catch (err: any) {
-      console.error(err);
+      logger.error(err);
       setError(err);
       setLoading(false);
       return () => {};

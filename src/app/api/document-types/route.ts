@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db'; // This is a pool
 import { RowDataPacket } from 'mysql2';
 import { requireAuth } from '@/lib/auth-helpers';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
     const auth = await requireAuth();
@@ -11,7 +12,7 @@ export async function GET() {
         const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM document_types ORDER BY created_at DESC');
         return NextResponse.json(rows);
     } catch (error) {
-        console.error('Error fetching document types:', error);
+        logger.error('Error fetching document types:', error);
         return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 }
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
 
     } catch (error) {
-        console.error('Error in document-types API:', error);
+        logger.error('Error in document-types API:', error);
         return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 }
@@ -118,7 +119,7 @@ export async function DELETE(request: NextRequest) {
         await pool.execute('DELETE FROM document_types WHERE id = ?', [id]);
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error deleting document type:', error);
+        logger.error('Error deleting document type:', error);
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }

@@ -212,7 +212,7 @@ export default function EmployeeProfilePage() {
                                     {(isSelfView || isOwnProfile) && (
                                         <Button variant="outline" className="w-full rounded-full shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setPinSetupOpen(true)}>
                                             <Lock className="mr-2 h-4 w-4" />
-                                            {hasPin ? 'Change Document PIN' : 'Set Document PIN'}
+                                            {hasPin ? 'Change PIN' : 'Set PIN'}
                                         </Button>
                                     )}
                                     <IdCardDialog employee={user} company={userCompany}>

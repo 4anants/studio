@@ -8,6 +8,7 @@ import { join, extname } from 'path';
 import { createReadStream, statSync } from 'fs';
 import { stat } from 'fs/promises';
 import { getDecryptedStream } from '@/lib/encryption';
+import { logger } from '@/lib/logger';
 
 function getMimeType(filename: string): string {
     const ext = extname(filename).toLowerCase();
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
         try {
             await stat(filePath);
         } catch {
-            console.error(`File missing at ${filePath}`);
+            logger.error(`File missing at ${filePath}`);
             return NextResponse.json({ error: 'File not found on server' }, { status: 404 });
         }
 
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Download error:', error);
+        logger.error('Download error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

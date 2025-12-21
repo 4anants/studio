@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function PATCH(request: NextRequest) {
     const session = await getServerSession(authOptions);
@@ -20,12 +21,12 @@ export async function PATCH(request: NextRequest) {
             await pool.query('SELECT photo_x_offset FROM users LIMIT 1');
         } catch (err: any) {
             if (err.code === 'ER_BAD_FIELD_ERROR') {
-                console.log('Adding photo offset columns to users table...');
+                logger.log('Adding photo offset columns to users table...');
                 const addColumnSafe = async (query: string) => {
                     try {
                         await pool.query(query);
                     } catch (e: any) {
-                        if (e.code !== 'ER_DUP_FIELDNAME') console.warn(e.message);
+                        if (e.code !== 'ER_DUP_FIELDNAME') logger.warn(e.message);
                     }
                 };
                 await addColumnSafe('ALTER TABLE users ADD COLUMN photo_x_offset INT DEFAULT 0');
@@ -41,7 +42,7 @@ export async function PATCH(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
-        console.error('Error updating profile photo settings:', error);
+        logger.error('Error updating profile photo settings:', error);
         return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
     }
 }

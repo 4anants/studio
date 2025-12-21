@@ -4,6 +4,34 @@ import AzureADProvider from "next-auth/providers/azure-ad";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import bcrypt from "bcryptjs";
+import { logger } from '@/lib/logger';
+import { domainToCompanyMap } from '@/lib/constants';
+
+// Server-side helper to get company from email domain
+async function getCompanyFromEmail(email: string): Promise<string | null> {
+    if (!email) return null;
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (!domain) return null;
+
+    try {
+        // Query database for company with matching domain
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT name FROM companies WHERE LOWER(domain) = ? LIMIT 1',
+            [domain]
+        );
+
+        if (rows.length > 0) {
+            return rows[0].name;
+        }
+
+        // Fallback to static mapping
+        return domainToCompanyMap[domain] || null;
+    } catch (error) {
+        logger.error('Error querying company by domain:', error);
+        // Fallback to static mapping on error
+        return domainToCompanyMap[domain] || null;
+    }
+}
 
 const providers: any[] = [
     CredentialsProvider({
@@ -47,7 +75,7 @@ const providers: any[] = [
                     image: user.avatar && user.avatar.length < 200 ? user.avatar : null // Prevent large cookies (HTTP 431) if avatar is base64
                 };
             } catch (error) {
-                console.error("Auth error:", error);
+                logger.error("Auth error:", error);
                 return null;
             }
         }
@@ -106,7 +134,7 @@ export const authOptions: NextAuthOptions = {
                                 }
                             }
                         } catch (idErr) {
-                            console.error("Error generating sequential ID, falling back to UUID", idErr);
+                            logger.error("Error generating sequential ID, falling back to UUID", idErr);
                             const { randomUUID } = await import('crypto');
                             newId = randomUUID();
                         }
@@ -114,15 +142,16 @@ export const authOptions: NextAuthOptions = {
                         const firstName = nameParts[0] || '';
                         const lastName = nameParts.slice(1).join(' ') || '';
                         const username = user.email.split('@')[0];
+                        const company = getCompanyFromEmail(user.email);
 
                         await pool.execute(
-                            `INSERT INTO users (id, email, username, first_name, last_name, display_name, status, is_admin, created_at, updated_at, avatar) 
-                             VALUES (?, ?, ?, ?, ?, ?, 'active', 0, NOW(), NOW(), ?)`,
-                            [newId, user.email, username, firstName, lastName, user.name, user.image || null]
+                            `INSERT INTO users (id, email, username, first_name, last_name, display_name, company, status, is_admin, created_at, updated_at, avatar) 
+                             VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, NOW(), NOW(), ?)`,
+                            [newId, user.email, username, firstName, lastName, user.name, company, user.image || null]
                         );
                     }
                 } catch (e) {
-                    console.error("SSO Auto-registration failed:", e);
+                    logger.error("SSO Auto-registration failed:", e);
                     return false;
                 }
             }

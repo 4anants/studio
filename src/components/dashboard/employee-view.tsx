@@ -7,7 +7,12 @@ import { EmployeeFileExplorer } from './employee-file-explorer'
 import { BirthdayList } from './birthday-list'
 import { UploadDialog } from './upload-dialog'
 import { PhotoAdjustmentDialog } from './photo-adjustment-dialog'
+import { EventCalendar } from './engagement/event-calendar'
+import { PollsSurveys } from './engagement/polls-surveys'
+import { CompanyResources } from './engagement/company-resources'
+import { FeedbackBox } from './engagement/feedback-box'
 import { useData } from '@/hooks/use-data'
+
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -205,17 +210,18 @@ export function EmployeeView() {
             </div>
 
             <Tabs value={activeTab} onValueChange={onTabChange} className="pt-4">
-                <TabsList className="bg-transparent p-0 gap-2 h-auto flex-wrap">
-                    <TabsTrigger value="documents" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">My Documents</TabsTrigger>
-                    <TabsTrigger value="holidays" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Holiday List</TabsTrigger>
-                    <TabsTrigger value="announcements" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all relative data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">
+                <TabsList className="bg-[#12141c] border border-white/5 p-1 gap-1 h-auto flex-wrap rounded-xl">
+                    <TabsTrigger value="documents" className="rounded-lg data-[state=active]:bg-[#1a1c24] data-[state=active]:text-white data-[state=active]:shadow-lg px-4 py-2 transition-all font-medium text-slate-400">My Documents</TabsTrigger>
+                    <TabsTrigger value="holidays" className="rounded-lg data-[state=active]:bg-[#1a1c24] data-[state=active]:text-white data-[state=active]:shadow-lg px-4 py-2 transition-all font-medium text-slate-400">Holiday List</TabsTrigger>
+                    <TabsTrigger value="announcements" className="rounded-lg data-[state=active]:bg-[#1a1c24] data-[state=active]:text-white data-[state=active]:shadow-lg px-4 py-2 transition-all relative font-medium text-slate-400">
                         Announcements
                         {hasUnreadAnnouncements && <span className="relative flex h-3 w-3 ml-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                         </span>}
                     </TabsTrigger>
-                    <TabsTrigger value="birthdays" className="rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:via-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md px-4 py-2 transition-all data-[state=active]:animate-gradient-xy data-[state=active]:bg-[length:200%_200%]">Birthdays</TabsTrigger>
+                    <TabsTrigger value="birthdays" className="rounded-lg data-[state=active]:bg-[#1a1c24] data-[state=active]:text-white data-[state=active]:shadow-lg px-4 py-2 transition-all font-medium text-slate-400">Birthdays</TabsTrigger>
+                    <TabsTrigger value="engagement" className="rounded-lg data-[state=active]:bg-[#1a1c24] data-[state=active]:text-white data-[state=active]:shadow-lg px-4 py-2 transition-all font-medium text-slate-400">Engagement Hub</TabsTrigger>
                 </TabsList>
                 <TabsContent value="documents">
                     <EmployeeFileExplorer documents={serverDocuments as Document[]} currentUser={currentUser as User} />
@@ -236,10 +242,10 @@ export function EmployeeView() {
                                             size="sm"
                                             onClick={() => setHolidayLocationFilter('all')}
                                             className={cn(
-                                                "rounded-full transition-all",
+                                                "rounded-xl transition-all font-medium",
                                                 holidayLocationFilter === 'all'
-                                                    ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
-                                                    : "hover:bg-accent"
+                                                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg border-0"
+                                                    : "hover:bg-accent border-transparent"
                                             )}
                                         >
                                             All
@@ -251,10 +257,10 @@ export function EmployeeView() {
                                                 size="sm"
                                                 onClick={() => setHolidayLocationFilter(loc)}
                                                 className={cn(
-                                                    "rounded-full transition-all",
+                                                    "rounded-xl transition-all font-medium",
                                                     holidayLocationFilter === loc
-                                                        ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0"
-                                                        : "hover:bg-accent"
+                                                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg border-0"
+                                                        : "hover:bg-accent border-transparent"
                                                 )}
                                             >
                                                 {loc}
@@ -308,8 +314,8 @@ export function EmployeeView() {
                                             </TableCell>
                                             <TableCell>{holiday.name}</TableCell>
                                             <TableCell>
-                                                <span className={cn('px-2 py-1 rounded-full text-xs font-medium',
-                                                    holiday.location === 'ALL' ? 'bg-blue-100 text-blue-800' :
+                                                <span className={cn('px-2 py-1 rounded-lg text-xs font-medium',
+                                                    holiday.location === 'ALL' ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20' :
                                                         'bg-secondary text-secondary-foreground'
                                                 )}>
                                                     {holiday.location}
@@ -412,6 +418,21 @@ export function EmployeeView() {
                 <TabsContent value="birthdays">
                     <BirthdayList users={birthdays as User[]} searchQuery={birthdaySearchQuery} />
                 </TabsContent>
+                <TabsContent value="engagement">
+                    <div className="space-y-6 pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-6">
+                                <EventCalendar />
+                                <CompanyResources />
+                            </div>
+                            <div className="space-y-6">
+                                <PollsSurveys />
+                            </div>
+                        </div>
+                        <FeedbackBox />
+                    </div>
+                </TabsContent>
+
             </Tabs>
         </>
     )

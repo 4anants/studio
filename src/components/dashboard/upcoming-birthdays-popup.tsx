@@ -162,7 +162,7 @@ export function UpcomingBirthdaysPopup({ users, currentUserId }: UpcomingBirthda
                     <div className="mx-auto bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mb-4 animate-bounce">
                         <Cake className="h-8 w-8 text-pink-600" />
                     </div>
-                    <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
+                    <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">
                         {hasToday ? "Birthdays & Celebrations! 🎉" : "Upcoming Birthdays 📅"}
                     </DialogTitle>
                     <DialogDescription>
@@ -177,18 +177,18 @@ export function UpcomingBirthdaysPopup({ users, currentUserId }: UpcomingBirthda
                             className={cn(
                                 "flex items-center gap-4 p-4 rounded-xl border transition-all hover:scale-[1.02]",
                                 user.isToday
-                                    ? "bg-gradient-to-r from-yellow-50 via-pink-50 to-purple-50 border-pink-200 shadow-md"
-                                    : "bg-card border-border hover:bg-accent/50"
+                                    ? "bg-blue-500/10 border-blue-500/20 shadow-md"
+                                    : "bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/10"
                             )}
                         >
                             <div className="relative">
-                                <div className={cn("rounded-full p-1", user.isToday && "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500")}>
+                                <div className={cn("rounded-full p-1", user.isToday && "bg-blue-500/20")}>
                                     <Image
                                         src={getAvatarSrc(user)}
                                         alt={user.name}
                                         width={56}
                                         height={56}
-                                        className="rounded-full object-cover border-2 border-white aspect-square h-14 w-14"
+                                        className="rounded-full object-cover border-2 border-slate-100 dark:border-white/10 aspect-square h-14 w-14"
                                     />
                                 </div>
                                 {user.isToday && (
@@ -197,14 +197,14 @@ export function UpcomingBirthdaysPopup({ users, currentUserId }: UpcomingBirthda
                             </div>
 
                             <div className="flex-1">
-                                <h4 className={cn("font-bold text-lg leading-none", user.isToday ? "text-pink-700 dark:text-pink-300" : "text-foreground")}>
+                                <h4 className={cn("font-bold text-lg leading-none", user.isToday ? "text-blue-600 dark:text-blue-400" : "text-slate-900 dark:text-slate-200")}>
                                     {user.name}
                                 </h4>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full",
+                                    <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-lg",
                                         user.isToday
-                                            ? "bg-pink-100 text-pink-700"
-                                            : "bg-blue-100 text-blue-700"
+                                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/5"
                                     )}>
                                         {user.isToday ? "🎂 TODAY!" : "🎈 Upcoming"}
                                     </span>
@@ -216,7 +216,7 @@ export function UpcomingBirthdaysPopup({ users, currentUserId }: UpcomingBirthda
                             </div>
 
                             {user.isToday && (
-                                <Button size="icon" variant="ghost" className="text-pink-500 hover:text-pink-600 hover:bg-pink-50 rounded-full h-10 w-10 shrink-0">
+                                <Button size="icon" variant="ghost" className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-xl h-10 w-10 shrink-0">
                                     <PartyPopper className="h-5 w-5" />
                                 </Button>
                             )}
@@ -225,7 +225,7 @@ export function UpcomingBirthdaysPopup({ users, currentUserId }: UpcomingBirthda
                 </div>
 
                 <DialogFooter className="sm:justify-center pt-2">
-                    <Button onClick={handleClose} className="w-full sm:w-auto rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
+                    <Button onClick={handleClose} className="w-full sm:w-auto rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-6">
                         Close
                     </Button>
                 </DialogFooter>

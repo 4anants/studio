@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileRow } from './types';
 import { CheckCircle2, XCircle, Loader2, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface StageThreeProps {
     rows: FileRow[];
@@ -69,7 +70,7 @@ export function StageThree({ rows: initialRows, onClose, onRetry }: StageThreePr
 
                     setRows(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'success', createdDocumentId: createdId } : r));
                 } catch (error) {
-                    console.error(`Error uploading ${row.originalName}:`, error);
+                    logger.error(`Error uploading ${row.originalName}:`, error);
                     setRows(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'error', errorMessage: 'Upload Failed' } : r));
                 } finally {
                     completed++;

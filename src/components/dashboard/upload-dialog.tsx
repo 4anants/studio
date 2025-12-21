@@ -16,19 +16,22 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { UploadCloud, FileCheck2, Loader2 } from 'lucide-react'
 
+
+
 export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => void }) {
   const [open, setOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [fileName, setFileName] = useState('');
+  const [selectedFilesCount, setSelectedFilesCount] = useState(0);
+  const [selectedType, setSelectedType] = useState('Personal');
+
 
   const handleUpload = async () => {
-    if (!fileName) return;
     const fileInput = document.getElementById('document') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
-    if (!file) return;
+    const files = fileInput?.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true)
     setIsComplete(false)
@@ -45,18 +48,23 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
     }, 200)
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('category', 'Personal');
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', selectedType);
 
-      const response = await fetch('/api/documents', {
-        method: 'POST',
-        body: formData,
+        const response = await fetch('/api/documents', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed for file: ${file.name}`);
+        }
+        return response;
       });
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
+      await Promise.all(uploadPromises);
 
       clearInterval(interval)
       setUploadProgress(100)
@@ -75,7 +83,7 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
       setTimeout(() => {
         setIsComplete(false)
         setUploadProgress(0)
-        setFileName('')
+        setSelectedFilesCount(0)
       }, 500)
     } catch (error) {
       console.error("Upload error:", error);
@@ -91,7 +99,7 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
       setIsUploading(false);
       setIsComplete(false);
       setUploadProgress(0);
-      setFileName('');
+      setSelectedFilesCount(0);
     }
     setOpen(isOpen);
   }
@@ -99,16 +107,16 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
+        <Button className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-4">
           <UploadCloud className="mr-2 h-4 w-4" />
           Upload Document
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Upload a new document</DialogTitle>
+          <DialogTitle>Upload Documents</DialogTitle>
           <DialogDescription>
-            Choose a file to upload. It will be saved as a "Personal" document.
+            Choose one or more files to upload. They will be saved as "Personal" documents.
           </DialogDescription>
         </DialogHeader>
         {isUploading || isComplete ? (
@@ -121,7 +129,7 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
             ) : (
               <>
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                <p className="text-lg font-medium">Uploading...</p>
+                <p className="text-lg font-medium">Uploading {selectedFilesCount} file(s)...</p>
                 <Progress value={uploadProgress} className="w-[60%]" />
               </>
             )}
@@ -130,17 +138,32 @@ export function UploadDialog({ onUploadComplete }: { onUploadComplete: () => voi
           <>
             <div className="grid gap-4 py-4">
               <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Label htmlFor="document">Document</Label>
-                <Input id="document" type="file" onChange={(e) => setFileName(e.target.files?.[0]?.name || '')} />
+                <Label htmlFor="document">Documents</Label>
+                <Input
+                  id="document"
+                  type="file"
+                  multiple
+                  onChange={(e) => setSelectedFilesCount(e.target.files?.length || 0)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {selectedFilesCount > 0 ? `${selectedFilesCount} file(s) selected` : 'Select one or more files'}
+                </p>
               </div>
               <div className="grid w-full max-w-sm items-center gap-1.5">
                 <Label htmlFor="doc-type">Document Type</Label>
-                <Input id="doc-type" type="text" value="Personal" disabled readOnly />
+                <Input
+                  id="doc-type"
+                  type="text"
+                  value="Personal"
+                  disabled
+                  readOnly
+                  className="bg-slate-100 dark:bg-slate-800"
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" onClick={handleUpload} disabled={!fileName} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">
-                Upload
+              <Button type="button" onClick={handleUpload} disabled={selectedFilesCount === 0} className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-4">
+                Upload {selectedFilesCount > 0 && `(${selectedFilesCount})`}
               </Button>
             </DialogFooter>
           </>

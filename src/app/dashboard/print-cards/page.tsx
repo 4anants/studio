@@ -173,15 +173,6 @@ export default function PrintCardsExplorerPage() {
     return (
         <div className="flex h-full min-h-[80vh] w-full flex-col bg-muted/10">
             {/* Same Gradient as Files */}
-            <svg width="0" height="0" className="absolute block w-0 h-0 overflow-hidden" aria-hidden="true">
-                <defs>
-                    <linearGradient id="folder-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#3b82f6" />
-                        <stop offset="50%" stopColor="#a855f7" />
-                        <stop offset="100%" stopColor="#ec4899" />
-                    </linearGradient>
-                </defs>
-            </svg>
 
             {/* Header */}
             <header className="flex items-center justify-between px-6 py-4 border-b bg-background sticky top-0 z-10 shadow-sm">
@@ -220,9 +211,9 @@ export default function PrintCardsExplorerPage() {
                         <Button
                             disabled={selectedUserIds.length === 0}
                             className={cn(
-                                "rounded-full transition-all transform hover:scale-105 border-0 h-9",
+                                "rounded-xl transition-all transform hover:scale-105 border-0 h-9 font-medium px-4",
                                 selectedUserIds.length > 0
-                                    ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md animate-gradient-xy bg-[length:200%_200%]"
+                                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
                                     : "bg-muted text-muted-foreground"
                             )}
                         >
@@ -235,7 +226,7 @@ export default function PrintCardsExplorerPage() {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search employees..."
-                            className="pl-9 rounded-full bg-muted/40 border-0 focus-visible:bg-background h-9"
+                            className="pl-9 rounded-xl bg-muted/40 border-0 focus-visible:bg-background h-9"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -263,17 +254,17 @@ export default function PrintCardsExplorerPage() {
                         {(content as any).data.map((folderName: string) => (
                             <Card
                                 key={folderName}
-                                className="cursor-pointer hover:border-purple-500 hover:shadow-lg hover:bg-purple-50/10 transition-all border-muted shadow-sm bg-card group relative overflow-hidden"
+                                className="cursor-pointer hover:border-blue-500/50 hover:shadow-lg hover:bg-blue-50 dark:hover:bg-blue-500/5 transition-all border-slate-200 dark:border-white/5 shadow-sm bg-white dark:bg-card group relative overflow-hidden"
                                 onClick={() => enterFolder(folderName, folderName, (content as any).nextType)}
                             >
                                 <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
                                     <div className="group-hover:-translate-y-1 transition-transform duration-300">
                                         {(content as any).icon === 'department'
-                                            ? <Building2 className="h-16 w-16 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} style={{ stroke: 'url(#folder-gradient)' }} />
+                                            ? <Building2 className="h-16 w-16 text-blue-500 fill-blue-500/20 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
                                             : <MapPin className="h-16 w-16 text-red-500 fill-red-500/20 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
                                         }
                                     </div>
-                                    <span className="font-medium text-center truncate w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{folderName}</span>
+                                    <span className="font-medium text-center truncate w-full group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors text-slate-700 dark:text-slate-200">{folderName}</span>
                                 </CardContent>
                             </Card>
                         ))}
@@ -300,8 +291,8 @@ export default function PrintCardsExplorerPage() {
                                         <Card
                                             key={u.id}
                                             className={cn(
-                                                "group transition-all border-muted cursor-pointer relative",
-                                                isSelected ? "border-purple-500 bg-purple-50/10 shadow-md" : "hover:shadow-lg"
+                                                "group transition-all border-slate-200 dark:border-white/5 cursor-pointer relative bg-white dark:bg-card",
+                                                isSelected ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-md" : "hover:shadow-lg hover:bg-slate-50 dark:hover:bg-accent"
                                             )}
                                             onClick={() => toggleUserSelection(u.id)}
                                         >

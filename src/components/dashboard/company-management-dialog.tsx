@@ -30,12 +30,15 @@ import type { Company } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useDropzone } from 'react-dropzone';
 import Image from 'next/image';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { holidayLocations } from '@/lib/constants';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Company name is required.' }),
   shortName: z.string().min(1, { message: 'Short name is required.' }),
   email: z.string().email({ message: 'A valid email is required.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
+  domain: z.string().optional(),
   address: z.string().optional(),
   location: z.string().optional(),
   logo: z.string().optional(),
@@ -63,6 +66,7 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
       shortName: company?.shortName || '',
       email: company?.email || '',
       phone: company?.phone || '',
+      domain: company?.domain || '',
       address: company?.address || '',
       location: company?.location || '',
       logo: company?.logo || '',
@@ -132,6 +136,7 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
         shortName: company?.shortName || '',
         email: company?.email || '',
         phone: company?.phone || '',
+        domain: company?.domain || '',
         address: company?.address || '',
         location: company?.location || '',
         logo: company?.logo || '',
@@ -208,23 +213,15 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
             />
             <FormField
               control={form.control}
-              name="email"
+              name="domain"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl><Input placeholder="contact@company.com" {...field} /></FormControl>
+                  <FormLabel>Email Domain</FormLabel>
+                  <FormControl><Input placeholder="e.g., mydomain.com" {...field} /></FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl><Input placeholder="+1-123-456-7890" {...field} /></FormControl>
-                  <FormMessage />
+                  <p className="text-xs text-muted-foreground">
+                    Users with this email domain will be automatically assigned to this company
+                  </p>
                 </FormItem>
               )}
             />
@@ -253,11 +250,21 @@ export function CompanyManagementDialog({ company, onSave, children }: CompanyMa
                       </Button>
                     )}
                   </div>
-                  <Input
-                    placeholder="Location name (e.g., New York)"
+                  <Select
                     value={loc.location}
-                    onChange={(e) => updateLocation(index, 'location', e.target.value)}
-                  />
+                    onValueChange={(value) => updateLocation(index, 'location', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {holidayLocations.filter(l => l !== 'ALL').map(location => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Textarea
                     placeholder="Full address for this location"
                     value={loc.address}

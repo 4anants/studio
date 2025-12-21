@@ -3,14 +3,15 @@ import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import { unlink, rm } from 'fs/promises';
 import { join } from 'path';
+import { logger } from '@/lib/logger';
 
 async function deletePhysicalFile(url: string) {
     try {
         const filePath = join(process.cwd(), 'public', url);
         await unlink(filePath);
-        console.log(`Deleted physical file: ${filePath}`);
+        logger.log(`Deleted physical file: ${filePath}`);
     } catch (error) {
-        console.error('Error deleting physical file:', error);
+        logger.error('Error deleting physical file:', error);
     }
 }
 
@@ -18,9 +19,9 @@ async function deleteUserFolder(userId: string) {
     try {
         const userFolderPath = join(process.cwd(), 'public', 'uploads', userId);
         await rm(userFolderPath, { recursive: true, force: true });
-        console.log(`Deleted user folder: ${userFolderPath}`);
+        logger.log(`Deleted user folder: ${userFolderPath}`);
     } catch (error) {
-        console.error('Error deleting user folder:', error);
+        logger.error('Error deleting user folder:', error);
     }
 }
 
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
             message: `Cleanup completed: ${deletedCount} documents and ${deletedUsers.length} user folders deleted`
         });
     } catch (error) {
-        console.error('Error during cleanup:', error);
+        logger.error('Error during cleanup:', error);
         return NextResponse.json({ error: 'Cleanup failed' }, { status: 500 });
     }
 }

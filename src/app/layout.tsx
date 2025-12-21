@@ -9,6 +9,7 @@ import { SessionProvider } from '@/components/session-provider';
 import { DynamicFavicon } from '@/components/dynamic-favicon';
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 // Simple cache for metadata to reduce DB queries
 let metadataCache: { data: Metadata; timestamp: number } | null = null;
@@ -40,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
 
   } catch (error) {
-    console.error('Error fetching metadata settings:', error);
+    logger.error('Error fetching metadata settings:', error);
     // Return default metadata on error
   }
 

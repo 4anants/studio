@@ -10,6 +10,7 @@ import { IdCard } from "./id-card";
 import { Settings2, RotateCcw, Save } from "lucide-react";
 import type { User, Company } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from '@/lib/logger';
 
 // Default configuration based on standard CR80 size and current best fit
 const DEFAULT_CONFIG = {
@@ -23,7 +24,7 @@ const DEFAULT_CONFIG = {
     padding: 1.5, // units
     qrSize: 32, // px
 
-    // Position Offsets (x, y in px)
+    // Position Offsets (x, y in px) - X is kept for backward compatibility but not used in UI
     photoOffset: { x: 0, y: 0 },
     nameOffset: { x: 0, y: 0 },
     deptOffset: { x: 0, y: 0 },
@@ -49,7 +50,7 @@ export function IdCardDesignerDialog({ sampleUser, company }: IdCardDesignerDial
                 try {
                     return JSON.parse(saved);
                 } catch (e) {
-                    console.error("Failed to parse saved ID card config", e);
+                    logger.error("Failed to parse saved ID card config", e);
                 }
             }
         }
@@ -65,9 +66,9 @@ export function IdCardDesignerDialog({ sampleUser, company }: IdCardDesignerDial
 
     const handleSave = () => {
         localStorage.setItem('idCardConfig', JSON.stringify(config));
-        toast({ title: "Saved", description: "ID Card design saved locally." });
-        // Dispatch event so other components can update if they listen to storage
-        window.dispatchEvent(new Event('storage'));
+        toast({ title: "Saved", description: "ID Card design saved successfully." });
+        // Dispatch custom event instead of storage event to avoid reload loop
+        window.dispatchEvent(new CustomEvent('idCardConfigSaved', { detail: config }));
     };
 
     // Helper to render controls
@@ -90,36 +91,22 @@ export function IdCardDesignerDialog({ sampleUser, company }: IdCardDesignerDial
         </div>
     );
 
-    const renderXYControl = (label: string, key: 'photoOffset' | 'nameOffset' | 'deptOffset' | 'detailsOffset' | 'footerOffset' | 'companyOffset' | 'addressOffset') => (
-        <div className="space-y-3 border-b pb-3 last:border-0">
+    // Only Y-axis control since everything is centered
+    const renderYControl = (label: string, key: 'photoOffset' | 'nameOffset' | 'deptOffset' | 'detailsOffset' | 'footerOffset' | 'companyOffset' | 'addressOffset') => (
+        <div className="space-y-2 border-b pb-3 last:border-0">
             <Label className="text-xs font-semibold">{label}</Label>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                    <div className="flex justify-between">
-                        <span className="text-[10px] text-muted-foreground">X (Left/Right)</span>
-                        <span className="text-[10px] text-muted-foreground">{config[key].x}px</span>
-                    </div>
-                    <Slider
-                        value={[config[key].x]}
-                        min={-20}
-                        max={20}
-                        step={1}
-                        onValueChange={([val]) => setConfig(prev => ({ ...prev, [key]: { ...prev[key], x: val } }))}
-                    />
+            <div className="space-y-1">
+                <div className="flex justify-between">
+                    <span className="text-[10px] text-muted-foreground">Vertical Position (Up/Down)</span>
+                    <span className="text-[10px] text-muted-foreground">{config[key].y}px</span>
                 </div>
-                <div className="space-y-1">
-                    <div className="flex justify-between">
-                        <span className="text-[10px] text-muted-foreground">Y (Up/Down)</span>
-                        <span className="text-[10px] text-muted-foreground">{config[key].y}px</span>
-                    </div>
-                    <Slider
-                        value={[config[key].y]}
-                        min={-20}
-                        max={20}
-                        step={1}
-                        onValueChange={([val]) => setConfig(prev => ({ ...prev, [key]: { ...prev[key], y: val } }))}
-                    />
-                </div>
+                <Slider
+                    value={[config[key].y]}
+                    min={-20}
+                    max={20}
+                    step={1}
+                    onValueChange={([val]) => setConfig(prev => ({ ...prev, [key]: { ...prev[key], y: val } }))}
+                />
             </div>
         </div>
     );
@@ -168,16 +155,16 @@ export function IdCardDesignerDialog({ sampleUser, company }: IdCardDesignerDial
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Positioning & Layout</h4>
+                                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Vertical Positioning</h4>
                                 <div className="space-y-2">
                                     {renderControl("Photo Height (mm)", "photoHeight", 20, 60, 1)}
-                                    {renderXYControl("Photo Position", "photoOffset")}
-                                    {renderXYControl("Name Position", "nameOffset")}
-                                    {renderXYControl("Department Position", "deptOffset")}
-                                    {renderXYControl("Details Area Position", "detailsOffset")}
-                                    {renderXYControl("Footer Container", "footerOffset")}
-                                    {renderXYControl("Company Name Position", "companyOffset")}
-                                    {renderXYControl("Address Position", "addressOffset")}
+                                    {renderYControl("Photo Position", "photoOffset")}
+                                    {renderYControl("Name Position", "nameOffset")}
+                                    {renderYControl("Department Position", "deptOffset")}
+                                    {renderYControl("Details Area Position", "detailsOffset")}
+                                    {renderYControl("Footer Container", "footerOffset")}
+                                    {renderYControl("Company Name Position", "companyOffset")}
+                                    {renderYControl("Address Position", "addressOffset")}
                                 </div>
                             </div>
                         </div>

@@ -93,7 +93,7 @@ export function PinSetupDialog({ open, onOpenChange, onSuccess, isChanging = fal
                     <div className="flex items-center gap-2">
                         <Lock className="h-5 w-5 text-primary" />
                         <DialogTitle>
-                            {isChanging ? 'Change Document PIN' : 'Set Document PIN'}
+                            {isChanging ? 'Change PIN' : 'Set PIN'}
                         </DialogTitle>
                     </div>
                     <DialogDescription>

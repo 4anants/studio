@@ -25,6 +25,7 @@ import { Search, Calculator, CalendarIcon, ArrowLeft, ArrowRight, CheckCircle2, 
 import { documentTypesList } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 
 interface StageTwoProps {
     rows: FileRow[];
@@ -80,7 +81,7 @@ export function StageTwo({ rows: initialRows, onBack, onNext, defaultConfig }: S
                         row.status = 'error'; // No match
                     }
                 } catch (e) {
-                    console.error("Search failed for", row.originalName, e);
+                    logger.error("Search failed for", row.originalName, e);
                     row.status = 'error';
                 }
             }

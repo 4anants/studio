@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        console.error('Error resetting password:', error);
+        logger.error('Error resetting password:', error);
         return NextResponse.json({ error: error.message || 'Failed to reset password' }, { status: 500 });
     }
 }

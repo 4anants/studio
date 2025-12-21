@@ -7,8 +7,18 @@ export async function GET() {
     const auth = await requireAuth();
     if (!auth.authorized) return auth.response;
 
+    const session = auth.session;
+    const isAdmin = session?.user?.role === 'admin';
+    const userEmail = session?.user?.email;
+
     try {
-        const [rows] = await pool.query<RowDataPacket[]>(`
+        let userDept = '';
+        if (!isAdmin && userEmail) {
+            const [uRows] = await pool.query<RowDataPacket[]>('SELECT department FROM users WHERE email = ?', [userEmail]);
+            if (uRows.length > 0) userDept = uRows[0].department;
+        }
+
+        let sql = `
             SELECT 
                 id, 
                 title, 
@@ -20,8 +30,37 @@ export async function GET() {
                 event_date as eventDate, 
                 target_departments as targetDepartments 
             FROM announcements 
-            ORDER BY event_date ASC
-        `);
+        `;
+
+        const params: any[] = [];
+        const conditions: string[] = [];
+
+        if (!isAdmin) {
+            conditions.push("status = 'published'");
+            if (userDept) {
+                conditions.push(`(
+                    target_departments IS NULL 
+                    OR target_departments = '' 
+                    OR target_departments LIKE '%ALL%'
+                    OR target_departments LIKE ?
+                )`);
+                params.push(`%${userDept}%`);
+            } else {
+                conditions.push(`(
+                    target_departments IS NULL 
+                    OR target_departments = '' 
+                    OR target_departments LIKE '%ALL%'
+                 )`);
+            }
+        }
+
+        if (conditions.length > 0) {
+            sql += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        sql += ' ORDER BY event_date ASC';
+
+        const [rows] = await pool.query<RowDataPacket[]>(sql, params);
         return NextResponse.json(rows);
     } catch (error) {
         console.error('Error in GET /api/announcements:', error);

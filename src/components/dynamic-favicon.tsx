@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 export function DynamicFavicon() {
     useEffect(() => {
@@ -122,7 +123,7 @@ export function DynamicFavicon() {
                     }
                 }
             } catch (error) {
-                console.error("Failed to fetch settings", error);
+                logger.error("Failed to fetch settings", error);
             }
         };
         fetchSettings();

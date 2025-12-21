@@ -60,7 +60,7 @@ export function AddDocumentTypeDialog({ onAdd, children }: AddDocumentTypeDialog
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleAdd} className="rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 animate-gradient-xy bg-[length:200%_200%] border-0">Add Type</Button>
+          <Button onClick={handleAdd} className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all transform hover:scale-105 border-0 font-medium px-4">Add Type</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

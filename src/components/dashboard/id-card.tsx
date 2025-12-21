@@ -38,8 +38,22 @@ export const IdCard = forwardRef<HTMLDivElement, { employee: User, company?: any
         }
 
         loadConfig();
-        window.addEventListener('storage', loadConfig);
-        return () => window.removeEventListener('storage', loadConfig);
+
+        // Listen for custom event from designer
+        const handleConfigSaved = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail) {
+                setSavedConfig(customEvent.detail);
+            }
+        };
+
+        window.addEventListener('idCardConfigSaved', handleConfigSaved);
+        window.addEventListener('storage', loadConfig); // For logo changes
+
+        return () => {
+            window.removeEventListener('idCardConfigSaved', handleConfigSaved);
+            window.removeEventListener('storage', loadConfig);
+        };
     }, []);
 
     const contact = employee.emergencyContact || employee.mobile || '';

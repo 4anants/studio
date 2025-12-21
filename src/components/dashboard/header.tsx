@@ -29,7 +29,7 @@ import { useState, useEffect } from 'react'
 import { CompanyName } from '@/lib/constants'
 import { User as UserType } from '@/lib/types'
 import { useData } from '@/hooks/use-data'
-import { getAvatarSrc } from '@/lib/utils'
+import { cn, getAvatarSrc } from '@/lib/utils'
 import { AseLogo } from './ase-logo'
 import { Skeleton } from '../ui/skeleton';
 
@@ -217,11 +217,16 @@ export function DashboardHeader() {
 
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background px-4 sm:px-6 relative">
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6 z-10">
+    <header className="sticky top-0 z-30 flex h-16 items-center border-b border-white/5 bg-background px-4 sm:px-6 relative">
+      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-3 md:text-sm lg:gap-4 z-10">
         <Link
           href={`/dashboard?role=${searchParams.get('role') || 'employee'}`}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 whitespace-nowrap animate-gradient-xy bg-[length:200%_200%]"
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all transform hover:scale-105 whitespace-nowrap",
+            !searchParams.get('view') || searchParams.get('view') === 'employee'
+              ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy text-white shadow-lg border-0"
+              : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
+          )}
         >
           <LayoutDashboard className="h-4 w-4" />
           Dashboard
@@ -229,7 +234,12 @@ export function DashboardHeader() {
         {currentUser?.role === 'admin' && (
           <Link
             href="/dashboard?role=admin&view=panel"
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-medium shadow-md hover:from-blue-600 hover:to-pink-600 transition-all transform hover:scale-105 whitespace-nowrap animate-gradient-xy bg-[length:200%_200%]"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all transform hover:scale-105 whitespace-nowrap",
+              searchParams.get('view') === 'panel'
+                ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy text-white shadow-lg border-0"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
+            )}
           >
             <Shield className="h-4 w-4" />
             Admin Panel
@@ -241,10 +251,10 @@ export function DashboardHeader() {
       <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none md:pointer-events-auto">
         <Link
           href={`/dashboard?${searchParams.toString()}`}
-          className="flex items-center gap-3 text-lg font-semibold md:text-base"
+          className="flex items-center gap-3 text-lg font-semibold md:text-base group"
         >
-          <div className="h-10 w-10 relative rounded-full overflow-hidden shadow-sm flex items-center justify-center p-[2px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy bg-[length:200%_200%]">
-            <div className="h-full w-full bg-background rounded-full overflow-hidden flex items-center justify-center">
+          <div className="h-10 w-10 relative rounded-xl overflow-hidden shadow-sm flex items-center justify-center p-[2px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy group-hover:opacity-100 transition-all">
+            <div className="h-full w-full bg-white dark:bg-card rounded-[11px] overflow-hidden flex items-center justify-center">
               {logoSrc ? (
                 <img src={logoSrc} alt="Logo" className="h-full w-full object-cover" />
               ) : (
@@ -252,7 +262,7 @@ export function DashboardHeader() {
               )}
             </div>
           </div>
-          <span className={`font-bold whitespace-nowrap bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text animate-gradient-xy bg-[length:200%_200%] ${siteNameFontSize}`}>{siteName}</span>
+          <span className={`font-bold whitespace-nowrap text-slate-900 dark:text-white ${siteNameFontSize}`}>{siteName}</span>
         </Link>
       </div>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
@@ -261,9 +271,9 @@ export function DashboardHeader() {
         {currentUser.role !== 'admin' && <AnnouncementBell />}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full p-[2px] h-11 w-11 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy bg-[length:200%_200%] hover:scale-105 transition-transform duration-300">
-              <div className="h-full w-full rounded-full bg-background p-[2px] overflow-hidden">
-                <Image src={getAvatarSrc(currentUser)} width={40} height={40} className="rounded-full object-cover h-full w-full" alt="User avatar" data-ai-hint="person portrait" />
+            <Button variant="ghost" size="icon" className="rounded-xl p-[2px] h-11 w-11 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-xy hover:scale-105 transition-all duration-300">
+              <div className="h-full w-full rounded-[10px] bg-white dark:bg-card p-[1px] overflow-hidden">
+                <Image src={getAvatarSrc(currentUser)} width={40} height={40} className="rounded-[9px] object-cover h-full w-full" alt="User avatar" data-ai-hint="person portrait" />
               </div>
               <span className="sr-only">Toggle user menu</span>
             </Button>
